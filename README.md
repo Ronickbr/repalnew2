@@ -1,0 +1,214 @@
+# Repal Equipamentos - Site Institucional
+
+Site institucional da Repal Equipamentos, especializada em equipamentos para cozinha industrial e comercial.
+
+## 🚀 Tecnologias Utilizadas
+
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS
+- **Roteamento**: React Router DOM
+- **Estado**: React Query (TanStack Query)
+- **Backend**: Supabase (Database, Auth, Storage)
+- **Ícones**: Lucide React
+- **Notificações**: Sonner
+- **Data**: date-fns
+- **Containerização**: Docker + Docker Compose
+
+## 📋 Funcionalidades
+
+### Públicas
+- ✅ Página inicial com hero impactante
+- ✅ Catálogo de produtos com filtros e busca
+- ✅ Páginas individuais de produtos com galeria
+- ✅ Páginas de categorias
+- ✅ Sistema de leads com captura automática
+- ✅ Integração WhatsApp
+- ✅ Páginas institucionais (Sobre, Contato)
+- ✅ Design responsivo
+- ✅ SEO otimizado com slugs amigáveis
+
+### Administrativas
+- ✅ Dashboard com estatísticas
+- ✅ Gestão de produtos
+- ✅ Gestão de categorias
+- ✅ Gestão de leads com status
+- ✅ Interface intuitiva
+
+## 🛠️ Configuração do Ambiente
+
+### Pré-requisitos
+- Node.js 20+
+- Conta no Supabase
+
+### 1. Clone o repositório
+```bash
+git clone <repository-url>
+cd repalnew2
+```
+
+### 2. Configure as variáveis de ambiente
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+# Supabase
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+
+# WhatsApp
+VITE_WHATSAPP_NUMBER=5511999999999
+
+# Informações da Empresa
+VITE_COMPANY_NAME=Repal Equipamentos
+VITE_COMPANY_EMAIL=contato@repalequipamentos.com.br
+VITE_COMPANY_PHONE=(11) 99999-9999
+VITE_COMPANY_ADDRESS=São Paulo, SP
+```
+
+### 3. Configuração do Supabase
+
+1. Crie um novo projeto no [Supabase](https://supabase.com)
+2. Execute a migração SQL localizada em `supabase/migrations/001_initial_schema.sql`
+3. Configure as permissões RLS conforme necessário
+4. Copie a URL e a chave anônima para o arquivo `.env`
+
+## 🚀 Desenvolvimento
+
+### Opção 1: Desenvolvimento Local (Node.js)
+
+```bash
+# Instalar dependências
+npm install
+
+# Iniciar servidor de desenvolvimento
+npm run dev
+```
+
+Acesse: http://localhost:5173
+
+### Opção 2: Desenvolvimento com Docker (Recomendado)
+
+```bash
+# Iniciar ambiente de desenvolvimento
+docker-compose up app-dev
+
+# Ou em background
+docker-compose up -d app-dev
+```
+
+Acesse: http://localhost:5173
+
+### Scripts Disponíveis
+
+```bash
+npm run dev          # Servidor de desenvolvimento
+npm run build        # Build para produção
+npm run preview      # Preview do build
+npm run lint         # Verificar código
+npm run type-check   # Verificar tipos TypeScript
+```
+
+## 🏗️ Estrutura do Projeto
+
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── Layout.tsx      # Layout principal
+│   ├── ProductCard.tsx # Card de produto
+│   └── ContactForm.tsx # Formulário de contato
+├── hooks/              # Hooks customizados
+│   ├── useCategories.ts
+│   ├── useProducts.ts
+│   └── useLeads.ts
+├── lib/                # Configurações e utilitários
+│   ├── supabase.ts     # Cliente Supabase
+│   └── react-query.ts  # Configuração React Query
+├── pages/              # Páginas da aplicação
+│   ├── Home.tsx
+│   ├── Catalog.tsx
+│   ├── Category.tsx
+│   ├── ProductDetail.tsx
+│   ├── About.tsx
+│   ├── Contact.tsx
+│   └── Admin.tsx
+└── App.tsx             # Componente principal
+```
+
+## 🎨 Design System
+
+### Paleta de Cores
+- **Vermelho Principal**: #8B0000 (Repal Red)
+- **Azul Secundário**: #000080 (Navy Blue)
+- **Branco**: #FFFFFF
+- **Cinza Escuro**: #333333
+- **Verde WhatsApp**: #25D366
+
+### Tipografia
+- Fonte principal: Inter (via Tailwind CSS)
+- Hierarquia clara com tamanhos responsivos
+
+## 📱 Responsividade
+
+O site é totalmente responsivo com breakpoints:
+- **Mobile**: < 768px
+- **Tablet**: 768px - 1024px
+- **Desktop**: > 1024px
+
+## 🔒 Segurança
+
+- Row Level Security (RLS) configurado no Supabase
+- Validação de dados no frontend e backend
+- Sanitização de inputs
+- Headers de segurança configurados no Nginx
+
+## 🚀 Deploy
+
+### Opção 1: Docker (Produção)
+
+```bash
+# Build e iniciar em produção
+docker-compose --profile production up app-prod
+```
+
+### Opção 2: Vercel (Recomendado)
+
+1. Conecte o repositório ao Vercel
+2. Configure as variáveis de ambiente
+3. Deploy automático a cada push
+
+### Opção 3: Build Manual
+
+```bash
+# Gerar build
+npm run build
+
+# Os arquivos estarão em dist/
+# Servir com qualquer servidor web
+```
+
+## 📊 Monitoramento
+
+- React Query Devtools (desenvolvimento)
+- Console logs estruturados
+- Métricas do Supabase Dashboard
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto é propriedade da Repal Equipamentos. Todos os direitos reservados.
+
+## 📞 Suporte
+
+Para suporte técnico, entre em contato:
+- Email: dev@repalequipamentos.com.br
+- WhatsApp: (11) 99999-9999
+
+---
+
+**Desenvolvido com ❤️ para Repal Equipamentos**

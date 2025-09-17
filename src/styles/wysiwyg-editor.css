@@ -1,0 +1,150 @@
+/* Estilos personalizados para o editor WYSIWYG */
+.wysiwyg-editor .ql-editor {
+  min-height: 120px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.wysiwyg-editor .ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: normal;
+}
+
+.wysiwyg-editor .ql-toolbar {
+  border-top: 1px solid #d1d5db;
+  border-left: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background-color: #f9fafb;
+}
+
+.wysiwyg-editor .ql-container {
+  border-left: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  font-family: inherit;
+}
+
+.wysiwyg-editor .ql-toolbar .ql-stroke {
+  stroke: #6b7280;
+}
+
+.wysiwyg-editor .ql-toolbar .ql-fill {
+  fill: #6b7280;
+}
+
+.wysiwyg-editor .ql-toolbar button:hover .ql-stroke {
+  stroke: #374151;
+}
+
+.wysiwyg-editor .ql-toolbar button:hover .ql-fill {
+  fill: #374151;
+}
+
+.wysiwyg-editor .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #2563eb;
+}
+
+.wysiwyg-editor .ql-toolbar button.ql-active .ql-fill {
+  fill: #2563eb;
+}
+
+.wysiwyg-editor .ql-picker-label {
+  color: #6b7280;
+}
+
+.wysiwyg-editor .ql-picker-label:hover {
+  color: #374151;
+}
+
+.wysiwyg-editor .ql-picker.ql-expanded .ql-picker-label {
+  color: #2563eb;
+}
+
+/* Estilos para o conteúdo do editor */
+.wysiwyg-editor .ql-editor h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.wysiwyg-editor .ql-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.wysiwyg-editor .ql-editor h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.wysiwyg-editor .ql-editor ul,
+.wysiwyg-editor .ql-editor ol {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+.wysiwyg-editor .ql-editor li {
+  margin-bottom: 0.25rem;
+}
+
+.wysiwyg-editor .ql-editor a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.wysiwyg-editor .ql-editor a:hover {
+  color: #1d4ed8;
+}
+
+.wysiwyg-editor .ql-editor strong {
+  font-weight: 700;
+}
+
+.wysiwyg-editor .ql-editor em {
+  font-style: italic;
+}
+
+.wysiwyg-editor .ql-editor u {
+  text-decoration: underline;
+}
+
+.wysiwyg-editor .ql-editor s {
+  text-decoration: line-through;
+}
+
+/* Responsividade */
+@media (max-width: 640px) {
+  .wysiwyg-editor .ql-toolbar {
+    padding: 8px;
+  }
+  
+  .wysiwyg-editor .ql-editor {
+    min-height: 100px;
+    font-size: 16px; /* Evita zoom no iOS */
+  }
+}
+
+/* Foco no editor */
+.wysiwyg-editor .ql-container.ql-snow {
+  border-color: #d1d5db;
+}
+
+.wysiwyg-editor .ql-editor:focus {
+  outline: none;
+}
+
+.wysiwyg-editor:focus-within .ql-toolbar {
+  border-color: #2563eb;
+}
+
+.wysiwyg-editor:focus-within .ql-container {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}

@@ -1,0 +1,77 @@
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+export interface Store {
+  id: string;
+  name: string;
+  phone: string;
+  displayPhone: string;
+}
+
+const stores: Store[] = [
+  {
+    id: 'curitiba',
+    name: 'Loja Curitiba',
+    phone: '5541999412928',
+    displayPhone: '(41) 99941-2928'
+  },
+  {
+    id: 'londrina',
+    name: 'Loja Londrina',
+    phone: '5543984446097',
+    displayPhone: '(43) 98444-6097'
+  }
+];
+
+interface WhatsAppContextType {
+  isModalOpen: boolean;
+  stores: Store[];
+  currentMessage?: string;
+  openStoreSelector: (message?: string) => void;
+  closeStoreSelector: () => void;
+  redirectToWhatsApp: (store: Store, message?: string) => void;
+}
+
+const WhatsAppContext = createContext<WhatsAppContextType | undefined>(undefined);
+
+export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState<string>();
+
+  const openStoreSelector = (message?: string) => {
+    setCurrentMessage(message);
+    setIsModalOpen(true);
+  };
+
+  const closeStoreSelector = () => {
+    setIsModalOpen(false);
+  };
+
+  const redirectToWhatsApp = (store: Store, message: string = 'Olá, gostaria de mais informações') => {
+    const whatsappUrl = `https://wa.me/${store.phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    closeStoreSelector();
+  };
+
+  const value = {
+    isModalOpen,
+    stores,
+    currentMessage,
+    openStoreSelector,
+    closeStoreSelector,
+    redirectToWhatsApp
+  };
+
+  return (
+    <WhatsAppContext.Provider value={value}>
+      {children}
+    </WhatsAppContext.Provider>
+  );
+};
+
+export const useWhatsAppStore = () => {
+  const context = useContext(WhatsAppContext);
+  if (context === undefined) {
+    throw new Error('useWhatsAppStore must be used within a WhatsAppProvider');
+  }
+  return context;
+};
