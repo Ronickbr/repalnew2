@@ -59,9 +59,11 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <Lock className="h-8 w-8 text-white" />
-          </div>
+          <img 
+            src="/favicon.png" 
+            alt="Logo" 
+            className="mx-auto h-16 w-16 mb-4 rounded-full object-cover"
+          />
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Área Administrativa
           </h2>
@@ -152,14 +154,7 @@ const Login: React.FC = () => {
             </button>
           </form>
           
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Credenciais de Demonstração:</h3>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p><strong>Email:</strong> admin@repal.com.br</p>
-              <p><strong>Senha:</strong> admin123</p>
-            </div>
-          </div>
+
         </div>
         
         {/* Footer */}
