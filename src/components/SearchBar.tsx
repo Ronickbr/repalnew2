@@ -1,200 +1,191 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Search, X, Filter, TrendingUp } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
+import { useProductSearch, SearchResult } from '../hooks/useProductSearch';
+import SearchDropdown from './SearchDropdown';
 
 interface SearchBarProps {
-  value: string;
-  onChange: (value: string) => void;
-  onFilterToggle?: () => void;
-  showFilterButton?: boolean;
   placeholder?: string;
-  suggestions?: string[];
-  recentSearches?: string[];
   className?: string;
+  isMobile?: boolean;
+  style?: React.CSSProperties;
+  buttonClassName?: string;
+  buttonStyle?: React.CSSProperties;
+  iconClassName?: string;
 }
 
-const SearchBar: React.FC<SearchBarProps> = memo(({
-  value,
-  onChange,
-  onFilterToggle,
-  showFilterButton = false,
-  placeholder = "Buscar produtos...",
-  suggestions = [],
-  recentSearches = [],
-  className = ''
+const SearchBar: React.FC<SearchBarProps> = memo(({ 
+  placeholder = "Digite aqui o que você busca",
+  className = "",
+  isMobile = false,
+  style,
+  buttonClassName,
+  buttonStyle,
+  iconClassName
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  console.log('🔍 SearchBar: Componente renderizado!');
+  console.log('🔍 SearchBar: Props recebidas:', { placeholder, className, isMobile });
+  const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  
+  // Hook de busca
+  const { 
+    searchResults, 
+    isSearching, 
+    isEmpty
+  } = useProductSearch(query);
+  
+  // Fechar dropdown quando clicar fora
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      setIsDropdownOpen(false)
+      setSelectedIndex(-1)
+    }
+  }, [])
 
-  // Fechar sugestões ao clicar fora
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-        setIsFocused(false);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [handleClickOutside])
+
+  // Controlar visibilidade do dropdown
+  useEffect(() => {
+    const shouldShowDropdown = query.length >= 3 && (searchResults.length > 0 || isSearching || isEmpty)
+    setIsDropdownOpen(shouldShowDropdown)
+  }, [query, searchResults, isSearching, isEmpty])
+
+  // Reset do índice selecionado quando resultados mudam
+  useEffect(() => {
+    setSelectedIndex(-1)
+  }, [searchResults])
+  
+  // Navegação por teclado
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (!isDropdownOpen || searchResults.length === 0) {
+      if (e.key === 'Enter' && query.trim()) {
+        handleSearch();
       }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    onChange(newValue);
-    setShowSuggestions(newValue.length > 0 || recentSearches.length > 0);
-  };
-
-  const handleInputFocus = () => {
-    setIsFocused(true);
-    setShowSuggestions(value.length > 0 || recentSearches.length > 0);
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    onChange(suggestion);
-    setShowSuggestions(false);
-    setIsFocused(false);
-    inputRef.current?.blur();
-  };
-
-  const handleClear = () => {
-    onChange('');
-    setShowSuggestions(false);
-    inputRef.current?.focus();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setShowSuggestions(false);
+      return;
+    }
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < searchResults.length - 1 ? prev + 1 : 0
+        );
+        break;
+        
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : searchResults.length - 1
+        );
+        break;
+        
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+          const selectedResult = searchResults[selectedIndex];
+          handleResultClick(selectedResult);
+        } else if (query.trim()) {
+          handleSearch();
+        }
+        break;
+        
+      case 'Escape':
+        e.preventDefault();
+        setIsDropdownOpen(false);
+        setSelectedIndex(-1);
+        inputRef.current?.blur();
+        break;
+    }
+  }, [isDropdownOpen, searchResults, selectedIndex, query]);
+  
+  // Busca geral quando não há resultados específicos
+  const handleSearch = useCallback(() => {
+    if (query.trim()) {
+      navigate(`/categorias?busca=${encodeURIComponent(query.trim())}`);
+      setIsDropdownOpen(false);
+      setQuery('');
       inputRef.current?.blur();
     }
+  }, [query, navigate]);
+  
+  // Clique em resultado específico
+  const handleResultClick = useCallback((result: SearchResult) => {
+    navigate(`/produto/${result.slug || result.id}`);
+    setIsDropdownOpen(false);
+    setQuery('');
+    setSelectedIndex(-1);
+  }, [navigate]);
+  
+  // Mudança no input
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+    setSelectedIndex(-1);
+  }, []);
+  
+  // Foco no input
+  const handleInputFocus = () => {
+    if (query.length >= 3) {
+      setIsDropdownOpen(true);
+    }
   };
-
-  // Filtrar sugestões baseadas no valor atual
-  const filteredSuggestions = suggestions.filter(suggestion =>
-    suggestion.toLowerCase().includes(value.toLowerCase()) && suggestion !== value
-  ).slice(0, 5);
-
-  const displayRecentSearches = recentSearches.filter(search =>
-    !value || search.toLowerCase().includes(value.toLowerCase())
-  ).slice(0, 3);
-
-  const hasContent = filteredSuggestions.length > 0 || displayRecentSearches.length > 0;
-
+  
+  // Clique no botão de busca
+  const handleSearchClick = () => {
+    if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+      const selectedResult = searchResults[selectedIndex];
+      handleResultClick(selectedResult);
+    } else {
+      handleSearch();
+    }
+  };
+  
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
-      {/* Barra de busca principal */}
-      <div className={`relative flex items-center bg-white rounded-xl border-2 transition-all duration-200 ${
-        isFocused 
-          ? 'border-red-500 shadow-lg shadow-red-500/10' 
-          : 'border-gray-200 hover:border-gray-300'
-      }`}>
-        {/* Ícone de busca */}
-        <div className="pl-4 pr-3">
-          <Search className={`w-5 h-5 transition-colors ${
-            isFocused ? 'text-red-500' : 'text-gray-400'
-          }`} />
-        </div>
-
-        {/* Input de busca */}
+    <div ref={containerRef} className="relative w-full">
         <input
           ref={inputRef}
           type="text"
-          value={value}
+          value={query}
           onChange={handleInputChange}
-          onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
+          onFocus={handleInputFocus}
           placeholder={placeholder}
-          className="flex-1 py-3 px-1 text-gray-900 placeholder-gray-500 bg-transparent border-none outline-none text-sm sm:text-base"
+          className={className || `w-full px-3 py-2 lg:px-4 lg:py-3 pr-10 lg:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm lg:text-base transition-all duration-300 ${
+            isMobile ? 'min-h-[44px]' : ''
+          }`}
+          style={style}
+          autoComplete="off"
         />
-
-        {/* Botão de limpar */}
-        {value && (
-          <button
-            onClick={handleClear}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label="Limpar busca"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-
-        {/* Botão de filtros */}
-        {showFilterButton && (
-          <button
-            onClick={onFilterToggle}
-            className="p-2 mr-2 text-gray-400 hover:text-red-500 transition-colors border-l border-gray-200 ml-2"
-            aria-label="Abrir filtros"
-          >
-            <Filter className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Dropdown de sugestões */}
-      {showSuggestions && hasContent && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
-          <div className="py-2">
-            {/* Buscas recentes */}
-            {displayRecentSearches.length > 0 && (
-              <div>
-                <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                  <TrendingUp className="w-3 h-3" />
-                  Buscas Recentes
-                </div>
-                {displayRecentSearches.map((search, index) => (
-                  <button
-                    key={`recent-${index}`}
-                    onClick={() => handleSuggestionClick(search)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center gap-3"
-                  >
-                    <TrendingUp className="w-4 h-4 text-gray-400" />
-                    <span>{search}</span>
-                  </button>
-                ))}
-                {filteredSuggestions.length > 0 && (
-                  <div className="border-t border-gray-100 my-1" />
-                )}
-              </div>
-            )}
-
-            {/* Sugestões */}
-            {filteredSuggestions.length > 0 && (
-              <div>
-                {displayRecentSearches.length > 0 && (
-                  <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                    <Search className="w-3 h-3" />
-                    Sugestões
-                  </div>
-                )}
-                {filteredSuggestions.map((suggestion, index) => (
-                  <button
-                    key={`suggestion-${index}`}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors flex items-center gap-3"
-                  >
-                    <Search className="w-4 h-4 text-gray-400" />
-                    <span>
-                      {suggestion.split(new RegExp(`(${value})`, 'gi')).map((part, i) => (
-                        part.toLowerCase() === value.toLowerCase() ? (
-                          <mark key={i} className="bg-yellow-200 text-gray-900">{part}</mark>
-                        ) : (
-                          <span key={i}>{part}</span>
-                        )
-                      ))}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        <button 
+          onClick={handleSearchClick}
+          className={buttonClassName || `absolute right-2 lg:right-3 top-1/2 transform -translate-y-1/2 text-red-600 hover:text-red-700 transition-colors duration-200 ${
+            isMobile ? 'min-h-[44px] min-w-[44px]' : ''
+          }`}
+          style={buttonStyle}
+        >
+          <Search className={iconClassName || "h-4 w-4 lg:h-5 lg:w-5"} />
+        </button>
+      
+      <SearchDropdown
+        results={searchResults}
+        isSearching={isSearching}
+        isEmpty={isEmpty}
+        showResults={isDropdownOpen}
+        query={query}
+        selectedIndex={selectedIndex}
+        onResultClick={handleResultClick}
+        onClose={() => setIsDropdownOpen(false)}
+      />
     </div>
   );
 });
-
-SearchBar.displayName = 'SearchBar';
 
 export default SearchBar;

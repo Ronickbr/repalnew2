@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star, Award, Truck, Shield, MessageCircle } from 'lucide-react';
+import { ArrowRight, Award, Truck, Shield, MessageCircle } from 'lucide-react';
+import BannerCarousel from '../components/BannerCarousel';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../lib/supabase';
-import { useSiteSettings } from '../hooks/useSiteSettings';
+
 import WhatsAppButton from '../components/WhatsAppButton';
 
 const Home: React.FC = () => {
 
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const { metaDescription } = useSiteSettings();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,16 +49,7 @@ const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
 
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
 
 
@@ -73,153 +63,8 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Revolutionary Design */}
-      <section className="relative h-[45vh] sm:h-[42vh] md:h-[40vh] lg:h-[40vh] xl:h-[40vh] min-h-[320px] sm:min-h-[350px] md:min-h-[380px] overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center">
-        {/* Parallax Background Effect */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transform scale-110"
-          style={{
-            backgroundImage: `url('/images/bg-cc.png')`,
-          }}
-        ></div>
-
-        {/* Multi-layered Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-purple-900/40 to-black/80"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-purple-900/30"></div>
-
-        {/* Advanced Geometric Animation System */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Floating Geometric Elements */}
-          <div className="absolute top-10 left-10 w-16 h-16 bg-gradient-to-br from-yellow-400/20 to-orange-400/20 rounded-full blur-xl animate-float"></div>
-          <div className="absolute bottom-10 right-10 w-12 h-12 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-lg animate-float-delayed"></div>
-          <div className="absolute top-1/2 left-1/4 w-8 h-8 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-md animate-pulse"></div>
-        </div>
-        
-        {/* Main Content Container */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 md:gap-8 items-center min-h-[25vh] sm:min-h-[28vh] md:min-h-[30vh]">
-            
-            {/* Left Column - Enhanced Content (Responsive) */}
-            <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-8 xl:col-span-8 space-y-3 sm:space-y-4 md:space-y-5 text-center sm:text-center md:text-center lg:text-left order-2 lg:order-1">
-              
-              {/* Revolutionary Typography */}
-              <div className="space-y-1 sm:space-y-2 md:space-y-3 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-                <h1 className="text-xl sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl 2xl:text-5xl font-black leading-tight sm:leading-tight md:leading-[0.95] lg:leading-[0.9] tracking-tight">
-                  <span className="block text-white drop-shadow-2xl animate-slide-in-left" style={{fontSize: isMobile ? '22px' : undefined}}>
-                    Equipamentos Gastronomicos
-                  </span>
-                  <span className="block text-white drop-shadow-2xl animate-slide-in-left" style={{animationDelay: '0.8s', fontSize: isMobile ? '22px' : undefined}}>
-                    de
-                  </span>
-                  <span className="block text-transparent bg-clip-text animate-slide-in-right filter drop-shadow-lg" style={{animationDelay: '1.2s', background: 'linear-gradient(to right, #8B0000, #D946EF, #FB923C)', WebkitBackgroundClip: 'text', backgroundClip: 'text', fontSize: isMobile ? '22px' : undefined}}>
-                    Alta Performance
-                  </span>
-                </h1>
-              </div>
-              
-              {/* Enhanced Description */}
-              <div className="space-y-1 sm:space-y-2 md:space-y-3 animate-fade-in-up" style={{animationDelay: '1.6s'}}>
-                <p className="text-base sm:text-lg md:text-base lg:text-lg xl:text-lg text-gray-100 leading-relaxed font-light max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl mx-auto lg:mx-0">
-                  {metaDescription || 'Transforme sua cozinha profissional com equipamentos de '}
-                  <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-orange-300"> qualidade excepcional</span>.
-                </p>
-                <p className="text-base sm:text-base md:text-base lg:text-base xl:text-base text-gray-300 leading-relaxed max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl mx-auto lg:mx-0">
-                  <span className="inline-flex items-center justify-center lg:justify-start space-x-1 sm:space-x-2">
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-yellow-400 rounded-full animate-pulse flex-shrink-0"></span>
-                    <span className="text-center lg:text-left">Há mais de 60 anos elevando o padrão da gastronomia brasileira</span>
-                  </span>
-                </p>
-              </div>
-              
-              {/* CTA Buttons */}
-              <div className="hidden sm:flex flex-col sm:flex-row gap-4 mt-6 sm:mt-8 animate-fade-in-up" style={{animationDelay: '2s'}}>
-                <Link
-                  to="/categorias"
-                  className="group relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center space-x-2">
-                    <span>Explorar Categorias</span>
-                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-orange-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </Link>
-                
-                <button
-                  onClick={() => {
-                    const message = encodeURIComponent('Olá! Gostaria de uma consultoria gratuita sobre equipamentos gastronômicos.');
-                    window.open(`https://wa.me/5541999412928?text=${message}`, '_blank');
-                  }}
-                  className="group relative inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-                >
-                  <span className="relative z-10 flex items-center space-x-2">
-                    <span>Consultoria Gratuita</span>
-                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </button>
-              </div>
-
-              
-              {/* Advanced Stats Display */}
-              
-            </div>
-            
-            {/* Right Column - Premium Product Showcase (Responsive) */}
-            <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-4 xl:col-span-4 flex justify-center items-center animate-fade-in-up mt-4 sm:mt-6 md:mt-8 lg:mt-0 order-1 lg:order-2" style={{animationDelay: '1.8s'}}>
-              <div className="relative group w-full max-w-[180px] sm:max-w-[200px] md:max-w-[220px] lg:max-w-[200px] xl:max-w-[240px] mx-auto">
-                
-                {/* Main Product Image Container */}
-                <div className="relative">
-                  {/* Glow Effect Background */}
-                  <div className="absolute inset-0 rounded-xl blur-lg transform scale-110 group-hover:scale-125 transition-transform duration-1000" style={{background: 'linear-gradient(to bottom right, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.2), rgba(139, 0, 0, 0.3))'}}></div>
-                  
-                  {/* Image Container */}
-                  <div className="relative overflow-hidden rounded-xl shadow-xl transform group-hover:scale-105 transition-all duration-700 border border-white/20 hidden md:block">
-                    <img
-                      src="/images/batedor-milkshake.png"
-                      alt="Equipamento Industrial Premium Repal"
-                      className="w-full h-auto object-cover transform group-hover:scale-110 transition-transform duration-1000"
-                    />
-                    
-                    {/* Premium Overlay Effects */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 hidden md:block"></div>
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 hidden md:block" style={{background: 'linear-gradient(to bottom right, rgba(251, 191, 36, 0.1), transparent, rgba(139, 0, 0, 0.1))'}}></div>
-                    
-                    {/* Premium Quality Badge */}
-                    <div className="absolute top-1 sm:top-2 right-1 sm:right-2 transform group-hover:scale-110 transition-transform duration-500">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-yellow-400 rounded-md sm:rounded-lg blur-sm"></div>
-                        <div className="relative bg-gradient-to-r from-yellow-400 to-orange-400 text-black px-1 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-xs font-black shadow-xl flex items-center space-x-0.5 sm:space-x-1">
-                          <Star className="h-2 w-2 sm:h-2.5 sm:w-2.5 fill-current flex-shrink-0" />
-                          <span className="hidden md:inline text-xs">Premium</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Innovation Badge */}
-                    <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2 transform group-hover:scale-110 transition-transform duration-500">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-blue-500 rounded-md sm:rounded-lg blur-sm"></div>
-                        <div className="relative bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg text-xs font-black shadow-xl flex items-center space-x-0.5 sm:space-x-1">
-                          <Award className="h-2 w-2 sm:h-2.5 sm:w-2.5 flex-shrink-0" />
-                          <span className="hidden md:inline text-xs">Inovação</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-
-                <div className="absolute top-1/2 -left-2 sm:-left-3 md:-left-4 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full blur-sm sm:blur-md animate-bounce" style={{animationDelay: '2s', background: 'linear-gradient(to bottom right, rgba(139, 0, 0, 0.4), rgba(236, 72, 153, 0.3))'}}></div>
-              </div>
-            </div>
-            
-          </div>
-        </div>
-        
-
-      </section>
+      {/* Banner Carousel */}
+      <BannerCarousel />
 
       {/* Categorias Section */}
       <section className="py-16 bg-white">
@@ -233,7 +78,7 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Restaurantes */}
             <Link
-              to="/categoria/bares-restaurantes"
+              to="/categorias/bares-restaurantes"
               className="group relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
             >
               <div className="absolute inset-0">
@@ -255,7 +100,7 @@ const Home: React.FC = () => {
 
             {/* Açougues */}
             <Link
-              to="/categoria/acougue"
+              to="/categorias/acougue"
               className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
               style={{background: 'linear-gradient(to bottom right, #8B0000, #660000)'}}
             >
@@ -278,7 +123,7 @@ const Home: React.FC = () => {
 
             {/* Padarias */}
             <Link
-              to="/categoria/padaria-confeitaria"
+              to="/categorias/padaria-confeitaria"
               className="group relative bg-gradient-to-br from-yellow-600 to-orange-600 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
             >
               <div className="absolute inset-0">
@@ -321,54 +166,7 @@ const Home: React.FC = () => {
             </Link>
           </div>
 
-          {/* Seção Especial - Tudo para sua cozinha */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 rounded-2xl p-8 text-white relative overflow-hidden" style={{background: 'linear-gradient(to right, #8B0000, #660000)'}}>
-              <div className="absolute inset-0">
-                <img
-                  src="/images/bg-cc.png"
-                  alt="Cozinha Profissional"
-                  className="w-full h-full object-cover opacity-20"
-                />
-              </div>
-              <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-4">Do Forno ao Refrigerador: Tudo para seu Estabelecimento</h3>
-                <p className="text-lg mb-6">Do fogão à refrigeração, oferecemos soluções completas para restaurantes, bares e açougues que precisam de equipamentos resistentes, seguros e prontos para alto volume.
-Mais velocidade no preparo, economia de energia e equipamentos que acompanham o ritmo intenso do seu negócio.</p>
-                <p className="text-lg mb-6">Equipamentos robustos e de alta performance para padarias, restaurantes, bares, açougues e confeitarias.
-Mais produtividade, durabilidade e eficiência para o dia a dia do seu negócio.
-Do preparo ao armazenamento, garantimos qualidade e confiança que transformam sua rotina em resultados.</p>
-                <Link
-                  to="/contato"
-                  className="bg-white px-6 py-3 rounded-lg font-bold hover:bg-gray-100 transition-colors inline-block"
-                  style={{color: '#8B0000'}}
-                >
-                  Ver Equipamentos
-                </Link>
-              </div>
-            </div>
-            
-            <div className="bg-gray-100 rounded-2xl p-8 flex flex-col items-center text-center">
-              <div className="mb-6">
-                <img
-                  src="/images/bpsa05_Branca_acessorios.png"
-                  alt="Equipamento"
-                  className="w-29 h-29 object-cover rounded-lg"
-                />
-              </div>
-              <h4 className="text-xl font-bold text-gray-900 mb-2">Inovação na sua cozinha</h4>
-              <p className="text-gray-600 mb-4">Equipamentos de última geração</p>
-              <Link
-                to="/categorias"
-                className="font-medium transition-colors"
-                style={{color: '#8B0000'}}
-                onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#660000'}
-                onMouseLeave={(e) => (e.target as HTMLElement).style.color = '#8B0000'}
-              >
-                Conheça →
-              </Link>
-            </div>
-          </div>
+
         </div>
       </section>
 

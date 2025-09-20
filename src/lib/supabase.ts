@@ -55,6 +55,10 @@ export interface Database {
           category_id: number
           featured: boolean
           display_order: number
+          featured_in_dropdown: boolean
+          is_disabled: boolean
+          featured_on_homepage: boolean
+          clearance_sale: boolean
           created_at: string
           updated_at: string
         }
@@ -67,6 +71,10 @@ export interface Database {
           category_id: number
           featured?: boolean
           display_order?: number
+          featured_in_dropdown?: boolean
+          is_disabled?: boolean
+          featured_on_homepage?: boolean
+          clearance_sale?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -79,6 +87,10 @@ export interface Database {
           category_id?: number
           featured?: boolean
           display_order?: number
+          featured_in_dropdown?: boolean
+          is_disabled?: boolean
+          featured_on_homepage?: boolean
+          clearance_sale?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -173,7 +185,7 @@ export interface Category {
 }
 
 export interface Product {
-  id: number;
+  id: string;
   product_name: string;
   slug: string;
   description?: string;
@@ -184,6 +196,10 @@ export interface Product {
   image_url?: string;
   featured: boolean;
   active: boolean;
+  featured_in_dropdown?: boolean;
+  is_disabled?: boolean;
+  featured_on_homepage?: boolean;
+  clearance_sale?: boolean;
   created_at: string;
   updated_at: string;
   category?: Category;
@@ -193,7 +209,7 @@ export interface Product {
 }
 
 export interface ProductImage {
-  id: number;
+  id: string;
   product_id: number;
   image_url: string;
   alt_text?: string;

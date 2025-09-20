@@ -133,7 +133,7 @@ const ProductPage: React.FC = () => {
               <>
                 <span className="text-gray-400">/</span>
                 <Link 
-                  to={`/categoria/${product.category.slug}`} 
+                  to={`/categorias/${product.category.slug}`} 
                   className="text-gray-500 hover:text-gray-700"
                 >
                   {product.category.name}
@@ -185,7 +185,7 @@ const ProductPage: React.FC = () => {
           {/* Product Info */}
           <div>
             <Link
-              to={product.category ? `/categoria/${product.category.slug}` : '/categorias'}
+              to={product.category ? `/categorias/${product.category.slug}` : '/categorias'}
               className="inline-flex items-center text-red-600 hover:text-red-700 font-medium mb-4"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />

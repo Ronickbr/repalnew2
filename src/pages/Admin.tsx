@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Edit, Trash2, Eye, Users, Package, TrendingUp, Search, Filter, X, Save, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Settings, LogOut, Menu, BarChart3 } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Users, Package, TrendingUp, Search, Filter, X, Save, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Settings, LogOut, Menu, BarChart3, Image } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Product, Category, Lead } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import MultipleImageUpload from '../components/MultipleImageUpload';
 import WysiwygEditor from '../components/WysiwygEditor';
+import { useBanners, type Banner, type CreateBannerData } from '../hooks/useBanners';
 
 interface AdminStats {
   totalProducts: number;
@@ -20,7 +21,9 @@ interface ProductForm {
   category_id: string;
   subcategory_id: string;
   active: boolean;
-  featured: boolean;
+  featured_in_dropdown: boolean;
+  featured_on_homepage: boolean;
+  clearance_sale: boolean;
   images: ProductImageForm[];
   slug: string;
 }
@@ -61,7 +64,16 @@ interface Notification {
 
 const Admin: React.FC = () => {
   const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'leads' | 'settings'>('dashboard');
+  const { 
+    banners, 
+    error: bannerError,
+    fetchBanners, 
+    createBanner, 
+    updateBanner, 
+    deleteBanner, 
+    toggleBannerStatus
+  } = useBanners();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'leads' | 'banners' | 'settings'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState<AdminStats>({
     totalProducts: 0,
@@ -84,9 +96,11 @@ const Admin: React.FC = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showLeadModal, setShowLeadModal] = useState(false);
+  const [showBannerModal, setShowBannerModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [viewingLead, setViewingLead] = useState<Lead | null>(null);
   
   // Form states
@@ -96,7 +110,9 @@ const Admin: React.FC = () => {
     category_id: '',
     subcategory_id: '',
     active: true,
-    featured: false,
+    featured_in_dropdown: false,
+    featured_on_homepage: false,
+    clearance_sale: false,
     images: [],
     slug: ''
   });
@@ -131,6 +147,14 @@ const Admin: React.FC = () => {
     address: ''
   });
   
+  const [bannerForm, setBannerForm] = useState<CreateBannerData>({
+    title: '',
+    image_url: '',
+    link_url: '',
+    active: true,
+    sort_order: 1
+  });
+  
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -149,6 +173,7 @@ const Admin: React.FC = () => {
   useEffect(() => {
     fetchData();
     fetchSiteSettings();
+    fetchBanners();
   }, []);
 
   // Cleanup timeouts when component unmounts
@@ -481,7 +506,9 @@ const Admin: React.FC = () => {
       category_id: '',
       subcategory_id: '',
       active: true,
-      featured: false,
+      featured_in_dropdown: false,
+      featured_on_homepage: false,
+      clearance_sale: false,
       images: [],
       slug: ''
     });
@@ -586,7 +613,9 @@ const Admin: React.FC = () => {
         category_id: productForm.category_id,
         subcategory_id: productForm.subcategory_id,
         active: productForm.active,
-        featured: productForm.featured,
+        featured_in_dropdown: productForm.featured_in_dropdown,
+        featured_on_homepage: productForm.featured_on_homepage,
+        clearance_sale: productForm.clearance_sale,
         image_url: productForm.images.find(img => img.is_primary)?.image_url || productForm.images[0]?.image_url || null,
         slug
       };
@@ -827,7 +856,9 @@ const Admin: React.FC = () => {
         category_id: product.category_id?.toString() || '',
         subcategory_id: product.subcategory_id?.toString() || '',
         active: product.active,
-        featured: product.featured,
+        featured_in_dropdown: product.featured_in_dropdown || false,
+        featured_on_homepage: product.featured_on_homepage || false,
+        clearance_sale: product.clearance_sale || false,
         images: productImages,
         slug: product.slug
       });
@@ -1022,6 +1053,17 @@ const Admin: React.FC = () => {
               Leads
             </button>
             <button
+              onClick={() => { setActiveTab('banners'); setSidebarOpen(false); }}
+              className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left ${
+                activeTab === 'banners'
+                  ? 'bg-red-100 text-red-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Image className="mr-3 h-5 w-5" />
+              Banners
+            </button>
+            <button
               onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left ${
                 activeTab === 'settings'
@@ -1061,6 +1103,7 @@ const Admin: React.FC = () => {
                   {activeTab === 'products' && 'Produtos'}
                   {activeTab === 'categories' && 'Categorias'}
                   {activeTab === 'leads' && 'Leads'}
+                  {activeTab === 'banners' && 'Banners'}
                   {activeTab === 'settings' && 'Configurações'}
                 </h1>
               </div>
@@ -1659,6 +1702,153 @@ const Admin: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Banners Tab */}
+        {activeTab === 'banners' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Banners</h2>
+              <button
+                onClick={() => {
+                  setEditingBanner(null);
+                  setBannerForm({
+                    title: '',
+                    image_url: '',
+                    link_url: '',
+                    active: true,
+                    sort_order: banners.length + 1
+                  });
+                  setShowBannerModal(true);
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Novo Banner
+              </button>
+            </div>
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Imagem
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Título
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Link
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ordem
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                        Carregando banners...
+                      </td>
+                    </tr>
+                  ) : banners.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                        Nenhum banner encontrado
+                      </td>
+                    </tr>
+                  ) : (
+                    banners.map((banner) => (
+                      <tr key={banner.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="w-20 h-12 bg-gray-200 rounded overflow-hidden">
+                            {banner.image_url ? (
+                              <img
+                                src={banner.image_url}
+                                alt={banner.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Image className="w-6 h-6 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{banner.title}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {banner.link_url || 'Sem link'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            banner.active
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {banner.active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {banner.sort_order}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingBanner(banner);
+                                setBannerForm({
+                                  title: banner.title,
+                                  image_url: banner.image_url,
+                                  link_url: banner.link_url,
+                                  active: banner.active,
+                                  sort_order: banner.sort_order
+                                });
+                                setShowBannerModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                              title="Editar"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => toggleBannerStatus(banner.id, !banner.active)}
+                              className={`p-1 rounded ${
+                                banner.active
+                                  ? 'text-red-600 hover:text-red-900 hover:bg-red-50'
+                                  : 'text-green-600 hover:text-green-900 hover:bg-green-50'
+                              }`}
+                              title={banner.active ? 'Desativar' : 'Ativar'}
+                            >
+                              {banner.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                            <button
+                              onClick={() => deleteBanner(banner.id)}
+                              className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Product Modal */}
@@ -1784,26 +1974,65 @@ const Admin: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={productForm.active}
-                      onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Produto ativo</span>
-                  </label>
+                <div className="space-y-4">
+                  {/* Checkbox principal - Produto Ativo */}
+                  <div className="border-b pb-3">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={productForm.active}
+                        onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Produto Ativo</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">Quando desmarcado, o produto será considerado desativado</p>
+                  </div>
 
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={productForm.featured}
-                      onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Produto em destaque</span>
-                  </label>
+                  {/* Opções de destaque */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Opções de Destaque:</h4>
+                    <div className="space-y-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={productForm.featured_in_dropdown}
+                          onChange={(e) => setProductForm({ ...productForm, featured_in_dropdown: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-700">Produto em destaque no dropdown</span>
+                          <span className="text-xs text-gray-500">Exibe o produto no menu dropdown</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={productForm.featured_on_homepage}
+                          onChange={(e) => setProductForm({ ...productForm, featured_on_homepage: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-700">Produto em destaque na página Home</span>
+                          <span className="text-xs text-gray-500">Exibe o produto na página inicial</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={productForm.clearance_sale}
+                          onChange={(e) => setProductForm({ ...productForm, clearance_sale: e.target.checked })}
+                          className="mr-2"
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-700">Produto em Queima de Estoque</span>
+                          <span className="text-xs text-gray-500">Exibe o produto na seção de queima de estoque</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">
@@ -2082,6 +2311,176 @@ const Admin: React.FC = () => {
                   >
                     <Save className="w-4 h-4 mr-2" />
                     {formLoading ? 'Salvando...' : 'Salvar Configurações'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Banner Modal */}
+      {showBannerModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {editingBanner ? 'Editar Banner' : 'Novo Banner'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowBannerModal(false);
+                    setEditingBanner(null);
+                    setBannerForm({
+                      title: '',
+                      image_url: '',
+                      link_url: '',
+                      active: true,
+                      sort_order: banners.length + 1
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              
+              {bannerError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                  {bannerError}
+                </div>
+              )}
+
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setFormLoading(true);
+                try {
+                  if (editingBanner) {
+                    await updateBanner(editingBanner.id, bannerForm);
+                  } else {
+                    await createBanner(bannerForm);
+                  }
+                  setShowBannerModal(false);
+                  setEditingBanner(null);
+                  setBannerForm({
+                    title: '',
+                    image_url: '',
+                    link_url: '',
+                    active: true,
+                    sort_order: banners.length + 1
+                  });
+                } catch (error) {
+                  console.error('Erro ao salvar banner:', error);
+                  // O erro já é tratado no hook useBanners
+                }
+                setFormLoading(false);
+              }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Título *
+                  </label>
+                  <input
+                    type="text"
+                    value={bannerForm.title}
+                    onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                    placeholder="Título do banner"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL da Imagem *
+                  </label>
+                  <input
+                    type="url"
+                    value={bannerForm.image_url}
+                    onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                    placeholder="https://exemplo.com/imagem.jpg"
+                  />
+                  {bannerForm.image_url && (
+                    <div className="mt-2">
+                      <img
+                        src={bannerForm.image_url}
+                        alt="Preview"
+                        className="w-full h-32 object-cover rounded border"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    URL do Link
+                  </label>
+                  <input
+                    type="url"
+                    value={bannerForm.link_url}
+                    onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="https://exemplo.com (opcional)"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ordem de Exibição
+                    </label>
+                    <input
+                      type="number"
+                      value={bannerForm.sort_order}
+                      onChange={(e) => setBannerForm({ ...bannerForm, sort_order: parseInt(e.target.value) || 1 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                      min="1"
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={bannerForm.active}
+                        onChange={(e) => setBannerForm({ ...bannerForm, active: e.target.checked })}
+                        className="mr-2 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Banner Ativo</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBannerModal(false);
+                      setEditingBanner(null);
+                      setBannerForm({
+                        title: '',
+                        image_url: '',
+                        link_url: '',
+                        active: true,
+                        sort_order: banners.length + 1
+                      });
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={formLoading}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {formLoading ? 'Salvando...' : (editingBanner ? 'Atualizar Banner' : 'Criar Banner')}
                   </button>
                 </div>
               </form>

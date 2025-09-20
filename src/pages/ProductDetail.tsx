@@ -102,14 +102,14 @@ const ProductDetail: React.FC = () => {
           <span className="text-gray-400">/</span>
           <Link to="/categorias" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">Categoria</Link>
           {/* Removed parent_category reference as it doesn't exist in Category interface */}
-          {product.category && typeof product.category === 'object' && (
+          {product.categories && typeof product.categories === 'object' && (
             <>
               <span className="text-gray-400">/</span>
               <Link 
-                to={`/categoria/${product.category.slug}`} 
+                to={`/categorias/${product.categories.slug}`} 
                 className="hover:text-[#8B0000] transition-colors duration-200 font-medium"
               >
-                {product.category.name}
+                {product.categories.name}
               </Link>
             </>
           )}
@@ -238,9 +238,9 @@ const ProductDetail: React.FC = () => {
             {/* Header */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                {product.category && typeof product.category === 'object' && (
+                {product.categories && typeof product.categories === 'object' && (
                   <span className="bg-gradient-to-r from-[#000080] to-[#000060] text-white text-sm px-4 py-2 rounded-full font-medium shadow-md">
-                    {product.category.name}
+                    {product.categories.name}
                   </span>
                 )}
                 {product.featured && (
@@ -265,23 +265,7 @@ const ProductDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Specifications */}
-            {product.specifications && product.specifications.length > 0 && (
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-                <h3 className="text-xl font-bold text-[#333333] mb-4 flex items-center space-x-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-[#8B0000] to-[#000080] rounded-full"></div>
-                  <span>Especificações Técnicas</span>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(Array.isArray(product.specifications) ? product.specifications : []).map((spec, index: number) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                      <span className="font-medium text-gray-700">{spec.name}:</span>
-                      <span className="text-gray-600">{spec.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
 
             {/* Benefits */}
             {product.benefits && product.benefits.length > 0 && (
@@ -377,9 +361,9 @@ const ProductDetail: React.FC = () => {
               </WhatsAppButton>
               
               <div className="grid grid-cols-1 gap-4">
-                {product.category && typeof product.category === 'object' && product.category.slug ? (
+                {product.categories && typeof product.categories === 'object' && product.categories.slug ? (
                   <Link
-                    to={`/categoria/${product.category.slug}`}
+                    to={`/categorias/${product.categories.slug}`}
                     className="border-2 border-[#8B0000] text-[#8B0000] py-3 px-4 rounded-xl font-bold hover:bg-[#8B0000] hover:text-white transition-all duration-300 text-center shadow-md hover:shadow-lg hover:scale-105 transform flex items-center justify-center space-x-2"
                   >
                     <Star className="h-4 w-4" />

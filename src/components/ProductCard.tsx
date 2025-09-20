@@ -1,12 +1,12 @@
 import React, { memo } from 'react';
 import { Eye } from 'lucide-react';
-import { Product } from '../lib/supabase';
+import { ProductWithCategory } from '../types/product';
 
 interface ProductCardProps {
-  product: Product;
+  product: ProductWithCategory;
   viewMode?: 'grid' | 'list';
-  onAddToCart?: (product: Product) => void;
-  onViewDetails?: (product: Product) => void;
+  onAddToCart?: (product: ProductWithCategory) => void;
+  onViewDetails?: (product: ProductWithCategory) => void;
   className?: string;
 }
 

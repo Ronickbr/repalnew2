@@ -9,6 +9,10 @@ interface FilterState {
   selectedCategory: string;
   selectedSubcategory: string;
   sortBy: string;
+  showFeaturedOnly: boolean;
+  showHomepageFeatured: boolean;
+  showClearanceSale: boolean;
+  hideDisabled: boolean;
 }
 
 interface UseFiltersReturn {
@@ -18,6 +22,10 @@ interface UseFiltersReturn {
   setSelectedCategory: (category: string) => void;
   setSelectedSubcategory: (subcategory: string) => void;
   setSortBy: (sort: string) => void;
+  setShowFeaturedOnly: (show: boolean) => void;
+  setShowHomepageFeatured: (show: boolean) => void;
+  setShowClearanceSale: (show: boolean) => void;
+  setHideDisabled: (hide: boolean) => void;
   clearFilters: () => void;
   totalResults: number;
 }
@@ -26,8 +34,11 @@ const initialFilters: FilterState = {
   searchTerm: '',
   selectedCategory: 'all',
   selectedSubcategory: '',
-
-  sortBy: 'name'
+  sortBy: 'name',
+  showFeaturedOnly: false,
+  showHomepageFeatured: false,
+  showClearanceSale: false,
+  hideDisabled: true
 };
 
 export const useFilters = (products: Product[]): UseFiltersReturn => {
@@ -56,6 +67,22 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
 
   const setSortBy = useCallback((sort: string) => {
     setFilters(prev => ({ ...prev, sortBy: sort }));
+  }, []);
+
+  const setShowFeaturedOnly = useCallback((show: boolean) => {
+    setFilters(prev => ({ ...prev, showFeaturedOnly: show }));
+  }, []);
+
+  const setShowHomepageFeatured = useCallback((show: boolean) => {
+    setFilters(prev => ({ ...prev, showHomepageFeatured: show }));
+  }, []);
+
+  const setShowClearanceSale = useCallback((show: boolean) => {
+    setFilters(prev => ({ ...prev, showClearanceSale: show }));
+  }, []);
+
+  const setHideDisabled = useCallback((hide: boolean) => {
+    setFilters(prev => ({ ...prev, hideDisabled: hide }));
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -88,7 +115,22 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
       );
     }
 
+    // Filtros baseados nos novos campos booleanos
+    if (filters.hideDisabled) {
+      filtered = filtered.filter(product => !product.is_disabled);
+    }
 
+    if (filters.showFeaturedOnly) {
+      filtered = filtered.filter(product => product.featured_in_dropdown);
+    }
+
+    if (filters.showHomepageFeatured) {
+      filtered = filtered.filter(product => product.featured_on_homepage);
+    }
+
+    if (filters.showClearanceSale) {
+      filtered = filtered.filter(product => product.clearance_sale);
+    }
 
     // Ordenação
     filtered.sort((a, b) => {
@@ -102,7 +144,7 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
     });
 
     return filtered;
-  }, [products, debouncedSearchTerm, filters.selectedCategory, filters.selectedSubcategory, filters.sortBy]);
+  }, [products, debouncedSearchTerm, filters.selectedCategory, filters.selectedSubcategory, filters.sortBy, filters.hideDisabled, filters.showFeaturedOnly, filters.showHomepageFeatured, filters.showClearanceSale]);
 
   return {
     filters,
@@ -110,8 +152,11 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
     setSearchTerm,
     setSelectedCategory,
     setSelectedSubcategory,
-
     setSortBy,
+    setShowFeaturedOnly,
+    setShowHomepageFeatured,
+    setShowClearanceSale,
+    setHideDisabled,
     clearFilters,
     totalResults: filteredProducts.length
   };

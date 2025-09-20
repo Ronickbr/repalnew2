@@ -8,7 +8,18 @@ interface FilterPanelProps {
   onSearchChange: (term: string) => void;
   sortBy: string;
   onSortChange: (sort: string) => void;
-
+  selectedCategory: string;
+  selectedSubcategory: string;
+  onSubcategoryChange: (subcategory: string) => void;
+  availableSubcategories: Array<{ id: string; name: string }>;
+  showFeaturedOnly: boolean;
+  onShowFeaturedOnlyChange: (show: boolean) => void;
+  showHomepageFeatured: boolean;
+  onShowHomepageFeaturedChange: (show: boolean) => void;
+  showClearanceSale: boolean;
+  onShowClearanceSaleChange: (show: boolean) => void;
+  hideDisabled: boolean;
+  onHideDisabledChange: (hide: boolean) => void;
   onClearFilters: () => void;
   showFilters: boolean;
   onToggleFilters: () => void;
@@ -21,7 +32,18 @@ const FilterPanel: React.FC<FilterPanelProps> = memo(({
   onSearchChange,
   sortBy,
   onSortChange,
-
+  selectedCategory,
+  selectedSubcategory,
+  onSubcategoryChange,
+  availableSubcategories,
+  showFeaturedOnly,
+  onShowFeaturedOnlyChange,
+  showHomepageFeatured,
+  onShowHomepageFeaturedChange,
+  showClearanceSale,
+  onShowClearanceSaleChange,
+  hideDisabled,
+  onHideDisabledChange,
   onClearFilters,
   showFilters,
   onToggleFilters,
@@ -30,7 +52,7 @@ const FilterPanel: React.FC<FilterPanelProps> = memo(({
 }) => {
 
 
-  const hasActiveFilters = searchTerm || sortBy !== 'name';
+  const hasActiveFilters = searchTerm || sortBy !== 'name' || selectedSubcategory || showFeaturedOnly || showHomepageFeatured || showClearanceSale || !hideDisabled;
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 ${className}`}>
@@ -106,13 +128,100 @@ const FilterPanel: React.FC<FilterPanelProps> = memo(({
             >
               <option value="name">Nome A-Z</option>
               <option value="name-desc">Nome Z-A</option>
-
               <option value="newest">Mais Recentes</option>
               <option value="popular">Mais Populares</option>
             </select>
           </div>
 
+          {/* Subcategorias - Exibir apenas quando uma categoria específica estiver selecionada */}
+          {selectedCategory !== 'all' && availableSubcategories.length > 0 && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Subcategorias
+              </label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {/* Opção "Todas as subcategorias" */}
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="subcategory"
+                    value=""
+                    checked={selectedSubcategory === ''}
+                    onChange={() => onSubcategoryChange('')}
+                    className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-gray-700 font-medium">Todas as subcategorias</span>
+                </label>
+                
+                {/* Lista de subcategorias */}
+                {availableSubcategories.map((subcategory) => (
+                  <label key={subcategory.id} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="subcategory"
+                      value={subcategory.id}
+                      checked={selectedSubcategory === subcategory.id}
+                      onChange={() => onSubcategoryChange(subcategory.id)}
+                      className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-gray-700">{subcategory.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
+          {/* Filtros Especiais */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Filtros Especiais
+            </label>
+            <div className="space-y-3">
+              {/* Ocultar produtos desativados */}
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideDisabled}
+                  onChange={(e) => onHideDisabledChange(e.target.checked)}
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-700">Ocultar produtos desativados</span>
+              </label>
+
+              {/* Apenas produtos em destaque no dropdown */}
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showFeaturedOnly}
+                  onChange={(e) => onShowFeaturedOnlyChange(e.target.checked)}
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-700">Apenas destaques do dropdown</span>
+              </label>
+
+              {/* Apenas produtos destaque da homepage */}
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showHomepageFeatured}
+                  onChange={(e) => onShowHomepageFeaturedChange(e.target.checked)}
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-700">Apenas destaques da homepage</span>
+              </label>
+
+              {/* Apenas produtos em queima de estoque */}
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showClearanceSale}
+                  onChange={(e) => onShowClearanceSaleChange(e.target.checked)}
+                  className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <span className="text-sm text-gray-700">Apenas queima de estoque</span>
+              </label>
+            </div>
+          </div>
 
           {/* Botão Limpar Filtros */}
           {hasActiveFilters && (
