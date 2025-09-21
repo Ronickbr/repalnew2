@@ -61,7 +61,7 @@ const ProductDetail: React.FC = () => {
     return <Navigate to="/categorias" replace />
   }
 
-  const images = product.images?.sort((a, b) => a.sort_order - b.sort_order) || []
+  const images = product.product_images?.sort((a, b) => a.sort_order - b.sort_order) || []
   const currentImage = images[currentImageIndex]
 
   const whatsappMessage = `Olá! Tenho interesse no produto: ${product.product_name}. Gostaria de mais informações sobre especificações, preço e disponibilidade.`
