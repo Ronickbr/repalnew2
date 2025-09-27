@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import type { Product, Category, Lead } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import MultipleImageUpload from '../components/MultipleImageUpload';
+import ImageUrlInput from '../components/ImageUrlInput';
 import WysiwygEditor from '../components/WysiwygEditor';
 import { useBanners, type Banner, type CreateBannerData } from '../hooks/useBanners';
 
@@ -1950,27 +1951,77 @@ const Admin: React.FC = () => {
                     <strong>Preços:</strong> Entre em contato para consultar preços dos produtos.
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Imagens do Produto (máximo 5)
-                    </label>
-                    <MultipleImageUpload
-                      images={productForm.images.map(img => img.image_url)}
-                      onImagesChange={(imageUrls: string[]) => {
-                        const newImages: ProductImageForm[] = imageUrls.map((url, index) => {
-                          const existingImage = productForm.images.find(img => img.image_url === url);
-                          return {
-                            id: existingImage?.id,
-                            image_url: url,
-                            alt_text: existingImage?.alt_text || productForm.product_name,
-                            sort_order: index,
-                            is_primary: index === 0
-                          };
-                        });
-                        setProductForm({ ...productForm, images: newImages });
-                      }}
-                      maxImages={5}
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Imagens do Produto (máximo 5)
+                      </label>
+                      <MultipleImageUpload
+                        images={productForm.images.map(img => img.image_url)}
+                        onImagesChange={(imageUrls: string[]) => {
+                          const newImages: ProductImageForm[] = imageUrls.map((url, index) => {
+                            const existingImage = productForm.images.find(img => img.image_url === url);
+                            return {
+                              id: existingImage?.id,
+                              image_url: url,
+                              alt_text: existingImage?.alt_text || productForm.product_name,
+                              sort_order: index,
+                              is_primary: index === 0
+                            };
+                          });
+                          setProductForm({ ...productForm, images: newImages });
+                        }}
+                        maxImages={5}
+                      />
+                    </div>
+
+                    {/* Separador visual */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">ou</span>
+                      </div>
+                    </div>
+
+                    {/* Campo de URL de Imagem */}
+                     <div>
+                       <label className="block text-sm font-medium text-gray-700 mb-2">
+                         URLs de Imagens
+                       </label>
+                       <p className="text-xs text-gray-500 mb-3">
+                         Adicione imagens através de URLs externas. Use o botão "+" para adicionar múltiplas URLs. As imagens serão validadas automaticamente.
+                       </p>
+                       <ImageUrlInput
+                         placeholder="Cole a URL da imagem aqui (ex: https://exemplo.com/imagem.jpg)"
+                         onChange={(urls: string[]) => {
+                           // Converter URLs para o formato ProductImageForm
+                           const urlImages: ProductImageForm[] = urls.map((url, index) => ({
+                             image_url: url,
+                             alt_text: productForm.product_name || 'Imagem do produto',
+                             sort_order: productForm.images.length + index,
+                             is_primary: productForm.images.length === 0 && index === 0
+                           }));
+
+                           // Manter imagens existentes (não-URL) e adicionar as novas URLs
+                           const existingNonUrlImages = productForm.images.filter(img => 
+                             !img.image_url.startsWith('http')
+                           );
+
+                           const totalImages = existingNonUrlImages.length + urlImages.length;
+                           
+                           if (totalImages <= 5) {
+                             setProductForm({ 
+                               ...productForm, 
+                               images: [...existingNonUrlImages, ...urlImages]
+                             });
+                           }
+                         }}
+                         showPreview={true}
+                         maxUrls={5 - productForm.images.filter(img => !img.image_url.startsWith('http')).length}
+                       />
+                     </div>
                   </div>
                 </div>
 

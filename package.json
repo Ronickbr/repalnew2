@@ -22,6 +22,7 @@
     "express": "^5.1.0",
     "lucide-react": "^0.511.0",
     "multer": "^2.0.2",
+    "node-fetch": "^3.3.2",
     "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -36,7 +37,6 @@
     "@eslint/js": "^9.25.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
-
     "@types/multer": "^2.0.0",
     "@types/node": "^22.18.1",
     "@types/react": "^18.3.12",

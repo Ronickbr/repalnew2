@@ -487,16 +487,13 @@ const CategoryProducts: React.FC = () => {
 
             {/* Grid de produtos */}
             {filteredAndSortedProducts.length > 0 ? (
-              <div className={`grid gap-6 ${
-                viewMode === 'grid' 
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                  : 'grid-cols-1'
-              }`}>
+              <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'} gap-6`}>
                 {filteredAndSortedProducts.map((product) => (
                   <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    className={viewMode === 'list' ? 'flex-row' : ''}
+                    key={product.id}
+                    product={product}
+                    viewMode={viewMode}
+                    onViewDetails={() => navigate(`/produto/${product.slug}`)} // Adicionado o redirecionamento
                   />
                 ))}
               </div>

@@ -19,12 +19,18 @@ const LocalImageUpload: React.FC<LocalImageUploadProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  const allowedTypes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
+    'image/svg+xml', 'image/bmp', 'image/tiff', 'image/x-icon', 
+    'image/vnd.microsoft.icon', 'image/avif', 'image/heic', 'image/heif',
+    'image/x-ms-bmp', 'image/x-bmp', 'image/x-bitmap', 'image/pjpeg',
+    'image/apng', 'image/x-png'
+  ];
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
 
   const validateFile = (file: File): string | null => {
     if (!allowedTypes.includes(file.type)) {
-      return 'Tipo de arquivo não suportado. Use apenas JPG, PNG, GIF ou WebP.';
+      return 'Tipo de arquivo não suportado. Use formatos de imagem válidos (JPG, PNG, GIF, WebP, SVG, BMP, TIFF, ICO, AVIF, HEIC, etc.).';
     }
     
     if (file.size > maxSizeInBytes) {
@@ -166,7 +172,7 @@ const LocalImageUpload: React.FC<LocalImageUploadProps> = ({
             </div>
             
             <div className="text-xs text-gray-500">
-              JPG, PNG, GIF ou WebP (máx. {maxSizeInMB}MB)
+              Todos os formatos de imagem (JPG, PNG, GIF, WebP, SVG, BMP, TIFF, ICO, AVIF, HEIC, etc.) - máx. {maxSizeInMB}MB
             </div>
             
             <div className="text-xs text-blue-500 font-medium">
