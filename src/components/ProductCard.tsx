@@ -25,9 +25,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
     onViewDetails?.(product);
   };
 
-  const getContactMessage = () => {
-    return 'Entre em contato para consultar preços';
-  };
+
 
   const getProductImage = () => {
     if (product.product_images && product.product_images.length > 0) {
@@ -71,10 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               {product.product_name}
             </h3>
 
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-              <span className="text-sm font-medium text-gray-600 italic">
-                {getContactMessage()}
-              </span>
+            <div className="flex items-center justify-center pt-3 border-t border-gray-100">
               <button
                 onClick={handleViewDetails}
                 className="px-5 py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg hover:from-red-50 hover:to-red-100 hover:text-red-600 transition-all duration-200 text-sm font-semibold border border-gray-200 hover:border-red-200"
@@ -129,10 +124,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
           {product.product_name}
         </h3>
 
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span className="text-sm font-medium text-gray-600 italic">
-            {getContactMessage()}
-          </span>
+        <div className="flex items-center justify-center pt-2 border-t border-gray-100">
           <button
             onClick={handleViewDetails}
             className="px-5 py-2.5 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-lg hover:from-red-50 hover:to-red-100 hover:text-red-600 transition-all duration-200 text-sm font-semibold border border-gray-200 hover:border-red-200"

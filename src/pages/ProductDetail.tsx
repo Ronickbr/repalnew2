@@ -99,17 +99,19 @@ const ProductDetail: React.FC = () => {
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8 bg-white/70 backdrop-blur-sm rounded-full px-6 py-3 shadow-sm border border-gray-200/50">
           <Link to="/" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">Início</Link>
-          <span className="text-gray-400">/</span>
-          <Link to="/categorias" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">Categoria</Link>
+          {/*<span className="text-gray-400">/</span>
+           <Link to="/categorias" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">
+            {product.category && typeof product.category === 'object' ? product.category.name : 'Categorias'}
+          </Link> */}
           {/* Removed parent_category reference as it doesn't exist in Category interface */}
-          {product.categories && typeof product.categories === 'object' && (
+          {product.category && typeof product.category === 'object' && (
             <>
               <span className="text-gray-400">/</span>
               <Link 
-                to={`/categorias/${product.categories.slug}`} 
+                to={`/categorias/${product.category.slug}`} 
                 className="hover:text-[#8B0000] transition-colors duration-200 font-medium"
               >
-                {product.categories.name}
+                {product.category.name}
               </Link>
             </>
           )}
@@ -119,11 +121,13 @@ const ProductDetail: React.FC = () => {
 
         {/* Back Button */}
         <Link
-          to="/categorias"
+          to={product.category && typeof product.category === 'object' ? `/categorias/${product.category.slug}` : "/categorias"}
           className="inline-flex items-center space-x-2 text-[#000080] hover:text-[#000060] mb-8 transition-all duration-200 bg-white/70 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm border border-gray-200/50 hover:shadow-md hover:bg-white/90"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="font-medium">Voltar as Categorias</span>
+          <span className="font-medium">
+            Voltar para {product.category && typeof product.category === 'object' ? product.category.name : 'Categorias'}
+          </span>
         </Link>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
