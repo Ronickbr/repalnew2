@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Users, Package, TrendingUp, Search, Filter, X, Save, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Settings, LogOut, Menu, BarChart3, Image } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Users, Package, TrendingUp, Search, Filter, X, Save, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Settings, LogOut, Menu, BarChart3, Image, Database } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Product, Category, Lead } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import MultipleImageUpload from '../components/MultipleImageUpload';
 import WysiwygEditor from '../components/WysiwygEditor';
 import { useBanners, type Banner, type CreateBannerData } from '../hooks/useBanners';
+import BackupSection from '../components/backup/BackupSection';
 
 interface AdminStats {
   totalProducts: number;
@@ -73,7 +74,7 @@ const Admin: React.FC = () => {
     deleteBanner, 
     toggleBannerStatus
   } = useBanners();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'leads' | 'banners' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'leads' | 'banners' | 'backup' | 'settings'>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState<AdminStats>({
     totalProducts: 0,
@@ -90,7 +91,8 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   
   // Modal states
   const [showProductModal, setShowProductModal] = useState(false);
@@ -327,7 +329,8 @@ const Admin: React.FC = () => {
       const dataPromises = [
         supabase.from('products').select(`
           *,
-          category:categories!products_category_id_fkey(name)
+          category:categories!products_category_id_fkey(name),
+          subcategory:categories!products_subcategory_id_fkey(name)
         `).order('created_at', { ascending: false }).then(res => ({ type: 'products', ...res })),
         supabase.from('categories').select('*').order('name').then(res => ({ type: 'categories', ...res })),
         supabase.from('leads').select('*').order('created_at', { ascending: false }).then(res => ({ type: 'leads', ...res }))
@@ -901,7 +904,8 @@ const Admin: React.FC = () => {
     const matchesSearch = product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !selectedCategory || product.category_id?.toString() === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSubcategory = !selectedSubcategory || product.subcategory_id?.toString() === selectedSubcategory;
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
   const filteredLeads = leads.filter(lead =>
@@ -937,10 +941,22 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Filter subcategories based on selected category
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = subcategories.filter(sub => sub.parent_id?.toString() === selectedCategory);
+      setFilteredSubcategories(filtered);
+    } else {
+      setFilteredSubcategories([]);
+    }
+    // Reset subcategory selection when category changes
+    setSelectedSubcategory('');
+  }, [selectedCategory, subcategories]);
+
   // Reset pagination when changing tabs or filters
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchTerm, selectedCategory]);
+  }, [activeTab, searchTerm, selectedCategory, selectedSubcategory]);
 
   // Get paginated data
   const paginatedProducts = getPaginatedData(filteredProducts);
@@ -1064,6 +1080,17 @@ const Admin: React.FC = () => {
               Banners
             </button>
             <button
+              onClick={() => { setActiveTab('backup'); setSidebarOpen(false); }}
+              className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left ${
+                activeTab === 'backup'
+                  ? 'bg-red-100 text-red-900'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Database className="mr-3 h-5 w-5" />
+              Backup
+            </button>
+            <button
               onClick={() => { setActiveTab('settings'); setSidebarOpen(false); }}
               className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left ${
                 activeTab === 'settings'
@@ -1104,6 +1131,7 @@ const Admin: React.FC = () => {
                   {activeTab === 'categories' && 'Categorias'}
                   {activeTab === 'leads' && 'Leads'}
                   {activeTab === 'banners' && 'Banners'}
+                  {activeTab === 'backup' && 'Backup'}
                   {activeTab === 'settings' && 'Configurações'}
                 </h1>
               </div>
@@ -1230,6 +1258,11 @@ const Admin: React.FC = () => {
           </div>
         )}
 
+        {/* Backup Tab */}
+        {activeTab === 'backup' && (
+          <BackupSection />
+        )}
+
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
@@ -1323,7 +1356,7 @@ const Admin: React.FC = () => {
             
             {/* Filters */}
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                   <input
@@ -1340,9 +1373,22 @@ const Admin: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="">Todas as categorias</option>
-                  {categories.map((category) => (
+                  {parentCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={selectedSubcategory}
+                  onChange={(e) => setSelectedSubcategory(e.target.value)}
+                  disabled={!selectedCategory}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">Todas as subcategorias</option>
+                  {filteredSubcategories.map((subcategory) => (
+                    <option key={subcategory.id} value={subcategory.id}>
+                      {subcategory.name}
                     </option>
                   ))}
                 </select>
@@ -1355,16 +1401,19 @@ const Admin: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5 min-w-[300px]">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/6 min-w-[250px]">
                         Produto
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 min-w-[120px]">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 min-w-[100px]">
                         Categoria
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 min-w-[120px]">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 min-w-[100px]">
+                        Subcategoria
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 min-w-[100px]">
                         Status
                       </th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5 min-w-[120px]">
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6 min-w-[100px]">
                         Ações
                       </th>
                     </tr>
@@ -1372,7 +1421,7 @@ const Admin: React.FC = () => {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedProducts.map((product) => (
                       <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-4 w-2/5 min-w-[300px]">
+                        <td className="px-3 py-4 w-2/6 min-w-[250px]">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10">
                               <img className="h-10 w-10 rounded-full object-cover" src={(product.image_url || '/placeholder.jpg')} alt={product.product_name} />
@@ -1387,12 +1436,17 @@ const Admin: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4 w-1/5 min-w-[120px]">
+                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
                           <div className="text-sm text-gray-900 truncate" title={product.category?.name || 'Sem categoria'}>
                             {product.category?.name || 'Sem categoria'}
                           </div>
                         </td>
-                        <td className="px-3 py-4 w-1/5 min-w-[120px]">
+                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
+                          <div className="text-sm text-gray-900 truncate" title={product.subcategory?.name || 'Sem subcategoria'}>
+                            {product.subcategory?.name || 'Sem subcategoria'}
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
                           <div className="flex flex-col space-y-1">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${
                               product.active 
@@ -1408,7 +1462,7 @@ const Admin: React.FC = () => {
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-4 w-1/5 min-w-[120px]">
+                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
                           <div className="flex space-x-1">
                             <button 
                               onClick={() => openProductModal(product)}

@@ -4,6 +4,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import dotenv from 'dotenv';
+import backupRoutes from './api/routes/backup.js';
+
+// Carregar variáveis de ambiente
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +22,9 @@ app.use(express.json());
 
 // Servir arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Rotas da API
+app.use('/api/backup', backupRoutes);
 
 // Configurar multer para armazenamento em memória
 const upload = multer({

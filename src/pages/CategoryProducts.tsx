@@ -168,6 +168,11 @@ const CategoryProducts: React.FC = () => {
     setSelectedSubcategory(subcategorySlug || '');
   }, [subcategorySlug]);
 
+  // Função para navegar para a página de detalhes do produto
+  const handleViewDetails = (product: any) => {
+    navigate(`/produto/${product.slug}`);
+  };
+
   // Filtrar e ordenar produtos
   const filteredAndSortedProducts = useMemo(() => {
     if (!products) return [];
@@ -497,6 +502,7 @@ const CategoryProducts: React.FC = () => {
                     key={product.id} 
                     product={product} 
                     className={viewMode === 'list' ? 'flex-row' : ''}
+                    onViewDetails={handleViewDetails}
                   />
                 ))}
               </div>
