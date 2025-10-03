@@ -53,16 +53,39 @@ const BackupHistory: React.FC<BackupHistoryProps> = ({ onRefresh }) => {
     }
   };
 
+  const [deletingJobs, setDeletingJobs] = useState<Set<string>>(new Set());
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+
   const handleDelete = async (jobId: string) => {
     if (!confirm('Tem certeza que deseja excluir este backup? Esta ação não pode ser desfeita.')) {
       return;
     }
 
+    setDeletingJobs(prev => new Set(prev).add(jobId));
+    setDeleteError(null);
+    setDeleteSuccess(null);
+
     try {
       await deleteJob(jobId);
+      setDeleteSuccess('Backup excluído com sucesso!');
       onRefresh?.();
+      
+      // Limpar mensagem de sucesso após 3 segundos
+      setTimeout(() => setDeleteSuccess(null), 3000);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao deletar backup';
+      setDeleteError(errorMessage);
       console.error('Erro ao deletar backup:', err);
+      
+      // Limpar mensagem de erro após 5 segundos
+      setTimeout(() => setDeleteError(null), 5000);
+    } finally {
+      setDeletingJobs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(jobId);
+        return newSet;
+      });
     }
   };
 
@@ -145,6 +168,25 @@ const BackupHistory: React.FC<BackupHistoryProps> = ({ onRefresh }) => {
           </button>
         </div>
       </div>
+
+      {/* Mensagens de feedback */}
+      {deleteSuccess && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+            <span className="text-green-700">{deleteSuccess}</span>
+          </div>
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <XCircle className="h-5 w-5 text-red-500 mr-2" />
+            <span className="text-red-700">{deleteError}</span>
+          </div>
+        </div>
+      )}
 
       {/* Mensagens de erro */}
       {error && (
@@ -404,10 +446,19 @@ const BackupHistory: React.FC<BackupHistoryProps> = ({ onRefresh }) => {
                   {job.status === 'completed' && (
                     <button
                       onClick={() => handleDelete(job.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Excluir backup"
+                      disabled={deletingJobs.has(job.id)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        deletingJobs.has(job.id)
+                          ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                          : 'text-red-600 hover:bg-red-50'
+                      }`}
+                      title={deletingJobs.has(job.id) ? "Excluindo..." : "Excluir backup"}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {deletingJobs.has(job.id) ? (
+                        <div className="h-4 w-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </button>
                   )}
                 </div>

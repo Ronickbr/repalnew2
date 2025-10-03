@@ -7,23 +7,26 @@ import {
   AlertTriangle,
   Loader2
 } from 'lucide-react';
-import { useBackupJobs } from '../../hooks/useBackup';
+import { useBackupJobs, useBackupFiles } from '../../hooks/useBackup';
 import { AVAILABLE_TABLES, BACKUP_FORMATS } from '../../types/backup';
-import { CreateBackupJobRequest } from '../../types/backup';
+import { CreateBackupJobRequest, BackupJobWithFiles } from '../../types/backup';
 
 interface BackupManualProps {
   onBackupCreated?: () => void;
   onBackupComplete?: () => void;
 }
 
-const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupComplete: _onBackupComplete }) => {
-  const { createJob, loading } = useBackupJobs();
+const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupComplete }) => {
+  const { createJob, loading, startPolling } = useBackupJobs();
+  const { autoDownloadBackup } = useBackupFiles();
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
   const [format, setFormat] = useState<'sql' | 'json' | 'csv'>('sql');
   const [compression, setCompression] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
 
   const handleTableToggle = (tableId: string) => {
     setSelectedTables(prev => 
@@ -45,6 +48,7 @@ const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupCo
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setDownloadStatus(null);
 
     if (selectedTables.length === 0) {
       setError('Selecione pelo menos uma tabela para backup');
@@ -52,6 +56,8 @@ const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupCo
     }
 
     try {
+      setIsProcessing(true);
+      
       const request: CreateBackupJobRequest = {
         tables: selectedTables,
         format,
@@ -60,6 +66,37 @@ const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupCo
 
       const job = await createJob(request);
       setSuccess(`Backup criado com sucesso! ID: ${job.id}`);
+      setDownloadStatus('Aguardando conclusão do backup...');
+      
+      // Iniciar polling para monitorar o job
+      startPolling(job.id, async (completedJob: BackupJobWithFiles) => {
+        try {
+          if (completedJob.status === 'completed') {
+            setDownloadStatus('Backup concluído! Iniciando download...');
+            
+            // Fazer download automático
+            await autoDownloadBackup(completedJob);
+            setDownloadStatus('Download concluído com sucesso!');
+            
+            // Chamar callback de conclusão
+            onBackupComplete?.();
+            
+            // Limpar status após 3 segundos
+            setTimeout(() => {
+              setDownloadStatus(null);
+              setIsProcessing(false);
+            }, 3000);
+          } else if (completedJob.status === 'failed') {
+            setDownloadStatus(null);
+            setError('Backup falhou. Verifique os logs para mais detalhes.');
+            setIsProcessing(false);
+          }
+        } catch (downloadErr) {
+          setDownloadStatus(null);
+          setError('Backup concluído, mas houve erro no download automático.');
+          setIsProcessing(false);
+        }
+      });
       
       // Reset form
       setSelectedTables([]);
@@ -70,6 +107,7 @@ const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupCo
       onBackupCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar backup');
+      setIsProcessing(false);
     }
   };
 
@@ -92,6 +130,19 @@ const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupCo
           <div className="flex items-center">
             <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
             <span className="text-green-700">{success}</span>
+          </div>
+        </div>
+      )}
+
+      {downloadStatus && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            {downloadStatus.includes('Aguardando') || downloadStatus.includes('Iniciando') ? (
+              <Loader2 className="h-5 w-5 text-blue-500 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-5 w-5 text-blue-500 mr-2" />
+            )}
+            <span className="text-blue-700">{downloadStatus}</span>
           </div>
         </div>
       )}
@@ -309,13 +360,13 @@ const BackupManual: React.FC<BackupManualProps> = ({ onBackupCreated, onBackupCo
             
             <button
               type="submit"
-              disabled={loading || selectedTables.length === 0}
+              disabled={loading || isProcessing || selectedTables.length === 0}
               className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? (
+              {loading || isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Criando Backup...
+                  {loading ? 'Criando Backup...' : 'Processando...'}
                 </>
               ) : (
                 <>

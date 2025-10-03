@@ -328,11 +328,7 @@ const Admin: React.FC = () => {
 
       // Fetch detailed data with individual error handling
       const dataPromises = [
-        supabase.from('products').select(`
-          *,
-          category:categories!products_category_id_fkey(name),
-          subcategory:categories!products_subcategory_id_fkey(name)
-        `).order('created_at', { ascending: false }).then(res => ({ type: 'products', ...res })),
+        supabase.from('products').select('*').order('created_at', { ascending: false }).then(res => ({ type: 'products', ...res })),
         supabase.from('categories').select('*').order('name').then(res => ({ type: 'categories', ...res })),
         supabase.from('leads').select('*').order('created_at', { ascending: false }).then(res => ({ type: 'leads', ...res }))
       ];
@@ -359,8 +355,6 @@ const Admin: React.FC = () => {
               break;
           }
         } else {
-          // Erro já tratado pelo estado
-          
           // Set fallback data for failed requests
           if (result.status === 'fulfilled') {
             const { type } = result.value;
@@ -421,6 +415,19 @@ const Admin: React.FC = () => {
     
     showNotification('error', `${context}: ${errorMessage}`);
     return errorMessage;
+  };
+
+  // Funções helper para mapear IDs de categoria/subcategoria para nomes
+  const getCategoryName = (categoryId?: number): string => {
+    if (!categoryId) return 'Sem categoria';
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Sem categoria';
+  };
+
+  const getSubcategoryName = (subcategoryId?: number): string => {
+    if (!subcategoryId) return 'Sem subcategoria';
+    const subcategory = subcategories.find(subcat => subcat.id === subcategoryId);
+    return subcategory?.name || 'Sem subcategoria';
   };
 
   // Função para filtrar subcategorias baseadas na categoria pai selecionada
@@ -909,6 +916,8 @@ const Admin: React.FC = () => {
     return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
+
+
   const filteredLeads = leads.filter(lead =>
     lead.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -963,6 +972,8 @@ const Admin: React.FC = () => {
   const paginatedProducts = getPaginatedData(filteredProducts);
   const paginatedCategories = getPaginatedData(categories);
   const paginatedLeads = getPaginatedData(filteredLeads);
+
+
 
   if (loading) {
     return (
@@ -1420,76 +1431,132 @@ const Admin: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {paginatedProducts.map((product) => (
-                      <tr key={product.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-4 w-2/6 min-w-[250px]">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <img className="h-10 w-10 rounded-full object-cover" src={(product.image_url || '/placeholder.jpg')} alt={product.product_name} />
-                            </div>
-                            <div className="ml-4 min-w-0 flex-1">
-                              <div className="text-sm font-medium text-gray-900 truncate" title={product.product_name}>
-                                {product.product_name}
+                    {paginatedProducts.length > 0 ? (
+                      paginatedProducts.map((product) => (
+                        <tr key={product.id} className="hover:bg-gray-50">
+                          <td className="px-3 py-4 w-2/6 min-w-[250px]">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                <img className="h-10 w-10 rounded-full object-cover" src={product.product_images?.[0]?.image_url || product.image_url || '/placeholder.jpg'} alt={product.product_name} />
                               </div>
-                              <div className="text-sm text-gray-500 truncate" title={product.description || 'Sem descrição'}>
-                                {product.description ? product.description.substring(0, 50) + '...' : 'Sem descrição'}
+                              <div className="ml-4 min-w-0 flex-1">
+                                <div className="text-sm font-medium text-gray-900 truncate" title={product.product_name}>
+                                  {product.product_name}
+                                </div>
+                                <div className="text-sm text-gray-500 truncate" title={product.description || 'Sem descrição'}>
+                                  {product.description ? product.description.substring(0, 50) + '...' : 'Sem descrição'}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
-                          <div className="text-sm text-gray-900 truncate" title={product.category?.name || 'Sem categoria'}>
-                            {product.category?.name || 'Sem categoria'}
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
-                          <div className="text-sm text-gray-900 truncate" title={product.subcategory?.name || 'Sem subcategoria'}>
-                            {product.subcategory?.name || 'Sem subcategoria'}
-                          </div>
-                        </td>
-                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
-                          <div className="flex flex-col space-y-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${
-                              product.active 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {product.active ? 'Ativo' : 'Inativo'}
-                            </span>
-                            {product.featured && (
-                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 w-fit">
-                                Destaque
+                          </td>
+                          <td className="px-3 py-4 w-1/6 min-w-[100px]">
+                            <div className="text-sm text-gray-900 truncate" title={getCategoryName(product.category_id)}>
+                              {getCategoryName(product.category_id)}
+                            </div>
+                          </td>
+                          <td className="px-3 py-4 w-1/6 min-w-[100px]">
+                            <div className="text-sm text-gray-900 truncate" title={getSubcategoryName(product.subcategory_id)}>
+                              {getSubcategoryName(product.subcategory_id)}
+                            </div>
+                          </td>
+                          <td className="px-3 py-4 w-1/6 min-w-[100px]">
+                            <div className="flex flex-col space-y-1">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full w-fit ${
+                                product.active 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {product.active ? 'Ativo' : 'Inativo'}
                               </span>
+                              {product.featured && (
+                                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 w-fit">
+                                  Destaque
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-4 w-1/6 min-w-[100px]">
+                            <div className="flex space-x-1">
+                              <button 
+                                onClick={() => openProductModal(product)}
+                                className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 flex-shrink-0"
+                                title="Visualizar"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => openProductModal(product)}
+                                className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 flex-shrink-0"
+                                title="Editar"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => deleteProduct(product.id.toString())}
+                                className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 flex-shrink-0"
+                                title="Excluir"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center justify-center space-y-4">
+                            {products.length === 0 ? (
+                              <>
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                                  <Package className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <div className="text-center">
+                                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                    Nenhum produto cadastrado
+                                  </h3>
+                                  <p className="text-gray-500 mb-4">
+                                    Comece adicionando seu primeiro produto para começar a gerenciar seu catálogo.
+                                  </p>
+                                  <button
+                                    onClick={() => openProductModal()}
+                                    className="bg-red-900 hover:bg-red-800 text-white px-6 py-2 rounded-lg font-medium flex items-center space-x-2 mx-auto"
+                                  >
+                                    <Plus className="h-5 w-5" />
+                                    <span>Adicionar Primeiro Produto</span>
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                                  <Search className="w-8 h-8 text-gray-400" />
+                                </div>
+                                <div className="text-center">
+                                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                    Nenhum produto encontrado
+                                  </h3>
+                                  <p className="text-gray-500 mb-4">
+                                    Não encontramos produtos que correspondam aos filtros aplicados. Tente ajustar os critérios de busca.
+                                  </p>
+                                  <button
+                                    onClick={() => {
+                                      setSearchTerm('');
+                                      setSelectedCategory('');
+                                      setSelectedSubcategory('');
+                                    }}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium flex items-center space-x-2 mx-auto"
+                                  >
+                                    <X className="h-5 w-5" />
+                                    <span>Limpar Filtros</span>
+                                  </button>
+                                </div>
+                              </>
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-4 w-1/6 min-w-[100px]">
-                          <div className="flex space-x-1">
-                            <button 
-                              onClick={() => openProductModal(product)}
-                              className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 flex-shrink-0"
-                              title="Visualizar"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => openProductModal(product)}
-                              className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 flex-shrink-0"
-                              title="Editar"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => deleteProduct(product.id.toString())}
-                              className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 flex-shrink-0"
-                              title="Excluir"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

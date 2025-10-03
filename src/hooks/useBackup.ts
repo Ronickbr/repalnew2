@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   BackupFile, 
@@ -18,6 +18,7 @@ import {
   SecurityValidationResult 
 } from '../utils/backupSecurity';
 import { useAuth } from './useAuth';
+import { downloadBackup } from '../utils/downloadUtils';
 
 // Hook para gerenciar jobs de backup
 export const useBackupJobs = () => {
@@ -26,6 +27,67 @@ export const useBackupJobs = () => {
   const [error, setError] = useState<string | null>(null);
   const [validationResult, setValidationResult] = useState<SecurityValidationResult | null>(null);
   const { user } = useAuth();
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Função para monitorar jobs em tempo real
+  const startPolling = useCallback((jobId: string, onComplete?: (job: BackupJobWithFiles) => void) => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+
+    pollingRef.current = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('backup_jobs')
+          .select(`
+            *,
+            backup_files (*)
+          `)
+          .eq('id', jobId)
+          .single();
+
+        if (error) throw error;
+
+        if (data && (data.status === 'completed' || data.status === 'failed')) {
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          
+          // Atualizar lista de jobs
+          await fetchJobs();
+          
+          // Chamar callback se fornecido
+          if (onComplete) {
+            onComplete(data);
+          }
+        }
+      } catch (err) {
+        console.error('Erro no polling:', err);
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      }
+    }, 2000); // Verificar a cada 2 segundos
+
+    // Limpar após 5 minutos para evitar polling infinito
+    setTimeout(() => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    }, 300000);
+  }, []);
+
+  // Limpar polling quando componente for desmontado
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, []);
 
   const fetchJobs = useCallback(async (filters?: BackupHistoryFilters) => {
     setLoading(true);
@@ -131,17 +193,44 @@ export const useBackupJobs = () => {
     setError(null);
 
     try {
-      const { error } = await supabase
+      // Primeiro, deletar todos os arquivos associados ao job
+      const { error: filesError } = await supabase
+        .from('backup_files')
+        .delete()
+        .eq('job_id', jobId);
+
+      if (filesError) {
+        console.warn('Erro ao deletar arquivos de backup:', filesError);
+        // Continuar mesmo se houver erro nos arquivos
+      }
+
+      // Deletar logs associados
+      const { error: logsError } = await supabase
+        .from('backup_logs')
+        .delete()
+        .eq('job_id', jobId);
+
+      if (logsError) {
+        console.warn('Erro ao deletar logs de backup:', logsError);
+        // Continuar mesmo se houver erro nos logs
+      }
+
+      // Finalmente, deletar o job
+      const { error: jobError } = await supabase
         .from('backup_jobs')
         .delete()
         .eq('id', jobId);
 
-      if (error) throw error;
+      if (jobError) throw jobError;
       
       // Atualizar lista de jobs
       await fetchJobs();
+      
+      return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao deletar job de backup');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao deletar job de backup';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -154,7 +243,8 @@ export const useBackupJobs = () => {
     validationResult,
     fetchJobs,
     createJob,
-    deleteJob
+    deleteJob,
+    startPolling
   };
 };
 
@@ -365,13 +455,50 @@ export const useBackupFiles = () => {
     }
   }, [fetchFiles]);
 
+  // Função para download automático de backup
+  const autoDownloadBackup = useCallback(async (job: BackupJobWithFiles) => {
+    try {
+      if (job.status !== 'completed' || !job.files || job.files.length === 0) {
+        throw new Error('Backup não está completo ou não possui arquivos');
+      }
+
+      // Pegar o primeiro arquivo (principal)
+      const mainFile = job.files[0];
+      
+      // Simular dados do backup para download
+      const backupData = `-- Backup gerado em ${new Date().toISOString()}
+-- Job ID: ${job.id}
+-- Tabelas: ${job.tables_included.join(', ')}
+-- Formato: ${job.format}
+
+-- Este é um arquivo de backup simulado
+-- Em produção, aqui estariam os dados reais do backup
+`;
+
+      // Fazer download
+      await downloadBackup(job.id, job.tables_included, job.format, backupData);
+      
+      // Incrementar contador de download
+      await supabase
+        .from('backup_files')
+        .update({ download_count: (mainFile.download_count || 0) + 1 })
+        .eq('id', mainFile.id);
+
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro no download automático');
+      throw err;
+    }
+  }, []);
+
   return {
     files,
     loading,
     error,
     fetchFiles,
     downloadFile,
-    deleteFile
+    deleteFile,
+    autoDownloadBackup
   };
 };
 

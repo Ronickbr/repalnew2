@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useFeaturedProductByCategory } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 import WhatsAppButton from './WhatsAppButton';
 import SearchBar from './SearchBar';
 
@@ -51,140 +52,103 @@ const Header: React.FC = () => {
   const { siteName, contactPhone, contactEmail } = useSiteSettings();
   const navigate = useNavigate();
 
-  // Produtos em destaque são carregados dinamicamente por categoria
+  // Carregar categorias do banco de dados
+  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useCategories();
 
+  // Função para mapear ícones baseado no slug da categoria
+  const getCategoryIcon = (slug: string) => {
+    const iconMap: { [key: string]: any } = {
+      'refrigeracao-comercial': Snowflake,
+      'equipamentos-bares-restaurantes': Utensils,
+      'padaria-confeitaria': ChefHat,
+      'acougue': Beef,
+      'utensilios-utilidades': Utensils,
+      'mobiliario-inox': Building,
+      'pecas-componentes-refrigeracao': Settings
+    };
+    return iconMap[slug] || Utensils;
+  };
 
-
-  // Dados das categorias conforme AllCategories.tsx
-  const categories = useMemo(() => [
-    {
-      id: 'refrigeracao-comercial',
-      name: 'Refrigeração Comercial',
-      icon: Snowflake,
-      subcategories: [
-        { id: 'bebedouros', name: 'Bebedouros' },
-        { id: 'camaras-frias', name: 'Câmaras Frias' },
-        { id: 'cervejeiras', name: 'Cervejeiras' },
-        { id: 'expositores', name: 'Expositores' },
-        { id: 'freezers-comerciais', name: 'Freezers Comerciais' },
-        { id: 'geladeiras-profissionais', name: 'Geladeiras Profissionais' },
-        { id: 'ilhas-congelados', name: 'Ilhas para Congelados' },
-        { id: 'visa-coolers', name: 'Visa-Coolers' }
-      ]
-    },
-    {
-      id: 'bares-restaurantes',
-      name: 'Equipamentos para Bares e Restaurantes',
-      icon: Utensils,
-      subcategories: [
-        { id: 'batedores-milk-shake', name: 'Batedores de Milk Shake' },
-        { id: 'cafeteiras-profissionais', name: 'Cafeteiras Profissionais' },
-        { id: 'chapas-gas-eletricas', name: 'Chapas a Gás e Elétricas' },
-        { id: 'cilindros-massas', name: 'Cilindros de Massas' },
-        { id: 'cortadores-legumes', name: 'Cortadores de Legumes' },
-        { id: 'cutters', name: 'Cutters' },
-        { id: 'descascadores-batata', name: 'Descascadores de Batata' },
-        { id: 'estufas-quentes', name: 'Estufas Quentes' },
-        { id: 'extratores-suco', name: 'Extratores de Suco' },
-        { id: 'fogoes-industriais', name: 'Fogões Industriais' },
-        { id: 'fornos-combinados', name: 'Fornos Combinados' },
-        { id: 'fornos-conveccao', name: 'Fornos de Convecção' },
-        { id: 'fornos-lastro', name: 'Fornos de Lastro' },
-        { id: 'fritadeiras', name: 'Fritadeiras Elétricas e a Gás' },
-        { id: 'lava-loucas-industriais', name: 'Lava-louças Industriais' },
-        { id: 'liquidificadores-profissionais', name: 'Liquidificadores Profissionais' },
-        { id: 'mesas-buffet', name: 'Mesas de Buffet' },
-        { id: 'micro-ondas-industrial', name: 'Micro-ondas Industrial' },
-        { id: 'moedores-cafe', name: 'Moedores de Café' },
-        { id: 'moinhos-pao', name: 'Moinhos de Pão' },
-        { id: 'processadores-alimentos', name: 'Processadores de Alimentos' },
-        { id: 'refresqueiras', name: 'Refresqueiras' },
-        { id: 'seladoras', name: 'Seladoras a Vácuo e de Embalagens' },
-        { id: 'torres-chopp', name: 'Torres de Chopp' }
-      ]
-    },
-    {
-      id: 'padaria-confeitaria',
-      name: 'Padaria e Confeitaria',
-      icon: ChefHat,
-      subcategories: [
-        { id: 'amassadeiras', name: 'Amassadeiras' },
-        { id: 'batedeiras-industriais', name: 'Batedeiras Industriais' },
-        { id: 'camaras-climaticas', name: 'Câmaras Climáticas' },
-        { id: 'cortadores-frios', name: 'Cortadores de Frios' },
-        { id: 'divisoras-massa', name: 'Divisoras de Massa' },
-        { id: 'fatiadeiras-pao', name: 'Fatiadeiras de Pão' },
-        { id: 'fornos-turbo', name: 'Fornos Turbo' },
-        { id: 'modeladoras-pao', name: 'Modeladoras de Pão' },
-        { id: 'resfriadores-agua', name: 'Resfriadores de Água' }
-      ]
-    },
+  // Dados de fallback para quando há erro de conexão
+  const fallbackCategories = [
     {
       id: 'acougue',
       name: 'Açougue',
-      icon: Beef,
+      icon: <Beef className="w-5 h-5" />,
       subcategories: [
-        { id: 'amassadores-carne', name: 'Amassadores de Carne' },
-        { id: 'aplicadores-filme', name: 'Aplicadores de Filme' },
-        { id: 'assadores', name: 'Assadores' },
-        { id: 'balancas', name: 'Balanças Digitais e Mecânicas' },
-        { id: 'balcoes-refrigerados-acougue', name: 'Balcões Refrigerados para Açougue' },
-        { id: 'ensacadeiras-linguica', name: 'Ensacadeiras de Linguiça' },
-        { id: 'moedores-carne', name: 'Moedores de Carne' },
-        { id: 'serras-fita', name: 'Serras-Fita' }
+        { id: 'amaciadores-de-carne', name: 'Amaciadores de Carne' },
+        { id: 'balancas-para-acougue', name: 'Balanças para Açougue' },
+        { id: 'facas-e-utensílios', name: 'Facas e Utensílios' },
+        { id: 'moedores-de-carne', name: 'Moedores de Carne' },
+        { id: 'serra-fita', name: 'Serra Fita' }
       ]
     },
     {
-      id: 'utensilios-utilidades',
-      name: 'Utensílios e Utilidades',
-      icon: Utensils,
+      id: 'refrigeracao-comercial',
+      name: 'Refrigeração Comercial',
+      icon: <Snowflake className="w-5 h-5" />,
       subcategories: [
-        { id: 'copos-tacas', name: 'Copos e Taças' },
-        { id: 'cubas-gns', name: 'Cubas GN\'s' },
-        { id: 'formas-assadeiras', name: 'Formas e Assadeiras' },
-        { id: 'jarras', name: 'Jarras' },
-        { id: 'loucas', name: 'Louças' },
-        { id: 'panelas-profissionais', name: 'Panelas Profissionais' },
-        { id: 'talheres', name: 'Talheres' },
-        { id: 'travessas', name: 'Travessas' },
-        { id: 'utensilios-diversos', name: 'Utensílios Diversos' }
+        { id: 'balcoes-refrigerados', name: 'Balcões Refrigerados' },
+        { id: 'camaras-frias', name: 'Câmaras Frias' },
+        { id: 'freezers-horizontais', name: 'Freezers Horizontais' },
+        { id: 'geladeiras-comerciais', name: 'Geladeiras Comerciais' },
+        { id: 'vitrines-refrigeradas', name: 'Vitrines Refrigeradas' }
       ]
     },
     {
-      id: 'mobiliario-inox',
-      name: 'Mobiliário em Inox',
-      icon: Building,
+      id: 'cozinha-industrial',
+      name: 'Cozinha Industrial',
+      icon: <ChefHat className="w-5 h-5" />,
       subcategories: [
-        { id: 'bancadas-aco-inox', name: 'Bancadas em Aço Inox' },
-        { id: 'carrinhos', name: 'Carrinhos' },
-        { id: 'estantes', name: 'Estantes' },
-        { id: 'lixeiras', name: 'Lixeiras' },
-        { id: 'pias-assepsia', name: 'Pias de Assepsia' },
-        { id: 'prateleiras', name: 'Prateleiras' }
+        { id: 'fogoes-industriais', name: 'Fogões Industriais' },
+        { id: 'fornos-combinados', name: 'Fornos Combinados' },
+        { id: 'fritadeiras', name: 'Fritadeiras' },
+        { id: 'grills-e-chapas', name: 'Grills e Chapas' },
+        { id: 'panelas-de-pressao', name: 'Panelas de Pressão' }
       ]
     },
     {
-      id: 'pecas-componentes-refrigeracao',
-      name: 'Peças e Componentes para Refrigeração',
-      icon: Settings,
+      id: 'equipamentos-para-restaurante',
+      name: 'Equipamentos para Restaurante',
+      icon: <Utensils className="w-5 h-5" />,
       subcategories: [
-        { id: 'compressores', name: 'Compressores' },
-        { id: 'conexoes', name: 'Conexões' },
-        { id: 'controladores', name: 'Controladores' },
-        { id: 'evaporadores', name: 'Evaporadores' },
-        { id: 'filtros', name: 'Filtros' },
-        { id: 'forcadores-ar', name: 'Forçadores de Ar' },
-        { id: 'gas-refrigerante', name: 'Gás Refrigerante' },
-        { id: 'isolamentos', name: 'Isolamentos' },
-        { id: 'macaricos', name: 'Maçaricos' },
-        { id: 'pecas-reposicao', name: 'Peças de Reposição' },
-        { id: 'tubos-cobre', name: 'Tubos de Cobre' },
-        { id: 'unidades-condensadoras', name: 'Unidades Condensadoras' },
-        { id: 'valvulas', name: 'Válvulas' },
-        { id: 'ventiladores', name: 'Ventiladores' }
+        { id: 'equipamentos-de-buffet', name: 'Equipamentos de Buffet' },
+        { id: 'lava-loucas', name: 'Lava-louças' },
+        { id: 'mesas-e-bancadas', name: 'Mesas e Bancadas' },
+        { id: 'processadores-de-alimentos', name: 'Processadores de Alimentos' }
       ]
     }
-  ], []);
+  ];
+
+  // Transformar dados do banco em estrutura hierárquica
+  const categories = useMemo(() => {
+    // Se há erro de conexão, usar dados de fallback
+    if (categoriesError || (!categoriesData && !categoriesLoading)) {
+      return fallbackCategories;
+    }
+
+    if (!categoriesData || categoriesData.length === 0) {
+      return [];
+    }
+
+    // Separar categorias principais e subcategorias
+    const parentCategories = categoriesData.filter(cat => cat.parent_id === null);
+    const subcategories = categoriesData.filter(cat => cat.parent_id !== null);
+
+    // Construir estrutura hierárquica
+    return parentCategories.map(parentCat => ({
+      id: parentCat.slug,
+      name: parentCat.name,
+      icon: getCategoryIcon(parentCat.slug),
+      subcategories: subcategories
+        .filter(subCat => subCat.parent_id === parentCat.id)
+        .map(subCat => ({
+          id: subCat.slug,
+          name: subCat.name
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [categoriesData, categoriesError, categoriesLoading]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -346,7 +310,11 @@ const Header: React.FC = () => {
               isMobileCategoriesOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}>
               <div className="flex flex-col space-y-1">
-                {categories.map((category, index) => {
+                {categoriesLoading ? (
+                  <div className="flex items-center justify-center p-4">
+                    <div className="text-sm text-gray-500">Carregando categorias...</div>
+                  </div>
+                ) : categories.map((category, index) => {
                   const IconComponent = category.icon;
                   return (
                     <div key={category.id} className="relative dropdown-container">
@@ -402,7 +370,11 @@ const Header: React.FC = () => {
             {/* Tablet and Desktop: Grid layout */}
             <div className="hidden sm:block">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1 sm:gap-2 lg:gap-3">
-                {categories.map((category) => {
+                {categoriesLoading ? (
+                  <div className="col-span-full flex items-center justify-center p-4">
+                    <div className="text-sm text-gray-500">Carregando categorias...</div>
+                  </div>
+                ) : categories.map((category) => {
                   const IconComponent = category.icon;
                   return (
                     <div key={category.id} className="relative dropdown-container">

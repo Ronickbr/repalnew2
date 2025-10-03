@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   Database, 
   Calendar, 
@@ -23,6 +23,7 @@ interface BackupSectionProps {
 
 const BackupSection: React.FC<BackupSectionProps> = ({ className = '' }) => {
   const [activeTab, setActiveTab] = useState<BackupTab>('dashboard');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const tabs = [
     {
@@ -61,32 +62,63 @@ const BackupSection: React.FC<BackupSectionProps> = ({ className = '' }) => {
     setActiveTab(tabId);
   };
 
-  const handleBackupComplete = () => {
-    // Atualizar dashboard quando backup for concluído
-    if (activeTab !== 'dashboard') {
-      setActiveTab('dashboard');
-    }
-  };
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
-  const handleRestoreComplete = () => {
-    // Voltar ao dashboard após restauração
+  const handleBackupCreated = useCallback(() => {
+    // Atualizar todos os componentes quando um backup for criado
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handleBackupComplete = useCallback(() => {
+    // Atualizar dashboard e histórico quando backup for concluído
+    handleRefresh();
+    // Opcional: mudar para aba de histórico para mostrar o novo backup
+    setActiveTab('history');
+  }, [handleRefresh]);
+
+  const handleBackupDeleted = useCallback(() => {
+    // Atualizar dashboard e histórico quando backup for deletado
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handleRestoreComplete = useCallback(() => {
+    // Voltar ao dashboard após restauração e atualizar dados
+    handleRefresh();
     setActiveTab('dashboard');
-  };
+  }, [handleRefresh]);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <BackupDashboard />;
+        return <BackupDashboard key={refreshKey} />;
       case 'manual':
-        return <BackupManual onBackupComplete={handleBackupComplete} />;
+        return (
+          <BackupManual 
+            key={refreshKey}
+            onBackupCreated={handleBackupCreated}
+            onBackupComplete={handleBackupComplete} 
+          />
+        );
       case 'scheduler':
-        return <BackupScheduler />;
+        return <BackupScheduler key={refreshKey} />;
       case 'history':
-        return <BackupHistory />;
+        return (
+          <BackupHistory 
+            key={refreshKey}
+            onRefresh={handleBackupDeleted}
+          />
+        );
       case 'restore':
-        return <BackupRestore onRestoreComplete={handleRestoreComplete} />;
+        return (
+          <BackupRestore 
+            key={refreshKey}
+            onRestoreComplete={handleRestoreComplete} 
+          />
+        );
       default:
-        return <BackupDashboard />;
+        return <BackupDashboard key={refreshKey} />;
     }
   };
 

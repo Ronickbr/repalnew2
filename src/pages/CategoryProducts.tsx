@@ -2,13 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Search, Filter, X, Grid, List } from 'lucide-react';
 import { useProductsByCategory } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 import ProductCard from '../components/ProductCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-interface Category {
+interface CategoryWithSubcategories {
   id: string;
   name: string;
-  subcategories: { id: string; name: string; }[];
+  slug: string;
+  subcategories: { id: string; name: string; slug: string; }[];
 }
 
 const CategoryProducts: React.FC = () => {
@@ -23,129 +25,72 @@ const CategoryProducts: React.FC = () => {
   // Buscar produtos da categoria usando slug
   const { data: products, isLoading, error } = useProductsByCategory(categorySlug || '');
 
-  // Definir categorias usando slugs (mesmo array do Header.tsx)
-  const categories: Category[] = [
-    {
-      id: 'refrigeracao-comercial',
-      name: 'Refrigeração Comercial',
-      subcategories: [
-        { id: 'bebedouros', name: 'Bebedouros' },
-        { id: 'camaras-frias', name: 'Câmaras Frias' },
-        { id: 'cervejeiras', name: 'Cervejeiras' },
-        { id: 'expositores', name: 'Expositores' },
-        { id: 'freezers-comerciais', name: 'Freezers Comerciais' },
-        { id: 'geladeiras-profissionais', name: 'Geladeiras Profissionais' },
-        { id: 'ilhas-congelados', name: 'Ilhas para Congelados' },
-        { id: 'visa-coolers', name: 'Visa-Coolers' }
-      ]
-    },
-    {
-      id: 'bares-restaurantes',
-      name: 'Bares e Restaurantes',
-      subcategories: [
-        { id: 'batedores-milk-shake', name: 'Batedores de Milk Shake' },
-        { id: 'cafeteiras-profissionais', name: 'Cafeteiras Profissionais' },
-        { id: 'chapas-gas-eletricas', name: 'Chapas a Gás e Elétricas' },
-        { id: 'cilindros-massas', name: 'Cilindros de Massas' },
-        { id: 'cortadores-legumes', name: 'Cortadores de Legumes' },
-        { id: 'cutters', name: 'Cutters' },
-        { id: 'descascadores-batata', name: 'Descascadores de Batata' },
-        { id: 'estufas-quentes', name: 'Estufas Quentes' },
-        { id: 'extratores-suco', name: 'Extratores de Suco' },
-        { id: 'fogoes-industriais', name: 'Fogões Industriais' },
-        { id: 'fornos-combinados', name: 'Fornos Combinados' },
-        { id: 'fornos-conveccao', name: 'Fornos de Convecção' },
-        { id: 'fritadeiras', name: 'Fritadeiras' },
-        { id: 'grelhas-sanduicheiras', name: 'Grelhas e Sanduicheiras' },
-        { id: 'liquidificadores-industriais', name: 'Liquidificadores Industriais' },
-        { id: 'maquinas-gelo', name: 'Máquinas de Gelo' },
-        { id: 'moedores-carne', name: 'Moedores de Carne' },
-        { id: 'processadores-alimentos', name: 'Processadores de Alimentos' },
-        { id: 'refresqueiras', name: 'Refresqueiras' },
-        { id: 'seladoras', name: 'Seladoras a Vácuo e de Embalagens' },
-        { id: 'torres-chopp', name: 'Torres de Chopp' }
-      ]
-    },
-    {
-      id: 'padaria-confeitaria',
-      name: 'Padaria e Confeitaria',
-      subcategories: [
-        { id: 'amassadeiras', name: 'Amassadeiras' },
-        { id: 'batedeiras-industriais', name: 'Batedeiras Industriais' },
-        { id: 'camaras-climaticas', name: 'Câmaras Climáticas' },
-        { id: 'cortadores-frios', name: 'Cortadores de Frios' },
-        { id: 'divisoras-massa', name: 'Divisoras de Massa' },
-        { id: 'fatiadeiras-pao', name: 'Fatiadeiras de Pão' },
-        { id: 'fornos-turbo', name: 'Fornos Turbo' },
-        { id: 'modeladoras-pao', name: 'Modeladoras de Pão' },
-        { id: 'resfriadores-agua', name: 'Resfriadores de Água' }
-      ]
-    },
+  // Buscar categorias do Supabase
+  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useCategories();
+
+  // Transformar dados do Supabase para o formato esperado pelo componente
+  const categories: CategoryWithSubcategories[] = useMemo(() => {
+    if (!categoriesData) return [];
+
+    // Separar categorias principais (parent_id = null) e subcategorias
+    const parentCategories = categoriesData.filter(cat => !cat.parent_id);
+    const subcategories = categoriesData.filter(cat => cat.parent_id);
+
+    // Mapear categorias principais com suas subcategorias
+    return parentCategories.map(parentCat => ({
+      id: parentCat.slug,
+      name: parentCat.name,
+      slug: parentCat.slug,
+      subcategories: subcategories
+        .filter(subcat => subcat.parent_id === parentCat.id)
+        .map(subcat => ({
+          id: subcat.slug,
+          name: subcat.name,
+          slug: subcat.slug
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [categoriesData]);
+
+  // Dados de fallback caso não haja conexão com o banco
+  const fallbackCategories: CategoryWithSubcategories[] = [
     {
       id: 'acougue',
       name: 'Açougue',
+      slug: 'acougue',
       subcategories: [
-        { id: 'amassadores-carne', name: 'Amassadores de Carne' },
-        { id: 'aplicadores-filme', name: 'Aplicadores de Filme' },
-        { id: 'assadores', name: 'Assadores' },
-        { id: 'balancas', name: 'Balanças Digitais e Mecânicas' },
-        { id: 'balcoes-refrigerados-acougue', name: 'Balcões Refrigerados para Açougue' },
-        { id: 'ensacadeiras-linguica', name: 'Ensacadeiras de Linguiça' },
-        { id: 'moedores-carne', name: 'Moedores de Carne' },
-        { id: 'serras-fita', name: 'Serras-Fita' }
+        { id: 'amaciadores-carne', name: 'Amaciadores de Carne', slug: 'amaciadores-carne' },
+        { id: 'aplicadores-filme', name: 'Aplicadores de Filme', slug: 'aplicadores-filme' },
+        { id: 'assadores', name: 'Assadores', slug: 'assadores' },
+        { id: 'balancas', name: 'Balanças Digitais e Mecânicas', slug: 'balancas' },
+        { id: 'balcoes-refrigerados-acougue', name: 'Balcões Refrigerados para Açougue', slug: 'balcoes-refrigerados-acougue' },
+        { id: 'ensacadeiras-linguica', name: 'Ensacadeiras de Linguiça', slug: 'ensacadeiras-linguica' },
+        { id: 'moedores-carne', name: 'Moedores de Carne', slug: 'moedores-carne' },
+        { id: 'serras-fita', name: 'Serras-Fita', slug: 'serras-fita' }
       ]
     },
     {
-      id: 'utensilios-utilidades',
-      name: 'Utensílios e Utilidades',
+      id: 'refrigeracao-comercial',
+      name: 'Refrigeração Comercial',
+      slug: 'refrigeracao-comercial',
       subcategories: [
-        { id: 'copos-tacas', name: 'Copos e Taças' },
-        { id: 'cubas-gns', name: 'Cubas GN\'s' },
-        { id: 'formas-assadeiras', name: 'Formas e Assadeiras' },
-        { id: 'jarras', name: 'Jarras' },
-        { id: 'loucas', name: 'Louças' },
-        { id: 'panelas-profissionais', name: 'Panelas Profissionais' },
-        { id: 'talheres', name: 'Talheres' },
-        { id: 'travessas', name: 'Travessas' },
-        { id: 'utensilios-diversos', name: 'Utensílios Diversos' }
-      ]
-    },
-    {
-      id: 'mobiliario-inox',
-      name: 'Mobiliário em Inox',
-      subcategories: [
-        { id: 'bancadas-aco-inox', name: 'Bancadas em Aço Inox' },
-        { id: 'carrinhos', name: 'Carrinhos' },
-        { id: 'estantes', name: 'Estantes' },
-        { id: 'lixeiras', name: 'Lixeiras' },
-        { id: 'pias-assepsia', name: 'Pias de Assepsia' },
-        { id: 'prateleiras', name: 'Prateleiras' }
-      ]
-    },
-    {
-      id: 'pecas-componentes-refrigeracao',
-      name: 'Peças e Componentes para Refrigeração',
-      subcategories: [
-        { id: 'compressores', name: 'Compressores' },
-        { id: 'conexoes', name: 'Conexões' },
-        { id: 'controladores', name: 'Controladores' },
-        { id: 'evaporadores', name: 'Evaporadores' },
-        { id: 'filtros', name: 'Filtros' },
-        { id: 'forcadores-ar', name: 'Forçadores de Ar' },
-        { id: 'gas-refrigerante', name: 'Gás Refrigerante' },
-        { id: 'isolamentos', name: 'Isolamentos' },
-        { id: 'macaricos', name: 'Maçaricos' },
-        { id: 'pecas-reposicao', name: 'Peças de Reposição' },
-        { id: 'tubos-cobre', name: 'Tubos de Cobre' },
-        { id: 'unidades-condensadoras', name: 'Unidades Condensadoras' },
-        { id: 'valvulas', name: 'Válvulas' },
-        { id: 'ventiladores', name: 'Ventiladores' }
+        { id: 'bebedouros', name: 'Bebedouros', slug: 'bebedouros' },
+        { id: 'camaras-frias', name: 'Câmaras Frias', slug: 'camaras-frias' },
+        { id: 'cervejeiras', name: 'Cervejeiras', slug: 'cervejeiras' },
+        { id: 'expositores', name: 'Expositores', slug: 'expositores' },
+        { id: 'freezers-comerciais', name: 'Freezers Comerciais', slug: 'freezers-comerciais' },
+        { id: 'geladeiras-profissionais', name: 'Geladeiras Profissionais', slug: 'geladeiras-profissionais' },
+        { id: 'ilhas-congelados', name: 'Ilhas para Congelados', slug: 'ilhas-congelados' },
+        { id: 'visa-coolers', name: 'Visa-Coolers', slug: 'visa-coolers' }
       ]
     }
   ];
 
+  // Usar dados do Supabase ou fallback em caso de erro
+  const finalCategories = categoriesError || categories.length === 0 ? fallbackCategories : categories;
+
   // Encontrar categoria atual
-  const currentCategory = categories.find(cat => cat.id === categorySlug) || categories[0];
+  const currentCategory = finalCategories.find(cat => cat.id === categorySlug) || finalCategories[0];
   
   // Subcategorias disponíveis para a categoria atual
   const availableSubcategories = useMemo(() => {
@@ -224,7 +169,7 @@ const CategoryProducts: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || categoriesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />

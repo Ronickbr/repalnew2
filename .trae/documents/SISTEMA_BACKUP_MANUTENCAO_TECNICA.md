@@ -5,6 +5,7 @@
 ### Componentes Principais
 
 #### Frontend (React + TypeScript)
+
 ```
 src/
 ├── components/backup/
@@ -25,6 +26,7 @@ src/
 ```
 
 #### Backend (Express.js + Node.js)
+
 ```
 api/
 └── routes/
@@ -33,6 +35,7 @@ server.js                      # Servidor principal
 ```
 
 #### Banco de Dados (Supabase)
+
 ```sql
 -- Tabelas principais
 backup_jobs                    # Jobs de backup
@@ -43,7 +46,8 @@ backup_logs                   # Logs de execução
 
 ## Estrutura de Dados
 
-### Tabela: backup_jobs
+### Tabela: backup\_jobs
+
 ```sql
 CREATE TABLE backup_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -63,7 +67,8 @@ CREATE TABLE backup_jobs (
 );
 ```
 
-### Tabela: backup_schedules
+### Tabela: backup\_schedules
+
 ```sql
 CREATE TABLE backup_schedules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -88,6 +93,7 @@ CREATE TABLE backup_schedules (
 ## Configuração e Deploy
 
 ### Variáveis de Ambiente
+
 ```env
 # Backend
 SUPABASE_URL=https://seu-projeto.supabase.co
@@ -100,6 +106,7 @@ VITE_SUPABASE_ANON_KEY=sua_chave_anon
 ```
 
 ### Instalação de Dependências
+
 ```bash
 # Instalar dependências
 npm install
@@ -109,6 +116,7 @@ npm install express cors dotenv multer
 ```
 
 ### Execução
+
 ```bash
 # Frontend
 npm run dev
@@ -120,6 +128,7 @@ npm run api
 ## Segurança e Permissões
 
 ### Row Level Security (RLS)
+
 ```sql
 -- Habilitar RLS
 ALTER TABLE backup_jobs ENABLE ROW LEVEL SECURITY;
@@ -139,6 +148,7 @@ CREATE POLICY "Admins can manage all backups" ON backup_jobs
 ```
 
 ### Permissões de Tabela
+
 ```sql
 -- Conceder permissões aos roles
 GRANT ALL PRIVILEGES ON backup_jobs TO authenticated;
@@ -153,24 +163,35 @@ GRANT SELECT ON backup_schedules TO anon;
 ## Monitoramento e Logs
 
 ### Sistema de Logs
-- **backup_logs**: Registra todas as operações
-- **Console logs**: Debug no navegador
-- **Server logs**: Logs do Express.js
+
+* **backup\_logs**: Registra todas as operações
+
+* **Console logs**: Debug no navegador
+
+* **Server logs**: Logs do Express.js
 
 ### Métricas Importantes
-- Taxa de sucesso dos backups
-- Tempo médio de execução
-- Espaço utilizado
-- Frequência de falhas
+
+* Taxa de sucesso dos backups
+
+* Tempo médio de execução
+
+* Espaço utilizado
+
+* Frequência de falhas
 
 ### Alertas
-- Backups falhados consecutivos
-- Espaço em disco baixo
-- Agendamentos não executados
+
+* Backups falhados consecutivos
+
+* Espaço em disco baixo
+
+* Agendamentos não executados
 
 ## Manutenção Preventiva
 
 ### Limpeza Automática
+
 ```javascript
 // Função para limpeza de backups antigos
 const cleanupOldBackups = async (retentionDays = 30) => {
@@ -185,6 +206,7 @@ const cleanupOldBackups = async (retentionDays = 30) => {
 ```
 
 ### Verificação de Integridade
+
 ```javascript
 // Validar checksums dos backups
 const validateBackupIntegrity = async (backupId) => {
@@ -205,33 +227,45 @@ const validateBackupIntegrity = async (backupId) => {
 ### Problemas Comuns
 
 #### 1. Erro de Permissão
+
 ```
 Error: permission denied for table backup_jobs
 ```
+
 **Solução:**
+
 ```sql
 GRANT ALL PRIVILEGES ON backup_jobs TO authenticated;
 ```
 
 #### 2. Falha na Conexão Supabase
+
 ```
 Error: supabaseUrl is required
 ```
+
 **Solução:**
-- Verificar variáveis de ambiente
-- Confirmar configuração do .env
+
+* Verificar variáveis de ambiente
+
+* Confirmar configuração do .env
 
 #### 3. Backup Não Inicia
+
 ```
 Error: Token inválido
 ```
+
 **Solução:**
-- Verificar autenticação do usuário
-- Confirmar permissões de admin
+
+* Verificar autenticação do usuário
+
+* Confirmar permissões de admin
 
 ### Debug Avançado
 
 #### Logs Detalhados
+
 ```javascript
 // Habilitar logs detalhados
 console.debug('Backup iniciado:', {
@@ -243,6 +277,7 @@ console.debug('Backup iniciado:', {
 ```
 
 #### Monitoramento de Performance
+
 ```javascript
 // Medir tempo de execução
 const startTime = performance.now();
@@ -254,6 +289,7 @@ console.log(`Backup concluído em ${endTime - startTime}ms`);
 ## Backup e Recuperação do Sistema
 
 ### Backup da Configuração
+
 ```bash
 # Exportar configurações
 pg_dump -h seu-host -U seu-usuario -d seu-banco \
@@ -261,6 +297,7 @@ pg_dump -h seu-host -U seu-usuario -d seu-banco \
 ```
 
 ### Restauração de Emergência
+
 ```bash
 # Restaurar configurações
 psql -h seu-host -U seu-usuario -d seu-banco < backup_config.sql
@@ -269,6 +306,7 @@ psql -h seu-host -U seu-usuario -d seu-banco < backup_config.sql
 ## Atualizações e Versionamento
 
 ### Migração de Schema
+
 ```sql
 -- Exemplo de migração
 ALTER TABLE backup_jobs ADD COLUMN new_field TEXT;
@@ -276,14 +314,19 @@ UPDATE backup_jobs SET new_field = 'default_value';
 ```
 
 ### Compatibilidade
-- **Frontend**: React 18+
-- **Backend**: Node.js 18+
-- **Banco**: PostgreSQL 13+
-- **Supabase**: Versão atual
+
+* **Frontend**: React 18+
+
+* **Backend**: Node.js 18+
+
+* **Banco**: PostgreSQL 13+
+
+* **Supabase**: Versão atual
 
 ## Performance e Otimização
 
 ### Índices Recomendados
+
 ```sql
 -- Índices para performance
 CREATE INDEX idx_backup_jobs_status ON backup_jobs(status);
@@ -292,20 +335,27 @@ CREATE INDEX idx_backup_schedules_next_run ON backup_schedules(next_run);
 ```
 
 ### Otimizações
-- Compressão de backups grandes
-- Limpeza automática de arquivos antigos
-- Cache de estatísticas
-- Paginação de resultados
+
+* Compressão de backups grandes
+
+* Limpeza automática de arquivos antigos
+
+* Cache de estatísticas
+
+* Paginação de resultados
 
 ## Contato Técnico
 
 Para questões de desenvolvimento:
-- **Documentação**: Consulte os arquivos .md na pasta .trae/documents
-- **Código**: Verifique comentários inline nos componentes
-- **Issues**: Registre problemas no sistema de controle de versão
 
----
+* **Documentação**: Consulte os arquivos .md na pasta .trae/documents
 
-**Versão**: 1.0  
-**Última Atualização**: Outubro 2024  
+* **Código**: Verifique comentários inline nos componentes
+
+* **Issues**: Registre problemas no sistema de controle de versão
+
+***
+
+**Versão**: 1.0\
+**Última Atualização**: Outubro 2024\
 **Responsável**: Equipe de Desenvolvimento
