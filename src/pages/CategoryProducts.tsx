@@ -168,6 +168,11 @@ const CategoryProducts: React.FC = () => {
     setSelectedSubcategory(subcategorySlug || '');
   }, [subcategorySlug]);
 
+  // Função para navegar para a página de detalhes do produto
+  const handleViewDetails = (product: any) => {
+    navigate(`/produto/${product.slug}`);
+  };
+
   // Filtrar e ordenar produtos
   const filteredAndSortedProducts = useMemo(() => {
     if (!products) return [];
@@ -490,10 +495,10 @@ const CategoryProducts: React.FC = () => {
               <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'} gap-6`}>
                 {filteredAndSortedProducts.map((product) => (
                   <ProductCard 
-                    key={product.id}
-                    product={product}
-                    viewMode={viewMode}
-                    onViewDetails={() => navigate(`/produto/${product.slug}`)} // Adicionado o redirecionamento
+                    key={product.id} 
+                    product={product} 
+                    className={viewMode === 'list' ? 'flex-row' : ''}
+                    onViewDetails={handleViewDetails}
                   />
                 ))}
               </div>

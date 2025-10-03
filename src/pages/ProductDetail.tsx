@@ -99,10 +99,6 @@ const ProductDetail: React.FC = () => {
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8 bg-white/70 backdrop-blur-sm rounded-full px-6 py-3 shadow-sm border border-gray-200/50">
           <Link to="/" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">Início</Link>
-          {/*<span className="text-gray-400">/</span>
-           <Link to="/categorias" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">
-            {product.category && typeof product.category === 'object' ? product.category.name : 'Categorias'}
-          </Link> */}
           {/* Removed parent_category reference as it doesn't exist in Category interface */}
           {product.category && typeof product.category === 'object' && (
             <>
@@ -121,7 +117,7 @@ const ProductDetail: React.FC = () => {
 
         {/* Back Button */}
         <Link
-          to={product.category && typeof product.category === 'object' ? `/categorias/${product.category.slug}` : "/categorias"}
+          to={product.category?.slug ? `/categorias/${product.category.slug}` : "/categorias"}
           className="inline-flex items-center space-x-2 text-[#000080] hover:text-[#000060] mb-8 transition-all duration-200 bg-white/70 backdrop-blur-sm rounded-lg px-4 py-2 shadow-sm border border-gray-200/50 hover:shadow-md hover:bg-white/90"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -242,9 +238,9 @@ const ProductDetail: React.FC = () => {
             {/* Header */}
             <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                {product.categories && typeof product.categories === 'object' && (
+                {product.category && typeof product.category === 'object' && (
                   <span className="bg-gradient-to-r from-[#000080] to-[#000060] text-white text-sm px-4 py-2 rounded-full font-medium shadow-md">
-                    {product.categories.name}
+                    {product.category.name}
                   </span>
                 )}
                 {product.featured && (
@@ -365,9 +361,9 @@ const ProductDetail: React.FC = () => {
               </WhatsAppButton>
               
               <div className="grid grid-cols-1 gap-4">
-                {product.categories && typeof product.categories === 'object' && product.categories.slug ? (
+                {product.category && typeof product.category === 'object' && product.category.slug ? (
                   <Link
-                    to={`/categorias/${product.categories.slug}`}
+                    to={`/categorias/${product.category.slug}`}
                     className="border-2 border-[#8B0000] text-[#8B0000] py-3 px-4 rounded-xl font-bold hover:bg-[#8B0000] hover:text-white transition-all duration-300 text-center shadow-md hover:shadow-lg hover:scale-105 transform flex items-center justify-center space-x-2"
                   >
                     <Star className="h-4 w-4" />

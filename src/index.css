@@ -92,3 +92,55 @@
   animation: slideInRight 0.8s ease-out forwards;
   opacity: 0;
 }
+
+/* Banner Carousel Animations */
+@keyframes progress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+@keyframes pulse-indicator {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes slideIn {
+  0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(-100%); opacity: 0; }
+}
+
+/* Banner Carousel Utility Classes */
+.carousel-slide {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.carousel-control {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
+}
+
+.carousel-indicator {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-progress {
+  animation: progress var(--duration, 5000ms) linear;
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .carousel-slide,
+  .carousel-control,
+  .carousel-indicator,
+  .carousel-progress {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
