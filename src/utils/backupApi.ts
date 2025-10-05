@@ -354,7 +354,7 @@ export const getBackupStats = async (): Promise<BackupStats> => {
       .from('backup_files')
       .select('file_size');
 
-    const totalSize = files?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+    const totalSize = files?.reduce((sum: number, file: any) => sum + (file.file_size || 0), 0) || 0;
 
     return {
       total_jobs: totalJobs || 0,

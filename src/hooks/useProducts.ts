@@ -66,7 +66,7 @@ export const useProducts = () => {
       }
       
       // Transformar os dados para manter compatibilidade com a interface existente
-      const transformedProducts: ProductWithCategory[] = (productsData || []).map(product => ({
+      const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
         product_name: product.product_name,
         description: product.description || undefined,
@@ -283,7 +283,7 @@ export const useProductBySlug = (slug: string) => {
         if (nameError) throw nameError
 
         // Encontrar produto cujo nome convertido para slug corresponde ao slug buscado
-        const foundProduct = productsByName?.find(p => 
+        const foundProduct = productsByName?.find((p: any) => 
           generateSlug(p.product_name || '') === slug
         )
 

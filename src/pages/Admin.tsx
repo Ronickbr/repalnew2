@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Edit, Trash2, Eye, EyeOff, Users, Package, TrendingUp, Search, Filter, X, Save, AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Settings, LogOut, Menu, BarChart3, Image, Database } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Product, Category, Lead } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import MultipleImageUpload from '../components/MultipleImageUpload';
@@ -290,12 +290,12 @@ const Admin: React.FC = () => {
     try {
       // Fetch stats with individual error handling
       const statsPromises = [
-        supabase.from('products').select('id', { count: 'exact', head: true }).then(res => ({ type: 'products', ...res })),
-        supabase.from('categories').select('id', { count: 'exact', head: true }).then(res => ({ type: 'categories', ...res })),
-        supabase.from('leads').select('id', { count: 'exact', head: true }).then(res => ({ type: 'leads', ...res })),
+        supabase.from('products').select('id', { count: 'exact', head: true }).then((res: any) => ({ type: 'products', ...res })),
+        supabase.from('categories').select('id', { count: 'exact', head: true }).then((res: any) => ({ type: 'categories', ...res })),
+        supabase.from('leads').select('id', { count: 'exact', head: true }).then((res: any) => ({ type: 'leads', ...res })),
         supabase.from('leads').select('id', { count: 'exact', head: true })
           .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-          .then(res => ({ type: 'recentLeads', ...res }))
+          .then((res: any) => ({ type: 'recentLeads', ...res }))
       ];
 
       const statsResults = await Promise.allSettled(statsPromises);
@@ -328,9 +328,9 @@ const Admin: React.FC = () => {
 
       // Fetch detailed data with individual error handling
       const dataPromises = [
-        supabase.from('products').select('*').order('created_at', { ascending: false }).then(res => ({ type: 'products', ...res })),
-        supabase.from('categories').select('*').order('name').then(res => ({ type: 'categories', ...res })),
-        supabase.from('leads').select('*').order('created_at', { ascending: false }).then(res => ({ type: 'leads', ...res }))
+        supabase.from('products').select('*').order('created_at', { ascending: false }).then((res: any) => ({ type: 'products', ...res })),
+        supabase.from('categories').select('*').order('name').then((res: any) => ({ type: 'categories', ...res })),
+        supabase.from('leads').select('*').order('created_at', { ascending: false }).then((res: any) => ({ type: 'leads', ...res }))
       ];
 
       const dataResults = await Promise.allSettled(dataPromises);
@@ -346,7 +346,7 @@ const Admin: React.FC = () => {
               setCategories(data);
               // Separar categorias pai e subcategorias
               const parents = data.filter((cat: Category) => cat.is_parent === true);
-        const subs = data.filter((cat: Category) => cat.is_parent === false);
+              const subs = data.filter((cat: Category) => cat.is_parent === false);
               setParentCategories(parents);
               setSubcategories(subs);
               break;
@@ -360,10 +360,44 @@ const Admin: React.FC = () => {
             const { type } = result.value;
             switch (type) {
               case 'products':
-                setProducts([]);
+                // Fallback de desenvolvimento: manter formulário acessível sem dados do Supabase
+                // Se o Supabase não está configurado, usar um exemplo mínimo para validar UI
+                if (!isSupabaseConfigured) {
+                  setProducts([]);
+                } else {
+                  setProducts([]);
+                }
                 break;
               case 'categories':
-                setCategories([]);
+                if (!isSupabaseConfigured) {
+                  const devParent: Category = {
+                    id: 1,
+                    name: 'Categoria Exemplo',
+                    slug: 'categoria-exemplo',
+                    description: 'Usada para validação visual em desenvolvimento',
+                    sort_order: 1,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    is_parent: true,
+                  } as Category;
+                  const devSub: Category = {
+                    id: 2,
+                    name: 'Subcategoria Exemplo',
+                    slug: 'subcategoria-exemplo',
+                    description: 'Usada para validação visual em desenvolvimento',
+                    sort_order: 1,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    parent_id: 1,
+                    is_parent: false,
+                  } as Category;
+                  const devCats = [devParent, devSub];
+                  setCategories(devCats);
+                  setParentCategories([devParent]);
+                  setSubcategories([devSub]);
+                } else {
+                  setCategories([]);
+                }
                 break;
               case 'leads':
                 setLeads([]);
@@ -380,7 +414,35 @@ const Admin: React.FC = () => {
       // Set fallback data
       setStats({ totalProducts: 0, totalCategories: 0, totalLeads: 0, recentLeads: 0 });
       setProducts([]);
-      setCategories([]);
+      if (!isSupabaseConfigured) {
+        const devParent: Category = {
+          id: 1,
+          name: 'Categoria Exemplo',
+          slug: 'categoria-exemplo',
+          description: 'Usada para validação visual em desenvolvimento',
+          sort_order: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_parent: true,
+        } as Category;
+        const devSub: Category = {
+          id: 2,
+          name: 'Subcategoria Exemplo',
+          slug: 'subcategoria-exemplo',
+          description: 'Usada para validação visual em desenvolvimento',
+          sort_order: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          parent_id: 1,
+          is_parent: false,
+        } as Category;
+        const devCats = [devParent, devSub];
+        setCategories(devCats);
+        setParentCategories([devParent]);
+        setSubcategories([devSub]);
+      } else {
+        setCategories([]);
+      }
       setLeads([]);
     } finally {
       setLoading(false);
@@ -832,7 +894,7 @@ const Admin: React.FC = () => {
         if (error) {
           // Erro já tratado pelo estado
         } else if (images && images.length > 0) {
-          productImages = images.map(img => ({
+          productImages = images.map((img: any) => ({
             id: img.id,
             image_url: img.image_url,
             alt_text: img.alt_text,

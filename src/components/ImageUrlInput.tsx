@@ -167,42 +167,48 @@ const ImageUrlInput: React.FC<ImageUrlInputProps> = ({
   };
 
   const handleUrlChange = async (id: string, newUrl: string) => {
-    setUrlStates(prev => prev.map(state => 
+    // Primeiro, preparar o estado com loading enquanto valida
+    let nextStates = urlStates.map(state => 
       state.id === id 
-        ? { ...state, url: newUrl, isLoading: true, error: '', isValid: false }
+        ? { ...state, url: newUrl, isLoading: true, error: '', isValid: false, previewUrl: '' }
         : state
-    ));
+    );
 
-    if (newUrl.trim()) {
-      const validation = await validateImageUrl(newUrl);
-      
-      setUrlStates(prev => prev.map(state => 
-        state.id === id 
-          ? { 
-              ...state, 
-              isLoading: false, 
-              isValid: validation.isValid,
-              error: validation.error,
-              previewUrl: validation.isValid ? newUrl : ''
-            }
-          : state
-      ));
-    } else {
-      setUrlStates(prev => prev.map(state => 
+    // Se não há URL, finalize o estado e envie mudança vazia ou URLs válidas restantes
+    if (!newUrl.trim()) {
+      nextStates = nextStates.map(state => 
         state.id === id 
           ? { ...state, isLoading: false, isValid: false, error: '', previewUrl: '' }
           : state
-      ));
+      );
+      setUrlStates(nextStates);
+      const validUrlsEmpty = nextStates
+        .filter(s => s.url.trim() && s.isValid)
+        .map(s => s.url);
+      onChange(validUrlsEmpty);
+      return;
     }
 
-    // Notificar mudanças
-    const validUrls = urlStates
-      .map(state => state.id === id ? newUrl : state.url)
-      .filter((url, index) => {
-        const currentState = urlStates[index];
-        return url.trim() && currentState?.isValid;
-      });
-    
+    // Validar URL e atualizar o estado com base no resultado
+    const validation = await validateImageUrl(newUrl);
+    nextStates = nextStates.map(state => 
+      state.id === id 
+        ? { 
+            ...state, 
+            isLoading: false, 
+            isValid: validation.isValid,
+            error: validation.error,
+            previewUrl: validation.isValid ? newUrl : ''
+          }
+        : state
+    );
+
+    setUrlStates(nextStates);
+
+    // Notificar mudanças com base no estado atualizado
+    const validUrls = nextStates
+      .filter(s => s.url.trim() && s.isValid)
+      .map(s => s.url);
     onChange(validUrls);
   };
 
@@ -222,11 +228,12 @@ const ImageUrlInput: React.FC<ImageUrlInputProps> = ({
 
   const removeUrlField = (id: string) => {
     if (urlStates.length > 1) {
-      setUrlStates(prev => prev.filter(state => state.id !== id));
+      const nextStates = urlStates.filter(state => state.id !== id);
+      setUrlStates(nextStates);
       
-      // Atualizar URLs válidas
-      const validUrls = urlStates
-        .filter(state => state.id !== id && state.url.trim() && state.isValid)
+      // Atualizar URLs válidas com base no novo estado
+      const validUrls = nextStates
+        .filter(state => state.url.trim() && state.isValid)
         .map(state => state.url);
       onChange(validUrls);
     }

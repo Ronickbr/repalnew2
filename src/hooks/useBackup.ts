@@ -654,9 +654,9 @@ export const useBackupStats = () => {
 
       // Calcular estatísticas
       const total_backups = jobs?.length || 0;
-      const successful_backups = jobs?.filter(job => job.status === 'completed').length || 0;
-      const failed_backups = jobs?.filter(job => job.status === 'failed').length || 0;
-      const total_storage_used = files?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+      const successful_backups = jobs?.filter((job: any) => job.status === 'completed').length || 0;
+      const failed_backups = jobs?.filter((job: any) => job.status === 'failed').length || 0;
+      const total_storage_used = files?.reduce((sum: number, file: any) => sum + (file.file_size || 0), 0) || 0;
       const active_schedules = schedules?.length || 0;
       
       // Último backup com dados completos

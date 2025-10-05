@@ -27,11 +27,11 @@ const Home: React.FC = () => {
             category_id,
             categories!products_category_id_fkey(name)
           `)
-          .eq('featured', true)
-          .limit(4);
+          .eq('featured_on_homepage', true)
+          .limit(8);
 
         if (productsData) {
-          const transformedProducts = productsData.map(product => ({
+          const transformedProducts = productsData.map((product: any) => ({
             ...product,
             active: true,
             created_at: new Date().toISOString(),
@@ -173,20 +173,11 @@ const Home: React.FC = () => {
       {/* Produtos Populares Section */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-8">
+          <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-900">Produtos Populares</h2>
-            <Link
-              to="/categorias"
-              className="text-white px-6 py-2 rounded-lg font-medium transition-colors"
-              style={{backgroundColor: '#8B0000'}}
-              onMouseEnter={(e) => (e.target as HTMLElement).style.backgroundColor = '#660000'}
-              onMouseLeave={(e) => (e.target as HTMLElement).style.backgroundColor = '#8B0000'}
-            >
-              Veja todos os produtos
-            </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
             {featuredProducts.map((product) => (
               <Link
                 key={product.id}

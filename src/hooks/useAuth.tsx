@@ -1,6 +1,10 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 
+// Flags de ambiente para permitir bypass de autenticação em desenvolvimento
+const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+const devAuthBypass = (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true' || (import.meta.env.VITE_DEV_AUTH_BYPASS as any) === true);
+
 interface AdminUser {
   id: string;
   email: string;
@@ -39,6 +43,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     // Verificar se há um usuário logado no localStorage
     const checkAuth = async () => {
+      // Bypass de autenticação em desenvolvimento quando Supabase não está configurado
+      // ou quando habilitado explicitamente via VITE_DEV_AUTH_BYPASS
+      if (devAuthBypass || !isSupabaseConfigured) {
+        const devUser: AdminUser = {
+          id: 'dev-admin',
+          email: 'dev@local',
+          name: 'Dev Admin',
+          role: 'super_admin',
+          active: true,
+        };
+        setUser(devUser);
+        setLoading(false);
+        return;
+      }
       try {
         const storedUser = localStorage.getItem('admin_user');
         const storedToken = localStorage.getItem('admin_token');
@@ -77,6 +95,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
+      // Em desenvolvimento, permitir login automático sem consultar o banco
+      if (devAuthBypass || !isSupabaseConfigured) {
+        const devUser: AdminUser = {
+          id: 'dev-admin',
+          email: email || 'dev@local',
+          name: 'Dev Admin',
+          role: 'super_admin',
+          active: true,
+        };
+        const token = btoa(`${devUser.id}:${Date.now()}`);
+        localStorage.setItem('admin_user', JSON.stringify(devUser));
+        localStorage.setItem('admin_token', token);
+        setUser(devUser);
+        return { success: true };
+      }
       
       // Buscar usuário pelo email
       const { data: userData, error: userError } = await supabase

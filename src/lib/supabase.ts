@@ -3,11 +3,64 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+// Criar um stub seguro para desenvolvimento quando variáveis de ambiente faltarem,
+// evitando quebra da UI enquanto validações visuais são realizadas.
+function createSupabaseStub() {
+  const result = { data: null as any, error: new Error('Supabase não configurado (ambiente de desenvolvimento)') }
+
+  const base: any = {
+    // Suporte a Promise-like para permitir await direto na cadeia
+    then: (onFulfilled: (value: typeof result) => any, onRejected?: (reason: any) => any) => {
+      try {
+        const value = onFulfilled(result)
+        return Promise.resolve(value)
+      } catch (err) {
+        if (onRejected) return Promise.resolve(onRejected(err))
+        return Promise.resolve(undefined)
+      }
+    },
+    catch: (_onRejected: (reason: any) => any) => Promise.resolve(undefined),
+    finally: (_onFinally: () => any) => Promise.resolve(undefined),
+    single: () => builder,
+    select: () => builder,
+    insert: () => builder,
+    update: () => builder,
+    delete: () => builder,
+    eq: () => builder,
+    in: () => builder,
+    order: () => builder,
+    limit: () => builder,
+    like: () => builder,
+    ilike: () => builder,
+    neq: () => builder,
+    gte: () => builder,
+    lte: () => builder,
+    is: () => builder,
+    or: () => builder,
+  }
+
+  // Proxy para retornar o próprio builder para qualquer método encadeado não mapeado
+  const builder: any = new Proxy(base, {
+    get(target, prop) {
+      if (prop in target) return (target as any)[prop]
+      // Qualquer método não definido retorna uma função que mantém o encadeamento
+      return () => builder
+    }
+  })
+
+  const stubClient: any = {
+    from: (_table: string) => builder,
+    auth: {
+      getUser: async () => ({ data: { user: null }, error: new Error('Supabase não configurado (ambiente de desenvolvimento)') }),
+    },
+  }
+
+  return stubClient
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const isEnvConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export const isSupabaseConfigured = isEnvConfigured
+export const supabase = isEnvConfigured ? createClient(supabaseUrl!, supabaseAnonKey!) : createSupabaseStub()
 
 // Types para o banco de dados
 export interface Database {
