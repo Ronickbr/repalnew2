@@ -339,7 +339,10 @@ const Header: React.FC = () => {
                         <div className="absolute top-full left-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
                           <div className="py-2 max-h-80 overflow-y-auto scrollbar-hide">
                             <button
-                              onClick={() => handleCategoryNavigation(category.id)}
+                              onClick={() => { 
+                                handleCategoryNavigation(category.id); 
+                                setOpenDropdown(null); 
+                              }}
                               className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 font-medium transition-colors duration-200"
                               style={{minHeight: '44px'}}
                             >
@@ -350,7 +353,10 @@ const Header: React.FC = () => {
                               {category.subcategories.map((subcategory) => (
                                 <button
                                   key={subcategory.id}
-                                  onClick={() => handleCategoryNavigation(category.id, subcategory.id)}
+                                  onClick={() => { 
+                                    handleCategoryNavigation(category.id, subcategory.id); 
+                                    setOpenDropdown(null); 
+                                  }}
                                   className="w-full text-left px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200 min-h-[44px] flex items-center rounded-md mx-2"
                                   style={{width: 'calc(100% - 1rem)'}}
                                 >
@@ -407,7 +413,10 @@ const Header: React.FC = () => {
                             <div className="w-1/2 py-2 border-r border-gray-200">
                               <div className="max-h-96 overflow-y-auto scrollbar-hide">
                                 <button
-                                  onClick={() => handleCategoryNavigation(category.id)}
+                                  onClick={() => { 
+                                    handleCategoryNavigation(category.id); 
+                                    setOpenDropdown(null); 
+                                  }}
                                   className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 font-medium transition-colors duration-200 sticky top-0 bg-white border-b border-gray-100"
                                   style={{minHeight: '44px'}}
                                 >
@@ -417,7 +426,10 @@ const Header: React.FC = () => {
                                   {category.subcategories.map((subcategory) => (
                                     <button
                                       key={subcategory.id}
-                                      onClick={() => handleCategoryNavigation(category.id, subcategory.id)}
+                                      onClick={() => { 
+                                        handleCategoryNavigation(category.id, subcategory.id); 
+                                        setOpenDropdown(null); 
+                                      }}
                                       className="w-full text-left px-4 py-3 text-sm text-gray-600 hover:bg-gray-100 transition-all duration-200 min-h-[44px] flex items-center rounded-md mx-2"
                                       style={{width: 'calc(100% - 1rem)'}}
                                     >
