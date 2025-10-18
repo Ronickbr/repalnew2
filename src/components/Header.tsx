@@ -4,7 +4,6 @@ import {
   Menu, 
   Phone, 
   Mail, 
-  ChevronDown,
   Settings,
   Snowflake,
   ChefHat,
@@ -304,7 +303,7 @@ const Header: React.FC = () => {
       {/* Categories Section - Positioned above visual effects */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4 xl:px-8">
-          <div className="py-1 sm:py-2 lg:py-3">
+          <div className="py-1 sm:py-1 lg:py-2">
             {/* Mobile Categories - Toggle Visibility */}
             <div className={`block sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
               isMobileCategoriesOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
@@ -319,7 +318,7 @@ const Header: React.FC = () => {
                   return (
                     <div key={category.id} className="relative dropdown-container">
                       <button
-                        className={`flex items-center space-x-3 p-3 text-red-600 hover:text-red-700 hover:bg-white rounded-lg transition-all duration-300 cursor-pointer group w-full min-h-[44px] hover:shadow-md ${
+                        className={`flex items-center space-x-3 p-2 text-red-600 hover:text-red-700 hover:bg-white rounded-lg transition-all duration-300 cursor-pointer group w-full min-h-[40px] hover:shadow-md ${
                           index < categories.length - 1 ? 'border-b border-gray-100' : ''
                         }`}
                         onClick={(e) => {
@@ -330,7 +329,7 @@ const Header: React.FC = () => {
                           setOpenDropdown(newDropdownState);
                         }}
                       >
-                        <IconComponent className="h-5 w-5 flex-shrink-0" />
+                        <IconComponent className="h-4 w-4 flex-shrink-0" />
                         <span className="text-sm font-medium text-left flex-1">{category.name}</span>
                       </button>
                       
@@ -375,7 +374,7 @@ const Header: React.FC = () => {
 
             {/* Tablet and Desktop: Grid layout */}
             <div className="hidden sm:block">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1 sm:gap-2 lg:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1 sm:gap-1 lg:gap-2">
                 {categoriesLoading ? (
                   <div className="col-span-full flex items-center justify-center p-4">
                     <div className="text-sm text-gray-500">Carregando categorias...</div>
@@ -385,7 +384,7 @@ const Header: React.FC = () => {
                   return (
                     <div key={category.id} className="relative dropdown-container">
                       <button
-                        className="flex flex-col items-center space-y-1 sm:space-y-2 p-2 sm:p-3 text-red-600 hover:text-red-700 hover:bg-white rounded-lg transition-all duration-300 cursor-pointer group w-full min-h-[60px] sm:min-h-[70px] lg:min-h-[80px] hover:shadow-md"
+                        className="flex flex-col items-center space-y-1 p-2 sm:p-2 text-red-600 hover:text-red-700 hover:bg-white rounded-lg transition-all duration-300 cursor-pointer group w-full min-h-[50px] sm:min-h-[55px] lg:min-h-[60px] hover:shadow-md"
                         onClick={(e) => {
                           const newDropdownState = openDropdown === category.id ? null : category.id;
                           if (newDropdownState) {
@@ -394,11 +393,8 @@ const Header: React.FC = () => {
                           setOpenDropdown(newDropdownState);
                         }}
                       >
-                        <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 xl:h-8 xl:w-8" />
+                        <IconComponent className="h-5 w-5 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7" />
                         <span className="text-xs sm:text-xs lg:text-sm font-medium text-center leading-tight px-1">{category.name}</span>
-                        <ChevronDown className={`h-3 w-3 transition-transform duration-200 group-hover:rotate-180 ${
-                          openDropdown === category.id ? 'rotate-180' : ''
-                        }`} />
                       </button>
                       
                       {/* Desktop Dropdown Menu - Layout de Duas Colunas */}
