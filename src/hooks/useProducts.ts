@@ -8,7 +8,6 @@ let cacheTimestamp: number = 0
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
 
 export const useProducts = () => {
-  console.log('🚀 useProducts: Hook inicializado!')
   const [products, setProducts] = useState<ProductWithCategory[]>(productsCache || [])
   const [isLoading, setIsLoading] = useState(!productsCache)
   const [error, setError] = useState<string | null>(null)
@@ -17,14 +16,12 @@ export const useProducts = () => {
     // Verificar se o cache ainda é válido
     const now = Date.now()
     if (productsCache && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log('📦 useProducts: Usando dados do cache')
       setProducts(productsCache)
       setIsLoading(false)
       return
     }
 
     try {
-      console.log('📡 useProducts: Iniciando requisição ao Supabase...');
       setIsLoading(true);
       setError(null);
       
@@ -57,11 +54,7 @@ export const useProducts = () => {
         `)
         .eq('active', true);
       
-      console.log('📊 useProducts: Resposta do Supabase:', { data: productsData, error: productsError });
-      console.log('📈 useProducts: Número de produtos encontrados:', productsData?.length || 0);
-      
       if (productsError) {
-        console.error('❌ useProducts: Erro ao buscar produtos:', productsError);
         throw new Error(`Falha ao carregar produtos: ${productsError.message}`);
       }
       
@@ -96,21 +89,15 @@ export const useProducts = () => {
       productsCache = transformedProducts
       cacheTimestamp = now
       
-      console.log('🔄 useProducts: Produtos transformados:', transformedProducts.length);
-      console.log('📋 useProducts: Primeiros 3 produtos:', transformedProducts.slice(0, 3));
       setProducts(transformedProducts);
     } catch (err) {
-      console.error('💥 useProducts: Erro inesperado:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      // Erro já tratado pelo estado de error
     } finally {
       setIsLoading(false);
-      console.log('✅ useProducts: Busca finalizada');
     }
   }, []);
 
   useEffect(() => {
-    console.log('🔄 useProducts: Iniciando busca de produtos...');
     fetchProducts();
   }, [fetchProducts]);
 

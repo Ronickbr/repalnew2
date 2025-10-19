@@ -95,9 +95,17 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                 <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
                   {result.product_images && result.product_images.length > 0 ? (
                     <img 
-                      src={result.product_images[0].image_url} 
+                      src={
+                        result.product_images?.[0]?.image_url || 
+                        result.image_url || 
+                        '/placeholder-product.jpg'
+                      }
                       alt={result.product_name}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/placeholder-product.jpg';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

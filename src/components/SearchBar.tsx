@@ -23,8 +23,6 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
   buttonStyle,
   iconClassName
 }) => {
-  console.log('🔍 SearchBar: Componente renderizado!');
-  console.log('🔍 SearchBar: Props recebidas:', { placeholder, className, isMobile });
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -129,6 +127,13 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
     const value = e.target.value;
     setQuery(value);
     setSelectedIndex(-1);
+    
+    // Abrir dropdown se há texto suficiente
+    if (value.length >= 3) {
+      setIsDropdownOpen(true);
+    } else {
+      setIsDropdownOpen(false);
+    }
   }, []);
   
   // Foco no input

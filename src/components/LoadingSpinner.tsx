@@ -39,9 +39,10 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = memo(({
 
   const spinner = (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
-      <div className={`relative ${sizeClasses[size]}`}>
-        {/* Chapéu de Chef estático no fundo */}
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Container principal com overflow-visible para não cortar o chapéu escalonado */}
+      <div className={`relative ${sizeClasses[size]} overflow-visible`}>
+        {/* Chapéu de Chef escalonado para 2x o tamanho */}
+        <div className="absolute inset-0 flex items-center justify-center scale-[2]">
           <ChefHat className={`w-full h-full ${variantClasses[variant]}`} />
         </div>
         {/* Talheres girando sobre o chapéu */}

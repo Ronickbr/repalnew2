@@ -6,15 +6,12 @@ import type { ProductWithCategory } from '../types/product';
 export type SearchResult = ProductWithCategory;
 
 export const useProductSearch = (query: string) => {
-  console.log('🔍 useProductSearch: Hook inicializado com query:', query);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   
   const debouncedQuery = useDebounce(query, 300);
   const { data: products, isLoading: productsLoading } = useProducts();
-  
-  console.log('🔍 useProductSearch: Produtos recebidos do useProducts:', products?.length || 0, 'loading:', productsLoading);
   
   // Função para filtrar produtos baseado na query
   const filteredProducts = useMemo(() => {
@@ -30,16 +27,38 @@ export const useProductSearch = (query: string) => {
     
     return products
       .filter(product => {
+        // Verificar se o produto está ativo e não desabilitado
+        if (product.is_disabled) return false;
+        
         const productName = product.product_name?.toLowerCase() || ''
-        const categoryName = product.categories?.name?.toLowerCase() || ''
+        const description = product.description?.toLowerCase() || ''
+        const benefits = product.benefits?.toLowerCase() || ''
+        
+        // Verificar categoria (suporta tanto 'category' quanto 'categories')
+        const categoryName = (product.category?.name || product.categories?.name || '').toLowerCase()
         const subcategoryName = product.subcategory?.name?.toLowerCase() || ''
         
         return productName.includes(searchTerm) || 
+               description.includes(searchTerm) ||
+               benefits.includes(searchTerm) ||
                categoryName.includes(searchTerm) ||
                subcategoryName.includes(searchTerm)
       })
       .slice(0, 10) // Limitar a 10 resultados
-      .map(product => product as SearchResult)
+      .map(product => {
+        // Garantir que o produto tenha a estrutura correta para o SearchDropdown
+        return {
+          ...product,
+          slug: product.slug || `produto-${product.id}`,
+          product_images: product.product_images || (product.image_url ? [{
+            id: '1',
+            product_id: product.id,
+            image_url: product.image_url,
+            sort_order: 1,
+            created_at: new Date().toISOString()
+          }] : [])
+        } as SearchResult
+      })
   }, [debouncedQuery, products])
   
   // Efeito para atualizar resultados e estados
