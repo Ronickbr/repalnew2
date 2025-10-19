@@ -4,12 +4,14 @@ import {
   Menu, 
   Phone, 
   Mail, 
-  Settings,
   Snowflake,
   ChefHat,
   Beef,
   Utensils,
-  Building
+  Container,
+  Wrench,
+  UtensilsCrossed,
+  Hamburger
 } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useFeaturedProductByCategory } from '../hooks/useProducts';
@@ -58,12 +60,12 @@ const Header: React.FC = () => {
   const getCategoryIcon = (slug: string) => {
     const iconMap: { [key: string]: any } = {
       'refrigeracao-comercial': Snowflake,
-      'equipamentos-bares-restaurantes': Utensils,
+      'equipamentos-bares-restaurantes': Hamburger,
       'padaria-confeitaria': ChefHat,
       'acougue': Beef,
-      'utensilios-utilidades': Utensils,
-      'mobiliario-inox': Building,
-      'pecas-componentes-refrigeracao': Settings
+      'utensilios-utilidades': UtensilsCrossed,
+      'mobiliario-inox': Container,
+      'pecas-refrigeracao': Wrench
     };
     return iconMap[slug] || Utensils;
   };
@@ -374,7 +376,7 @@ const Header: React.FC = () => {
 
             {/* Tablet and Desktop: Grid layout */}
             <div className="hidden sm:block">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-1 sm:gap-1 lg:gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-0.5 sm:gap-0.5 lg:gap-1">
                 {categoriesLoading ? (
                   <div className="col-span-full flex items-center justify-center p-4">
                     <div className="text-sm text-gray-500">Carregando categorias...</div>
@@ -384,7 +386,7 @@ const Header: React.FC = () => {
                   return (
                     <div key={category.id} className="relative dropdown-container">
                       <button
-                        className="flex flex-col items-center space-y-1 p-2 sm:p-2 text-red-600 hover:text-red-700 hover:bg-white rounded-lg transition-all duration-300 cursor-pointer group w-full min-h-[50px] sm:min-h-[55px] lg:min-h-[60px] hover:shadow-md"
+                        className="flex flex-col items-center space-y-0.5 p-1 sm:p-1.5 text-red-600 hover:text-red-700 hover:bg-white rounded-lg transition-all duration-300 cursor-pointer group w-full min-h-[45px] sm:min-h-[48px] lg:min-h-[50px] hover:shadow-md"
                         onClick={(e) => {
                           const newDropdownState = openDropdown === category.id ? null : category.id;
                           if (newDropdownState) {
@@ -393,8 +395,8 @@ const Header: React.FC = () => {
                           setOpenDropdown(newDropdownState);
                         }}
                       >
-                        <IconComponent className="h-5 w-5 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7" />
-                        <span className="text-xs sm:text-xs lg:text-sm font-medium text-center leading-tight px-1">{category.name}</span>
+                        <IconComponent className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6" />
+                        <span className="text-xs sm:text-xs lg:text-xs font-medium text-center leading-tight px-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">{category.name}</span>
                       </button>
                       
                       {/* Desktop Dropdown Menu - Layout de Duas Colunas */}

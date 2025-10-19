@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Loader2 } from 'lucide-react';
+import { ChefHat, UtensilsCrossed } from 'lucide-react';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -16,11 +16,12 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = memo(({
   className = '',
   fullScreen = false
 }) => {
+  // Aumentei ligeiramente os tamanhos padrão para os ícones de cozinha ficarem mais visíveis
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
-    xl: 'w-12 h-12'
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20'
   };
 
   const variantClasses = {
@@ -38,9 +39,16 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = memo(({
 
   const spinner = (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
-      <Loader2 
-        className={`animate-spin ${sizeClasses[size]} ${variantClasses[variant]}`}
-      />
+      <div className={`relative ${sizeClasses[size]}`}>
+        {/* Chapéu de Chef estático no fundo */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <ChefHat className={`w-full h-full ${variantClasses[variant]}`} />
+        </div>
+        {/* Talheres girando sobre o chapéu */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <UtensilsCrossed className={`w-3/5 h-3/5 ${variantClasses[variant]} animate-spin`} />
+        </div>
+      </div>
       {text && (
         <p className={`${textSizeClasses[size]} ${variantClasses[variant]} font-medium`}>
           {text}
