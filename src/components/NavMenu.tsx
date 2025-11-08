@@ -20,28 +20,6 @@ const fallbackCategories = [
     ]
   },
   {
-    id: 2,
-    name: 'Refrigeração Comercial',
-    slug: 'refrigeracao-comercial',
-    icon: 'Snowflake',
-    subcategories: [
-      { id: 21, name: 'Freezers Horizontais', slug: 'freezers-horizontais' },
-      { id: 22, name: 'Geladeiras Comerciais', slug: 'geladeiras-comerciais' },
-      { id: 23, name: 'Expositores', slug: 'expositores' }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Padaria e Confeitaria',
-    slug: 'padaria-e-confeitaria',
-    icon: 'ChefHat',
-    subcategories: [
-      { id: 31, name: 'Fogões Industriais', slug: 'fogoes-industriais' },
-      { id: 32, name: 'Fornos Comerciais', slug: 'fornos-comerciais' },
-      { id: 33, name: 'Fritadeiras', slug: 'fritadeiras' }
-    ]
-  },
-  {
     id: 4,
     name: 'Bar e Restaurante',
     slug: 'bar-e-restaurante',
@@ -50,17 +28,6 @@ const fallbackCategories = [
       { id: 41, name: 'Máquinas de Café', slug: 'maquinas-de-cafe' },
       { id: 42, name: 'Liquidificadores Comerciais', slug: 'liquidificadores-comerciais' },
       { id: 43, name: 'Processadores de Alimentos', slug: 'processadores-de-alimentos' }
-    ]
-  },
-  {
-    id: 5,
-    name: 'Utilidades Domesticas',
-    slug: 'utilidades-domesticas',
-    icon: 'UtensilsCrossed',
-    subcategories: [
-      { id: 51, name: 'Liquidificadores', slug: 'liquidificadores' },
-      { id: 52, name: 'Processadores', slug: 'processadores' },
-      { id: 53, name: 'Acessórios', slug: 'acessorios' }
     ]
   },
   {
@@ -74,6 +41,17 @@ const fallbackCategories = [
       { id: 63, name: 'Acessórios', slug: 'acessorios' }
     ]
   },
+   {
+    id: 3,
+    name: 'Padaria e Confeitaria',
+    slug: 'padaria-e-confeitaria',
+    icon: 'ChefHat',
+    subcategories: [
+      { id: 31, name: 'Fogões Industriais', slug: 'fogoes-industriais' },
+      { id: 32, name: 'Fornos Comerciais', slug: 'fornos-comerciais' },
+      { id: 33, name: 'Fritadeiras', slug: 'fritadeiras' }
+    ]
+  },
   {
     id: 7,
     name: 'Peças para Refrigeração',
@@ -83,6 +61,28 @@ const fallbackCategories = [
       { id: 71, name: 'Compressores', slug: 'compressores' },
       { id: 72, name: 'Termostatos', slug: 'termostatos' },
       { id: 73, name: 'Ventiladores', slug: 'ventiladores' }
+    ]
+  },
+  {
+    id: 2,
+    name: 'Refrigeração Comercial',
+    slug: 'refrigeracao-comercial',
+    icon: 'Snowflake',
+    subcategories: [
+      { id: 21, name: 'Freezers Horizontais', slug: 'freezers-horizontais' },
+      { id: 22, name: 'Geladeiras Comerciais', slug: 'geladeiras-comerciais' },
+      { id: 23, name: 'Expositores', slug: 'expositores' }
+    ]
+  },
+  {
+    id: 5,
+    name: 'Utilidades Domesticas',
+    slug: 'utilidades-domesticas',
+    icon: 'UtensilsCrossed',
+    subcategories: [
+      { id: 51, name: 'Liquidificadores', slug: 'liquidificadores' },
+      { id: 52, name: 'Processadores', slug: 'processadores' },
+      { id: 53, name: 'Acessórios', slug: 'acessorios' }
     ]
   }
 ];
