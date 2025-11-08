@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -6,10 +7,10 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import CategoryProducts from './pages/CategoryProducts';
 import ProductDetail from './pages/ProductDetail';
-import Contact from './pages/Contact';
-import About from './pages/About';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
+import UserProfile from './pages/UserProfile';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppStoreSelector from './components/WhatsAppStoreSelector';
 import { AuthProvider } from './hooks/useAuth';
@@ -31,10 +32,17 @@ function App() {
               <Route path="categorias/:categorySlug" element={<CategoryProducts />} />
               <Route path="categorias/:categorySlug/:subcategorySlug" element={<CategoryProducts />} />
               <Route path="produto/:slug" element={<ProductDetail />} />
-              <Route path="sobre" element={<About />} />
-              <Route path="contato" element={<Contact />} />
-            </Route>
-            <Route path="/login" element={<Login />} />
+          </Route>
+          <Route path="/login" element={<Login />} />
+
+            <Route 
+              path="/perfil" 
+              element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/admin" 
               element={
