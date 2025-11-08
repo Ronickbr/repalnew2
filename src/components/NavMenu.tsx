@@ -321,7 +321,7 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
                   {category.subcategories?.map((subcategory, index) => (
                     <Link
                       key={subcategory.id}
-                      to={`/categoria/${category.slug}/${subcategory.slug}`}
+                      to={`/categorias/${category.slug}/${subcategory.slug}`}
                       className="block px-3 py-2 text-sm text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 rounded-md transition-colors duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-opacity-50"
                       onClick={() => {
                         setOpenDropdown(null);
@@ -387,7 +387,7 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
               {categories.map((category) => (
                 <Link
                   key={category.id}
-                  to={`/categoria/${category.slug}`}
+                  to={`/categorias/${category.slug}`}
                   className="flex items-center space-x-3 p-3 text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 rounded-md transition-colors duration-200"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
