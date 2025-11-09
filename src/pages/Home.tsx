@@ -93,10 +93,10 @@ const Home: React.FC = () => {
                     {product.product_name}
                   </h3>
                   <p className="text-gray-600 mb-4">Equipamento profissional para seu negócio.</p>
-                  <div className="flex items-center justify-between">
+                  <div className="space-y-3">
                     <Link
                       to={`/produto/${product.slug}`}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                      className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
                     >
                       Ver Detalhes
                     </Link>
@@ -106,7 +106,7 @@ const Home: React.FC = () => {
                         name: product.product_name,
                         image: product.image_url
                       })}
-                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                      className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
                     >
                       Incluir na Lista
                     </button>
