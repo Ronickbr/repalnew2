@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
-import { MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Star, Shield, Truck, Award, Clock, X, ZoomIn } from 'lucide-react'
+import { MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Star, Shield, Truck, Award, Clock, X, ZoomIn, Plus, Check } from 'lucide-react'
 import { useProductBySlug } from '../hooks/useProducts'
 import WhatsAppButton from '../components/WhatsAppButton'
+import { useBudget } from '../contexts/BudgetContext'
 
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
@@ -10,6 +11,8 @@ const ProductDetail: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
+  const { state: budgetState, addItem } = useBudget()
+  const [isAddedToBudget, setIsAddedToBudget] = useState(false)
   
   // Close modal on escape key
   React.useEffect(() => {
@@ -28,6 +31,14 @@ const ProductDetail: React.FC = () => {
       document.body.style.overflow = 'unset'
     }
   }, [])
+
+  // Verificar se o produto já está na lista de orçamento
+  React.useEffect(() => {
+    if (product) {
+      const isInBudget = budgetState.items.some(item => item.id === product.id)
+      setIsAddedToBudget(isInBudget)
+    }
+  }, [product, budgetState.items])
 
   if (loading) {
     return (
@@ -91,6 +102,17 @@ const ProductDetail: React.FC = () => {
 
   const prevModalImage = () => {
     setModalImageIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  const addToBudget = () => {
+    if (product) {
+      addItem({
+        id: product.id,
+        name: product.product_name,
+        image: product.product_images?.[0]?.image_url || product.image_url
+      })
+      setIsAddedToBudget(true)
+    }
   }
 
   return (
@@ -361,20 +383,27 @@ const ProductDetail: React.FC = () => {
               </WhatsAppButton>
               
               <div className="grid grid-cols-1 gap-4">
-                {product.category && typeof product.category === 'object' && product.category.slug ? (
-                  <Link
-                    to={`/categorias/${product.category.slug}`}
-                    className="border-2 border-[#8B0000] text-[#8B0000] py-3 px-4 rounded-xl font-bold hover:bg-[#8B0000] hover:text-white transition-all duration-300 text-center shadow-md hover:shadow-lg hover:scale-105 transform flex items-center justify-center space-x-2"
-                  >
-                    <Star className="h-4 w-4" />
-                    <span>Ver Similares</span>
-                  </Link>
-                ) : (
-                  <div className="border-2 border-gray-300 text-gray-400 py-3 px-4 rounded-xl font-bold text-center cursor-not-allowed flex items-center justify-center space-x-2">
-                    <Star className="h-4 w-4" />
-                    <span>Categoria não disponível</span>
-                  </div>
-                )}
+                <button
+                  onClick={addToBudget}
+                  disabled={isAddedToBudget}
+                  className={`py-3 px-4 rounded-xl font-bold transition-all duration-300 text-center shadow-md hover:shadow-lg hover:scale-105 transform flex items-center justify-center space-x-2 ${
+                    isAddedToBudget
+                      ? 'bg-green-600 text-white cursor-not-allowed'
+                      : 'border-2 border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000] hover:text-white'
+                  }`}
+                >
+                  {isAddedToBudget ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Adicionado à Lista</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      <span>Incluir na Lista</span>
+                    </>
+                  )}
+                </button>
               </div>
               
               <div className="mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
