@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import type { ProductWithCategory } from '../types/product'
 
 // Cache global para evitar múltiplas requisições
@@ -8,6 +8,9 @@ let cacheTimestamp: number = 0
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutos
 
 export const useProducts = () => {
+  console.log('📦 useProducts: Iniciando busca de produtos...')
+  console.log('📦 useProducts: Supabase configurado?', supabase)
+  
   const [products, setProducts] = useState<ProductWithCategory[]>(productsCache || [])
   const [isLoading, setIsLoading] = useState(!productsCache)
   const [error, setError] = useState<string | null>(null)
@@ -24,6 +27,9 @@ export const useProducts = () => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      console.log('📦 fetchProducts: Iniciando busca de produtos...')
+      console.log('📦 fetchProducts: Supabase configurado?', isSupabaseConfigured)
       
       // Buscar produtos com join duplo na tabela categories para obter categoria e subcategoria
       const { data: productsData, error: productsError } = await supabase
@@ -53,6 +59,8 @@ export const useProducts = () => {
           )
         `)
         .eq('active', true);
+      
+      console.log('📦 fetchProducts: Resultado da busca - data:', productsData?.length, 'error:', productsError)
       
       if (productsError) {
         throw new Error(`Falha ao carregar produtos: ${productsError.message}`);
@@ -154,7 +162,12 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
   const { data: allProducts, isLoading, error } = useProducts()
   
   const featuredProduct = useMemo(() => {
-    if (!allProducts) return null
+    console.log('🎯 useFeaturedProductByCategory: Iniciando busca para categoria', categoryId, 'tipo:', typeof categoryId)
+    
+    if (!allProducts) {
+      console.log('🎯 useFeaturedProductByCategory: allProducts é null')
+      return null
+    }
     
     console.log('🎯 useFeaturedProductByCategory: Filtrando produtos em destaque para categoria', categoryId)
     console.log('📦 useFeaturedProductByCategory: Total de produtos disponíveis:', allProducts.length)
@@ -168,22 +181,30 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
     
     // Filtrar produtos que pertencem à categoria E têm featured_in_dropdown=true
     const featuredProducts = allProducts.filter(product => {
+      console.log(`🔍 Processando produto: ${product.product_name}`)
+      console.log(`   - category.id: ${product.category?.id} (tipo: ${typeof product.category?.id})`)
+      console.log(`   - category.slug: ${product.category?.slug}`)
+      console.log(`   - featured_in_dropdown: ${product.featured_in_dropdown}`)
+      
       // Se categoryId for string (slug), filtrar por category.slug
       if (typeof categoryId === 'string') {
         const match = product.category?.slug === categoryId
-        console.log(`🔍 Verificando ${product.product_name}: slug=${product.category?.slug} vs ${categoryId} = ${match}, featured=${product.featured_in_dropdown}`)
+        console.log(`   - Comparação slug: ${product.category?.slug} === ${categoryId} = ${match}`)
         return match && product.featured_in_dropdown === true
       }
       
       // Se categoryId for number (id), filtrar por category.id
-      const match = product.category?.id === String(categoryId)
-      console.log(`🔍 Verificando ${product.product_name}: id=${product.category?.id} vs ${categoryId} = ${match}, featured=${product.featured_in_dropdown}`)
+      const categoryIdStr = String(categoryId)
+      const match = product.category?.id === categoryIdStr
+      console.log(`   - Comparação id: ${product.category?.id} === ${categoryIdStr} = ${match}`)
       return match && product.featured_in_dropdown === true
     })
     
-    console.log('⭐ useFeaturedProductByCategory: Produtos featured encontrados:', featuredProducts.length)
+    console.log('⭐ useFeaturedProductByCategory: Produtos featured encontrados para categoria', categoryId, ':', featuredProducts.length)
     if (featuredProducts.length > 0) {
-      console.log('✅ Produto em destaque selecionado:', featuredProducts[0].product_name)
+      console.log('✅ Produto em destaque selecionado para categoria', categoryId, ':', featuredProducts[0].product_name)
+    } else {
+      console.log('⚠️ Nenhum produto featured encontrado para categoria', categoryId)
     }
     
     // Retornar o primeiro produto featured ou null se não houver
@@ -366,6 +387,45 @@ export const useFeaturedDropdownProducts = () => {
     
     return filtered
   }, [allProducts])
+  
+  return useMemo(() => ({
+    data: featuredProducts,
+    isLoading,
+    error
+  }), [featuredProducts, isLoading, error])
+}
+
+// Hook para buscar todos os produtos featured de uma categoria específica
+export const useFeaturedProductsByCategory = (categoryId: string | number) => {
+  const { data: allProducts, isLoading, error } = useProductsByCategory(categoryId)
+  
+  const featuredProducts = useMemo(() => {
+    if (!allProducts) return []
+    
+    console.log('🎯 useFeaturedProductsByCategory: Filtrando produtos featured da categoria', categoryId)
+    console.log('📦 Total de produtos na categoria:', allProducts.length)
+    
+    // Filtrar apenas produtos com featured_in_dropdown=true e ativos
+    const filtered = allProducts.filter(product => {
+      const isFeatured = product.featured_in_dropdown === true
+      const isActive = product.active === true
+      const isNotDisabled = !product.is_disabled
+      
+      console.log('🏷️ Produto:', product.product_name, {
+        featured_in_dropdown: product.featured_in_dropdown,
+        active: product.active,
+        is_disabled: product.is_disabled,
+        incluir: isFeatured && isActive && isNotDisabled
+      })
+      
+      return isFeatured && isActive && isNotDisabled
+    })
+    
+    console.log('✅ Produtos featured encontrados:', filtered.length)
+    console.log('📋 Produtos:', filtered.map(p => p.product_name))
+    
+    return filtered
+  }, [allProducts, categoryId])
   
   return useMemo(() => ({
     data: featuredProducts,
