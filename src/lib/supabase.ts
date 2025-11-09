@@ -259,6 +259,16 @@ export interface Product {
   subcategory?: Category;
   images?: ProductImage[];
   product_images?: ProductImage[];
+  // Additional properties for admin
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  short_description?: string;
+  key_features?: string;
+  model?: string;
+  sku_code?: string;
+  brand?: string;
+  technical_specifications?: string;
 }
 
 export interface ProductImage {

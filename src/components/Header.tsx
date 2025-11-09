@@ -19,12 +19,16 @@ import { useAuth } from '../hooks/useAuth';
 import SearchBar from './SearchBar';
 import { useCategories } from '../hooks/useCategories';
 import NavMenu from './NavMenu';
+import { useBudget } from '../contexts/BudgetContext';
+import SideQuoteList from './SideQuoteList';
 
 const Header: React.FC = () => {
   const { siteName, contactPhone, contactEmail } = useSiteSettings();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { state: budgetState } = useBudget();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSideQuoteList, setShowSideQuoteList] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Carregar categorias do banco de dados
@@ -295,12 +299,15 @@ const Header: React.FC = () => {
             <button 
               className="p-2 text-white hover:text-gray-200 transition-colors duration-200 relative"
               title="Meu Orçamento"
+              onClick={() => setShowSideQuoteList(true)}
             >
               <List className="h-5 w-5 lg:h-6 lg:w-6" />
               {/* Badge para mostrar quantidade de itens no orçamento */}
-              <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                0
-              </span>
+              {budgetState.totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                  {budgetState.totalItems > 99 ? '99+' : budgetState.totalItems}
+                </span>
+              )}
             </button>
           </div>
 
@@ -317,6 +324,12 @@ const Header: React.FC = () => {
         </div>
       </div>
     </header>
+    
+    {/* Side Quote List */}
+    <SideQuoteList 
+      isOpen={showSideQuoteList}
+      onClose={() => setShowSideQuoteList(false)}
+    />
     </>
   );
 };

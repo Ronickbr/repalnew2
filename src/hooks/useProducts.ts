@@ -154,24 +154,37 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
   const { data: allProducts, isLoading, error } = useProducts()
   
   const featuredProduct = useMemo(() => {
-    if (!allProducts || !categoryId) return null
+    if (!allProducts) return null
     
-    console.log('⭐ useFeaturedProductByCategory: Buscando produto featured para categoria:', categoryId)
+    console.log('🎯 useFeaturedProductByCategory: Filtrando produtos em destaque para categoria', categoryId)
+    console.log('📦 useFeaturedProductByCategory: Total de produtos disponíveis:', allProducts.length)
     
-    // Filtrar produtos featured_in_dropdown para a categoria específica
+    // Verificar todos os produtos com featured_in_dropdown=true (para debug)
+    const allFeaturedProducts = allProducts.filter(product => product.featured_in_dropdown === true)
+    console.log('🔍 Todos os produtos com featured_in_dropdown=true:', allFeaturedProducts.length)
+    allFeaturedProducts.forEach(p => {
+      console.log(`  - ${p.product_name}: categoria=${p.category?.name} (${p.category?.id}), slug=${p.category?.slug}`)
+    })
+    
+    // Filtrar produtos que pertencem à categoria E têm featured_in_dropdown=true
     const featuredProducts = allProducts.filter(product => {
-      if (!product.featured_in_dropdown) return false
-      
       // Se categoryId for string (slug), filtrar por category.slug
       if (typeof categoryId === 'string') {
-        return product.category?.slug === categoryId
+        const match = product.category?.slug === categoryId
+        console.log(`🔍 Verificando ${product.product_name}: slug=${product.category?.slug} vs ${categoryId} = ${match}, featured=${product.featured_in_dropdown}`)
+        return match && product.featured_in_dropdown === true
       }
       
       // Se categoryId for number (id), filtrar por category.id
-       return product.category?.id === String(categoryId)
+      const match = product.category?.id === String(categoryId)
+      console.log(`🔍 Verificando ${product.product_name}: id=${product.category?.id} vs ${categoryId} = ${match}, featured=${product.featured_in_dropdown}`)
+      return match && product.featured_in_dropdown === true
     })
     
     console.log('⭐ useFeaturedProductByCategory: Produtos featured encontrados:', featuredProducts.length)
+    if (featuredProducts.length > 0) {
+      console.log('✅ Produto em destaque selecionado:', featuredProducts[0].product_name)
+    }
     
     // Retornar o primeiro produto featured ou null se não houver
     return featuredProducts.length > 0 ? featuredProducts[0] : null

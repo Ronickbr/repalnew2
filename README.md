@@ -33,6 +33,7 @@ Site institucional da Repal Equipamentos, especializada em equipamentos para coz
 - ✅ Gestão de categorias
 - ✅ Gestão de leads com status
 - ✅ Interface intuitiva
+- ✅ **Geração de conteúdo com IA** (Gemini API) - Gera descrições, especificações técnicas e SEO automaticamente
 
 ## 🛠️ Configuração do Ambiente
 
@@ -62,6 +63,9 @@ VITE_COMPANY_NAME=Repal Equipamentos
 VITE_COMPANY_EMAIL=contato@repalequipamentos.com.br
 VITE_COMPANY_PHONE=(11) 99999-9999
 VITE_COMPANY_ADDRESS=São Paulo, SP
+
+# Google Gemini API (opcional - para geração de conteúdo com IA)
+VITE_GEMINI_API_KEY=sua_chave_do_gemini_aqui
 ```
 
 ### 3. Configuração do Supabase
@@ -159,6 +163,37 @@ O site é totalmente responsivo com breakpoints:
 - Validação de dados no frontend e backend
 - Sanitização de inputs
 - Headers de segurança configurados no Nginx
+
+## 🤖 Funcionalidade de IA - Geração de Conteúdo
+
+O sistema possui uma funcionalidade integrada de geração de conteúdo com IA que utiliza a API do Google Gemini para criar automaticamente:
+
+### Conteúdo Gerado
+- **Descrição Detalhada**: Texto persuasivo com mínimo 500 caracteres
+- **Descrição Curta**: Resumo impactante em 1-2 frases
+- **Principais Características**: Lista dos 5 principais diferenciais
+- **Especificações Técnicas**: Lista detalhada com mínimo 8 itens
+- **Dados do Produto**: Modelo e código SKU sugeridos
+- **SEO Completo**: Meta title, meta description e palavras-chave otimizadas
+
+### Como Usar
+1. Acesse o painel administrativo
+2. Crie ou edite um produto
+3. Clique no botão "✨ Gerar com IA" ao lado do campo de descrição
+4. Aguarde o processamento (indicador de loading)
+5. O conteúdo será gerado e preenchido automaticamente nos campos apropriados
+6. Revise e edite conforme necessário antes de salvar
+
+### Configuração
+1. Obtenha uma chave de API do Google Gemini em: https://makersuite.google.com/app/apikey
+2. Adicione a chave ao arquivo `.env` como `VITE_GEMINI_API_KEY`
+3. A funcionalidade estará disponível automaticamente no formulário de produtos
+
+### Observações
+- A API do Gemini é gratuita até certo limite de uso mensal
+- O conteúdo gerado deve ser revisado antes da publicação
+- A funcionalidade é opcional - o sistema funcionará normalmente sem a chave API
+- Em caso de erro na API, o sistema usará conteúdo padrão estruturado
 
 ## 🚀 Deploy
 

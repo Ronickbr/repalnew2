@@ -4,6 +4,7 @@ import { ArrowRight, Award, Truck, Shield, MessageCircle } from 'lucide-react';
 import BannerCarousel from '../components/BannerCarousel';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../lib/supabase';
+import { useBudget } from '../contexts/BudgetContext';
 
 import WhatsAppButton from '../components/WhatsAppButton';
 
@@ -11,6 +12,7 @@ const Home: React.FC = () => {
 
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addItem } = useBudget();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +67,56 @@ const Home: React.FC = () => {
     <div className="min-h-screen">
       {/* Banner Carousel */}
       <BannerCarousel />
+
+      {/* Produtos Populares Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">Produtos Populares</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+            {featuredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
+              >
+                <div className="aspect-square overflow-hidden">
+                  <img
+                    src={product.image_url || 'https://via.placeholder.com/400x400?text=Produto'}
+                    alt={product.product_name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {product.product_name}
+                  </h3>
+                  <p className="text-gray-600 mb-4">Equipamento profissional para seu negócio.</p>
+                  <div className="flex items-center justify-between">
+                    <Link
+                      to={`/produto/${product.slug}`}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                    >
+                      Ver Detalhes
+                    </Link>
+                    <button 
+                      onClick={() => addItem({
+                        id: product.id,
+                        name: product.product_name,
+                        image: product.image_url
+                      })}
+                      className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                    >
+                      Incluir na Lista
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Categorias Section */}
       <section className="py-16 bg-white">
@@ -170,41 +222,137 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Produtos Populares Section */}
-      <section className="py-16 bg-gray-50">
+      {/* Seção Novidades */}
+      <section className="py-8 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Produtos Populares</h2>
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Novidades</h2>
+            <p className="text-gray-600">Conheça nossos lançamentos e inovações</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <Link
-                key={product.id}
-                to={`/produto/${product.slug}`}
-                className="group bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
-              >
-                <div className="aspect-square overflow-hidden">
-                  <img
-                    src={product.image_url || 'https://via.placeholder.com/400x400?text=Produto'}
-                    alt={product.product_name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
+          {/* Grid de Novidades */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Novidade 1 - Lançamento */}
+            <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+              <div className="relative">
+                <img
+                  src="/images/liquidificador-maxi-blender-copo-tritan-alta-rota-o-com-variador-de-velocidade-2-0-litros_2041.jpg"
+                  alt="Novo Liquidificador Maxi Blender"
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">NOVO</span>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 transition-colors line-clamp-2 group-hover:" onMouseEnter={(e) => (e.target as HTMLElement).style.color = '#8B0000'} onMouseLeave={(e) => (e.target as HTMLElement).style.color = ''}>
-                    {product.product_name}
-                  </h3>
-                  <div className="font-medium text-sm" style={{color: '#8B0000'}}>
-                    Consulte o preço
-                  </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Liquidificador Maxi Blender 2.0L</h3>
+                <p className="text-gray-600 mb-4">Potência de 2238W com copo Tritan de 2 litros e variador de velocidade.</p>
+                <div className="flex items-center justify-between">
+                  <Link
+                    to="/produto/liquidificador-maxi-blender-2-litros"
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Ver Detalhes
+                  </Link>
+                  <button 
+                     onClick={() => addItem({
+                       id: 'novidade-1',
+                       name: 'Liquidificador Maxi Blender 2.0L',
+                       image: '/images/liquidificador-maxi-blender-copo-tritan-alta-rota-o-com-variador-de-velocidade-2-0-litros_2041.jpg'
+                     })}
+                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                   >
+                     Incluir na Lista
+                   </button>
                 </div>
-              </Link>
-            ))}
+              </div>
+            </div>
+
+            {/* Novidade 2 - Inovação */}
+            <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+              <div className="relative">
+                <img
+                  src="/images/discovery-10-forno-turbo-eletrico-para-10-assadeiras-20-000-w-220-v_5983.png"
+                  alt="Forno Turbo Discovery 10"
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">INOVADOR</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Forno Turbo Discovery 10</h3>
+                <p className="text-gray-600 mb-4">Capacidade para 10 assadeiras com 20.000W de potência e tecnologia turbo.</p>
+                <div className="flex items-center justify-between">
+                  <Link
+                    to="/produto/forno-turbo-discovery-10"
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Ver Detalhes
+                  </Link>
+                  <button 
+                     onClick={() => addItem({
+                       id: 'novidade-2',
+                       name: 'Forno Turbo Discovery 10',
+                       image: '/images/discovery-10-forno-turbo-eletrico-para-10-assadeiras-20-000-w-220-v_5983.png'
+                     })}
+                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                   >
+                     Incluir na Lista
+                   </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Novidade 3 - Promoção */}
+            <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+              <div className="relative">
+                <img
+                  src="/images/ps-22-picador-de-carne-inox-boca-22-1-5-hp-cv-220-v_4929.png"
+                  alt="Picador de Carne PS-22"
+                  className="w-full h-48 object-cover"
+                />
+                <div className="absolute top-4 left-4">
+                  <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">PROMOÇÃO</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Picador de Carne PS-22</h3>
+                <p className="text-gray-600 mb-4">Boca de 22cm em inox com 1,5 HP de potência para processamento eficiente.</p>
+                <div className="flex items-center justify-between">
+                  <Link
+                    to="/produto/picador-de-carne-ps-22"
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Ver Detalhes
+                  </Link>
+                  <button 
+                     onClick={() => addItem({
+                       id: 'novidade-3',
+                       name: 'Picador de Carne PS-22',
+                       image: '/images/ps-22-picador-de-carne-inox-boca-22-1-5-hp-cv-220-v_4929.png'
+                     })}
+                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                   >
+                     Incluir na Lista
+                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Botão Ver Todas as Novidades */}
+          <div className="text-center mt-8">
+            <Link
+              to="/produtos"
+              className="bg-red-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition-colors inline-flex items-center"
+            >
+              Ver Todas as Novidades
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Link>
           </div>
         </div>
       </section>
-
 
       {/* Seção Final - Potência e Eficiência */}
       <section className="py-16 bg-gray-800 text-white">
@@ -422,7 +570,7 @@ const Home: React.FC = () => {
             Entre em contato conosco e descubra como nossos equipamentos podem 
             transformar seu negócio gastronômico em um verdadeiro sucesso.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <WhatsAppButton
               className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center space-x-2"
               message="Olá! Gostaria de saber mais sobre os equipamentos da Repal."
@@ -430,15 +578,6 @@ const Home: React.FC = () => {
               <span>Falar no WhatsApp</span>
               <ArrowRight className="h-5 w-5" />
             </WhatsAppButton>
-            <Link
-              to="/contato"
-              className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center space-x-2"
-              onMouseEnter={(e) => {(e.target as HTMLElement).style.backgroundColor = 'white'; (e.target as HTMLElement).style.color = '#8B0000';}}
-              onMouseLeave={(e) => {(e.target as HTMLElement).style.backgroundColor = 'transparent'; (e.target as HTMLElement).style.color = 'white';}}
-            >
-              <span>Formulário de Contato</span>
-              <ArrowRight className="h-5 w-5" />
-            </Link>
           </div>
         </div>
       </section>

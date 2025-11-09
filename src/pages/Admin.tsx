@@ -3,11 +3,10 @@ import { Plus, Edit, Trash2, Eye, EyeOff, Users, Package, TrendingUp, Search, Fi
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Product, Category, Lead } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import MultipleImageUpload from '../components/MultipleImageUpload';
-import ImageUrlInput from '../components/ImageUrlInput';
-import WysiwygEditor from '../components/WysiwygEditor';
 import { useBanners, type Banner, type CreateBannerData } from '../hooks/useBanners';
 import BackupSection from '../components/backup/BackupSection';
+import ProductFormWrapper from '../components/ProductFormWrapper';
+import { BannerModal, LeadModal, CategoryManager } from '../components/admin';
 
 interface AdminStats {
   totalProducts: number;
@@ -28,6 +27,15 @@ interface ProductForm {
   clearance_sale: boolean;
   images: ProductImageForm[];
   slug: string;
+  brand?: string;
+  technical_specifications?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  short_description?: string;
+  key_features?: string;
+  model?: string;
+  sku_code?: string;
 }
 
 interface ProductImageForm {
@@ -167,6 +175,10 @@ const Admin: React.FC = () => {
   
   // Loading states for forms
   const [formLoading, setFormLoading] = useState(false);
+  
+  // AI Generation states
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   
   // Ref to store active timeouts for cleanup
   const activeTimeouts = useRef<Set<NodeJS.Timeout>>(new Set());
@@ -523,6 +535,45 @@ const Admin: React.FC = () => {
       .trim();
   };
 
+  // Handlers para modais
+  const handleBannerModalClose = () => {
+    setShowBannerModal(false);
+    setEditingBanner(null);
+    setBannerForm({
+      title: '',
+      image_url: '',
+      link_url: '',
+      active: true,
+      sort_order: banners.length + 1
+    });
+  };
+
+  const handleBannerFormChange = (field: string, value: any) => {
+    setBannerForm({ ...bannerForm, [field]: value });
+  };
+
+  const handleBannerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+    try {
+      if (editingBanner) {
+        await updateBanner(editingBanner.id, bannerForm);
+      } else {
+        await createBanner(bannerForm);
+      }
+      handleBannerModalClose();
+    } catch (error) {
+      console.error('Erro ao salvar banner:', error);
+      // O erro já é tratado no hook useBanners
+    }
+    setFormLoading(false);
+  };
+
+  const handleLeadModalClose = () => {
+    setShowLeadModal(false);
+    setViewingLead(null);
+  };
+
   const validateProductForm = () => {
     if (!productForm.product_name.trim()) {
       showNotification('error', 'Nome do produto é obrigatório');
@@ -583,7 +634,17 @@ const Admin: React.FC = () => {
       featured_on_homepage: false,
       clearance_sale: false,
       images: [],
-      slug: ''
+      slug: '',
+      // Campos opcionais - inicializar como strings vazias
+      brand: '',
+      technical_specifications: '',
+      meta_title: '',
+      meta_description: '',
+      meta_keywords: '',
+      short_description: '',
+      key_features: '',
+      model: '',
+      sku_code: ''
     });
     setFilteredSubcategories([]);
     setEditingProduct(null);
@@ -633,24 +694,25 @@ const Admin: React.FC = () => {
     }
   };
 
-  const deleteCategory = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
-    
-    try {
-      const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (error) {
-        // Erro já tratado pelo toast
-        alert(`Erro ao excluir categoria: ${error.message || 'Erro desconhecido'}`);
-        return;
-      }
-      
-      setCategories(categories.filter(c => c.id.toString() !== id));
-      alert('Categoria excluída com sucesso!');
-    } catch {
-      // Erro já tratado pelo toast
-      alert('Erro de conexão ao excluir categoria. Verifique sua internet.');
-    }
-  };
+  // Função comentada - agora gerenciada pelo CategoryManager
+  // const deleteCategory = async (id: string) => {
+  //   if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
+  //   
+  //   try {
+  //     const { error } = await supabase.from('categories').delete().eq('id', id);
+  //     if (error) {
+  //       // Erro já tratado pelo toast
+  //       alert(`Erro ao excluir categoria: ${error.message || 'Erro desconhecido'}`);
+  //       return;
+  //     }
+  //     
+  //     setCategories(categories.filter(c => c.id.toString() !== id));
+  //     alert('Categoria excluída com sucesso!');
+  //   } catch {
+  //     // Erro já tratado pelo toast
+  //     alert('Erro de conexão ao excluir categoria. Verifique sua internet.');
+  //   }
+  // };
 
   const deleteLead = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este lead?')) return;
@@ -690,7 +752,17 @@ const Admin: React.FC = () => {
         featured_on_homepage: productForm.featured_on_homepage,
         clearance_sale: productForm.clearance_sale,
         image_url: productForm.images.find(img => img.is_primary)?.image_url || productForm.images[0]?.image_url || null,
-        slug
+        slug,
+        // Campos adicionais
+        brand: productForm.brand,
+        technical_specifications: productForm.technical_specifications,
+        meta_title: productForm.meta_title,
+        meta_description: productForm.meta_description,
+        meta_keywords: productForm.meta_keywords,
+        short_description: productForm.short_description,
+        key_features: productForm.key_features,
+        model: productForm.model,
+        sku_code: productForm.sku_code
       };
       
       let productId: string | number;
@@ -877,6 +949,407 @@ const Admin: React.FC = () => {
     }
   };
 
+  // AI Content Generation Function
+  const generateAIContent = async () => {
+    // Validate required fields
+    if (!productForm.product_name.trim()) {
+      showNotification('error', 'Por favor, insira o nome do produto antes de gerar conteúdo.');
+      return;
+    }
+    
+    if (!productForm.category_id) {
+      showNotification('error', 'Por favor, selecione uma categoria antes de gerar conteúdo.');
+      return;
+    }
+
+    // Check if API key is configured
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      setAiError('Chave API do Gemini não configurada. Usando conteúdo padrão.');
+      // Generate fallback content without API
+      const categoryName = categories.find(c => c.id.toString() === productForm.category_id)?.name || 'Equipamentos';
+      const subcategoryName = categories.find(c => c.id.toString() === productForm.subcategory_id)?.name || '';
+      
+      const fallbackContent = {
+        description: `O ${productForm.product_name} é um equipamento profissional da categoria ${categoryName}, ideal para ${subcategoryName || 'uso industrial'}. Este produto oferece alta qualidade, durabilidade e excelente custo-benefício. Desenvolvido com tecnologia avançada, garante eficiência e segurança nas operações. Entre em contato para mais informações e condições especiais.`,
+        short_description: `Equipamento ${categoryName} profissional com alta qualidade e desempenho excepcional.`,
+        key_features: '• Alta qualidade de fabricação\n• Design moderno e ergonômico\n• Tecnologia avançada\n• Durabilidade comprovada\n• Garantia de satisfação',
+        technical_specifications: '• Material: Aço inoxidável de alta resistência\n• Acabamento: Profissional\n• Certificação: Conforme normas brasileiras\n• Garantia: 12 meses\n• Uso: Comercial e industrial\n• Origem: Nacional\n• Prazo de entrega: Consultar\n• Suporte técnico: Especializado',
+        model: `${productForm.product_name.replace(/\s+/g, '-').toUpperCase()}-PRO`,
+        sku_code: `${(productForm.brand || 'PROD').substring(0, 3).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        meta_title: `${productForm.product_name} - ${categoryName} | Repal Equipamentos`,
+        meta_description: `Compre ${productForm.product_name} com preço especial e entrega garantida. Qualidade superior e atendimento excelente.`,
+        seo_keywords: `${productForm.product_name}, ${categoryName}, ${subcategoryName}, ${productForm.brand || 'equipamentos'}, comprar, preço, industrial, profissional`
+      };
+
+      setProductForm(prev => ({
+        ...prev,
+        description: fallbackContent.description,
+        short_description: fallbackContent.short_description,
+        key_features: fallbackContent.key_features,
+        technical_specifications: fallbackContent.technical_specifications,
+        meta_title: fallbackContent.meta_title,
+        meta_description: fallbackContent.meta_description,
+        meta_keywords: fallbackContent.seo_keywords,
+        model: fallbackContent.model,
+        sku_code: fallbackContent.sku_code
+      }));
+      
+      showNotification('info', 'Conteúdo padrão gerado (API não configurada).');
+      return;
+    }
+
+    // const categoryName = categories.find(c => c.id.toString() === productForm.category_id)?.name || '';
+    // const subcategoryName = categories.find(c => c.id.toString() === productForm.subcategory_id)?.name || '';
+    
+    setAiLoading(true);
+    setAiError(null);
+    
+    try {
+      // Create comprehensive prompt for Gemini API
+      const prompt = `Você é um especialista em marketing e vendas de equipamentos industriais. 
+      
+Crie conteúdo completo para um produto com as seguintes informações:
+- Nome do produto: ${productForm.product_name}
+- Marca: ${productForm.brand || 'Marca não especificada'}
+
+Por favor, forneça:
+
+1. **Descrição Detalhada** (mínimo 800 caracteres):
+   - Comece com um parágrafo introdutório persuasivo que capture a atenção
+   - Destaque os principais benefícios e vantagens competitivas
+   - Inclua características técnicas relevantes de forma atrativa
+   - Use linguagem persuasiva focada em converter visitantes em compradores
+   - Inclua chamadas para ação claras (ex: "Compre agora", "Aproveite esta oferta")
+   - Mencione garantias e políticas de pós-venda para aumentar a confiança
+   - Finalize com um call-to-action convincente para contato
+
+2. **Descrição Curta** (1-2 frases):
+   - Resumo impactante e direto do produto
+   - Foque no valor principal e diferencial competitivo
+   - Use tom persuasivo e atrativo
+
+3. **Principais Características** (máximo 5 itens):
+   - Liste os 5 principais diferenciais do produto
+   - Use formato de bullet points com linguagem persuasiva
+   - Seja específico sobre benefícios, não apenas features
+   - Use negritos para ênfase em pontos-chave
+
+4. **Especificações Técnicas** (mínimo 8 itens):
+   - Capacidade
+   - Dimensões (A x L x P)
+   - Peso
+   - Materiais de construção
+   - Potência (se aplicável)
+   - Voltagem (se aplicável)
+   - Padrões de qualidade e certificações
+   - Informações de garantia
+   - Outras especificações relevantes para decisão de compra
+
+5. **Dados do Produto**:
+   - Modelo sugerido (baseado no nome)
+   - Código SKU sugerido (único e identificável)
+
+6. **SEO e Metadados**:
+   - Meta title (até 60 caracteres, incluindo palavras-chave estratégicas)
+   - Meta description (150-160 caracteres, persuasivo com CTA)
+   - Palavras-chave para SEO (10-15 palavras-chave relacionadas à compra)
+
+Importante: 
+- O conteúdo deve ser original e não plagiado
+- Use linguagem persuasiva e focada em conversão
+- Inclua palavras-chave estratégicas para SEO (compra, preço, venda, etc.)
+- Use formatação organizada com parágrafos curtos e bullet points
+- Mantenha o tom de voz profissional mas atrativo
+- Foque em como o produto resolve problemas e agrega valor ao negócio do cliente
+- Evite mencionar categorias ou subcategorias no texto visível ao cliente
+- Inclua informações de garantia e pós-venda para aumentar confiança
+
+Formato de resposta (JSON):
+{
+  "description": "descrição detalhada aqui",
+  "short_description": "descrição curta aqui",
+  "key_features": "características aqui",
+  "technical_specifications": "lista de especificações aqui",
+  "model": "modelo sugerido",
+  "sku_code": "código SKU sugerido",
+  "meta_title": "meta title aqui",
+  "meta_description": "meta description aqui",
+  "seo_keywords": "palavras-chave separadas por vírgula"
+}`;
+
+      // Call Gemini API - try gemini-2.5-flash first, fallback to gemini-1.5-flash if needed
+      let response;
+      const models = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+      
+      for (const model of models) {
+        try {
+          response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': import.meta.env.VITE_GEMINI_API_KEY || ''
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: prompt
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 2048,
+              }
+            })
+          });
+
+          if (response.ok) {
+            break; // Success with this model
+          } else if (response.status === 404) {
+            console.log(`Model ${model} not available, trying next model...`);
+            continue; // Try next model
+          } else if (response.status === 400) {
+            const errorText = await response.text();
+            console.error(`Gemini API Error 400 with ${model}:`, errorText);
+            throw new Error(`Erro de configuração da API (400): Verifique se a chave API está correta e tem as permissões necessárias`);
+          } else {
+            const errorText = await response.text();
+            console.error(`Gemini API Error with ${model}:`, errorText);
+            throw new Error(`Erro na API: ${response.status} ${response.statusText} - ${errorText}`);
+          }
+        } catch (error) {
+          if (model === models[models.length - 1]) {
+            // Last model failed, throw the error
+            throw error;
+          }
+          console.log(`Model ${model} failed, trying next model...`);
+          continue;
+        }
+      }
+
+      if (!response || !response.ok) {
+        throw new Error('Todos os modelos Gemini falharam');
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        const textResponse = await response.text();
+        console.error('Erro ao fazer parse do JSON. Resposta da API:', textResponse);
+        throw new Error('Resposta da API não está em formato JSON válido');
+      }
+      
+      // Log the full response for debugging
+      console.log('Gemini API Response:', JSON.stringify(data, null, 2));
+      
+      // Safely extract the generated text with multiple fallback strategies
+      let generatedText;
+      try {
+        // Strategy 1: Standard Gemini API response format (v1beta)
+        generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        // Strategy 2: Alternative response format (newer versions)
+        if (!generatedText && data?.candidates && Array.isArray(data.candidates)) {
+          const candidate = data.candidates[0];
+          if (candidate?.content?.parts && Array.isArray(candidate.content.parts)) {
+            generatedText = candidate.content.parts[0]?.text;
+          } else if (candidate?.content?.text) {
+            generatedText = candidate.content.text;
+          }
+        }
+        
+        // Strategy 3: Direct text field (some API versions)
+        if (!generatedText && data?.text) {
+          generatedText = data.text;
+        }
+        
+        // Strategy 3b: Check if the entire response is a string (some versions return text directly)
+        if (!generatedText && typeof data === 'string') {
+          generatedText = data;
+        }
+        
+        // Strategy 4: Check for finish reason that might indicate issues
+        if (data?.candidates?.[0]?.finishReason && data.candidates[0].finishReason !== 'STOP') {
+          console.warn('Gemini API finish reason:', data.candidates[0].finishReason);
+          if (data.candidates[0].finishReason === 'SAFETY') {
+            throw new Error('Conteúdo bloqueado por questões de segurança');
+          }
+        }
+        
+        // Strategy 5: Check for error in response
+        if (data?.error) {
+          console.error('Gemini API Error:', data.error);
+          throw new Error(`Erro da API: ${data.error.message || 'Erro desconhecido'}`);
+        }
+        
+        // Strategy 6: Check for alternative response structures (some versions return different formats)
+        if (!generatedText && data?.candidates?.[0]) {
+          const candidate = data.candidates[0];
+          
+          // Check if content is directly in candidate without parts
+          if (candidate.content && !candidate.content.parts) {
+            if (candidate.content.text) {
+              generatedText = candidate.content.text;
+            } else if (typeof candidate.content === 'string') {
+              generatedText = candidate.content;
+            }
+          }
+          
+          // Check for text directly in candidate
+          if (!generatedText && candidate.text) {
+            generatedText = candidate.text;
+          }
+          
+          // Check for output field (some versions use this)
+          if (!generatedText && candidate.output) {
+            generatedText = candidate.output;
+          }
+        }
+        
+        // Strategy 7: Check for candidates in different locations
+        if (!generatedText && data.candidate) {
+          if (data.candidate.content?.text) {
+            generatedText = data.candidate.content.text;
+          } else if (data.candidate.text) {
+            generatedText = data.candidate.text;
+          } else if (typeof data.candidate === 'string') {
+            generatedText = data.candidate;
+          }
+        }
+        
+        // Strategy 8: Last resort - try to convert the entire response to string
+        if (!generatedText) {
+          try {
+            // Try to extract any text content from the response
+            const responseStr = JSON.stringify(data, null, 2);
+            
+            // Look for JSON-like content in the response
+            const jsonMatch = responseStr.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              generatedText = jsonMatch[0];
+            } else {
+              generatedText = responseStr;
+            }
+            
+            console.warn('Usando estratégia de último recurso - resposta convertida para string:', generatedText?.substring(0, 100) + '...');
+          } catch (conversionError) {
+            console.error('Erro ao converter resposta para string:', conversionError);
+          }
+        }
+        
+        if (!generatedText) {
+          console.error('Resposta da API não contém o formato esperado:', data);
+          console.error('Estrutura esperada: data.candidates[0].content.parts[0].text');
+          console.error('Estrutura recebida:', {
+            hasCandidates: !!data?.candidates,
+            candidatesLength: data?.candidates?.length,
+            firstCandidate: data?.candidates?.[0],
+            hasContent: !!data?.candidates?.[0]?.content,
+            hasParts: !!data?.candidates?.[0]?.content?.parts,
+            partsLength: data?.candidates?.[0]?.content?.parts?.length,
+            fullResponse: JSON.stringify(data, null, 2).substring(0, 500) + '...'
+          });
+          throw new Error('Estrutura de resposta da API inválida');
+        }
+      } catch (extractError: any) {
+        console.error('Erro ao extrair texto da resposta:');
+        console.error('Erro original:', extractError);
+        console.error('Dados recebidos:', data);
+        console.error('Tipo dos dados:', typeof data);
+        
+        // Provide more detailed error message
+        let errorMessage = 'Erro ao processar resposta da API do Gemini';
+        if (extractError.message) {
+          errorMessage += `: ${extractError.message}`;
+        }
+        if (!data) {
+          errorMessage += ' (sem dados na resposta)';
+        } else if (typeof data === 'object' && !data.candidates) {
+          errorMessage += ' (formato inesperado da resposta)';
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Parse JSON response
+      let parsedContent;
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedContent = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('Resposta da IA não está em formato JSON válido');
+        }
+      } catch (parseError) {
+        // Fallback: create structured content based on product info
+        // const categoryName = categories.find(c => c.id.toString() === productForm.category_id)?.name || 'Equipamentos';
+        // const subcategoryName = categories.find(c => c.id.toString() === productForm.subcategory_id)?.name || '';
+        
+        parsedContent = {
+          description: `🎯 **Transforme seus resultados com o ${productForm.product_name}!**\n\nDesenvolvido para profissionais que buscam **excelência e produtividade**, este equipamento oferece:\n\n✅ **Benefícios principais:**\n• Alta performance e eficiência comprovada\n• Tecnologia de ponta para resultados excepcionais\n• Durabilidade que garante retorno sobre o investimento\n• Design ergonômico para maior conforto operacional\n\n💡 **Por que escolher este produto?**\nO ${productForm.product_name} é a escolha certa para quem valoriza **qualidade superior** e busca **maximizar resultados**. Sua construção robusta garante anos de uso confiável, mesmo nas condições mais exigentes.\n\n🚀 **Chamada para ação:**\n**Não perca tempo!** Garanta já o seu e eleve seu negócio ao próximo nível. Estoque limitado!\n\n📞 **Suporte completo:**\n• Garantia de 12 meses\n• Suporte técnico especializado\n• Assistência pós-venda ágil\n• Política de troca facilitada`,
+          short_description: `Equipamento profissional com alta qualidade e desempenho excepcional. Transforme seus resultados agora!`,
+          key_features: '• Alta performance e eficiência comprovada\n• Tecnologia de ponta para resultados excepcionais\n• Durabilidade que garante retorno sobre o investimento\n• Design ergonômico para maior conforto operacional\n• Construção robusta para uso intensivo\n• Certificação de qualidade garantida',
+          technical_specifications: '• Material: Componentes de alta resistência\n• Acabamento: Profissional premium\n• Certificação: Conforme normas de segurança\n• Garantia: 12 meses contra defeitos\n• Uso: Profissional e industrial\n• Origem: Nacional com qualidade garantida\n• Prazo de entrega: Consulte nossos consultores\n• Suporte técnico: Equipe especializada',
+          model: `${productForm.product_name.replace(/\s+/g, '-').toUpperCase()}-PRO`,
+          sku_code: `${(productForm.brand || 'PROD').substring(0, 3).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          meta_title: `${productForm.product_name} | Alta Performance e Qualidade | Repal Equipamentos`,
+          meta_description: `Compre ${productForm.product_name} com garantia de qualidade. Transforme seus resultados com equipamento profissional. Estoque limitado!`,
+          seo_keywords: `${productForm.product_name}, equipamento profissional, alta performance, qualidade superior, produtividade, eficiência, equipamento industrial, comprar online`
+        };
+      }
+      
+      // Update form with generated content (only fields that exist in the form)
+      setProductForm(prev => ({
+        ...prev,
+        description: parsedContent.description || prev.description,
+        technical_specifications: parsedContent.technical_specifications || prev.technical_specifications,
+        meta_title: parsedContent.meta_title || `${prev.product_name} - Equipamentos | Repal Equipamentos`,
+        meta_description: parsedContent.meta_description || parsedContent.description?.substring(0, 160) || prev.meta_description,
+        meta_keywords: parsedContent.seo_keywords || parsedContent.meta_keywords || prev.meta_keywords
+      }));
+      
+      showNotification('success', 'Conteúdo gerado com sucesso via IA! Você pode editar o conteúdo antes de salvar.');
+      
+    } catch (error) {
+      console.error('Erro ao gerar conteúdo com IA:', error);
+      
+      // Fallback para conteúdo padrão se a API falhar
+      // const categoryName = categories.find(c => c.id.toString() === productForm.category_id)?.name || 'Equipamentos';
+      // const subcategoryName = categories.find(c => c.id.toString() === productForm.subcategory_id)?.name || '';
+      
+      const fallbackContent = {
+        description: `🎯 **Transforme seus resultados com o ${productForm.product_name}!**\n\nDesenvolvido para profissionais que buscam **excelência e produtividade**, este equipamento oferece:\n\n✅ **Benefícios principais:**\n• Alta performance e eficiência comprovada\n• Tecnologia de ponta para resultados excepcionais\n• Durabilidade que garante retorno sobre o investimento\n• Design ergonômico para maior conforto operacional\n\n💡 **Por que escolher este produto?**\nO ${productForm.product_name} é a escolha certa para quem valoriza **qualidade superior** e busca **maximizar resultados**. Sua construção robusta garante anos de uso confiável, mesmo nas condições mais exigentes.\n\n🚀 **Chamada para ação:**\n**Não perca tempo!** Garanta já o seu e eleve seu negócio ao próximo nível. Estoque limitado!\n\n📞 **Suporte completo:**\n• Garantia de 12 meses\n• Suporte técnico especializado\n• Assistência pós-venda ágil\n• Política de troca facilitada`,
+        short_description: `Equipamento profissional com alta qualidade e desempenho excepcional. Transforme seus resultados agora!`,
+        key_features: '• Alta performance e eficiência comprovada\n• Tecnologia de ponta para resultados excepcionais\n• Durabilidade que garante retorno sobre o investimento\n• Design ergonômico para maior conforto operacional\n• Construção robusta para uso intensivo\n• Certificação de qualidade garantida',
+        technical_specifications: '• Material: Componentes de alta resistência\n• Acabamento: Profissional premium\n• Certificação: Conforme normas de segurança\n• Garantia: 12 meses contra defeitos\n• Uso: Profissional e industrial\n• Origem: Nacional com qualidade garantida\n• Prazo de entrega: Consulte nossos consultores\n• Suporte técnico: Equipe especializada',
+        model: `${productForm.product_name.replace(/\s+/g, '-').toUpperCase()}-PRO`,
+        sku_code: `${(productForm.brand || 'PROD').substring(0, 3).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        meta_title: `${productForm.product_name} | Alta Performance e Qualidade | Repal Equipamentos`,
+        meta_description: `Compre ${productForm.product_name} com garantia de qualidade. Transforme seus resultados com equipamento profissional. Estoque limitado!`,
+        seo_keywords: `${productForm.product_name}, equipamento profissional, alta performance, qualidade superior, produtividade, eficiência, equipamento industrial, comprar online`
+      };
+
+      // Aplicar o conteúdo de fallback (apenas campos que existem no formulário)
+      setProductForm(prev => ({
+        ...prev,
+        description: fallbackContent.description,
+        technical_specifications: fallbackContent.technical_specifications,
+        meta_title: fallbackContent.meta_title,
+        meta_description: fallbackContent.meta_description,
+        meta_keywords: fallbackContent.seo_keywords
+      }));
+      
+      setAiError(error instanceof Error ? error.message : 'Erro desconhecido ao gerar conteúdo');
+      showNotification('info', `Conteúdo padrão aplicado devido a erro na IA: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   // Modal handlers
   const openProductModal = async (product?: Product) => {
     if (product) {
@@ -933,7 +1406,17 @@ const Admin: React.FC = () => {
         featured_on_homepage: product.featured_on_homepage || false,
         clearance_sale: product.clearance_sale || false,
         images: productImages,
-        slug: product.slug
+        slug: product.slug,
+        // Campos opcionais - garantir que existam no formulário
+        brand: product.brand || '',
+        technical_specifications: product.technical_specifications || '',
+        meta_title: product.meta_title || '',
+        meta_description: product.meta_description || '',
+        meta_keywords: product.meta_keywords || '',
+        short_description: product.short_description || '',
+        key_features: product.key_features || '',
+        model: product.model || '',
+        sku_code: product.sku_code || ''
       });
       
       // Filtrar subcategorias quando editar produto
@@ -946,22 +1429,23 @@ const Admin: React.FC = () => {
     setShowProductModal(true);
   };
 
-  const openCategoryModal = (category?: Category) => {
-    if (category) {
-      setEditingCategory(category);
-      setCategoryForm({
-        id: category.id.toString(),
-        name: category.name,
-        description: category.description || '',
-        slug: category.slug,
-        parent_id: category.parent_id?.toString() || '',
-        is_parent: category.is_parent || false
-      });
-    } else {
-      resetCategoryForm();
-    }
-    setShowCategoryModal(true);
-  };
+  // Função comentada - agora gerenciada pelo CategoryManager
+  // const openCategoryModal = (category?: Category) => {
+  //   if (category) {
+  //     setEditingCategory(category);
+  //     setCategoryForm({
+  //       id: category.id.toString(),
+  //       name: category.name,
+  //       description: category.description || '',
+  //       slug: category.slug,
+  //       parent_id: category.parent_id?.toString() || '',
+  //       is_parent: category.is_parent || false
+  //     });
+  //   } else {
+  //     resetCategoryForm();
+  //   }
+  //   setShowCategoryModal(true);
+  // };
 
   const openLeadModal = (lead: Lead) => {
     setViewingLead(lead);
@@ -1032,7 +1516,7 @@ const Admin: React.FC = () => {
 
   // Get paginated data
   const paginatedProducts = getPaginatedData(filteredProducts);
-  const paginatedCategories = getPaginatedData(categories);
+  // const paginatedCategories = getPaginatedData(categories); // Comentado - agora gerenciado pelo CategoryManager
   const paginatedLeads = getPaginatedData(filteredLeads);
 
 
@@ -1668,95 +2152,13 @@ const Admin: React.FC = () => {
 
         {/* Categories Tab */}
         {activeTab === 'categories' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Categorias</h2>
-              <button 
-                onClick={() => openCategoryModal()}
-                className="bg-red-900 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Nova Categoria</span>
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedCategories.map((category) => (
-                <div key={category.id} className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">{category.name}</h3>
-                    <div className="flex space-x-2">
-                      <button 
-                        onClick={() => openCategoryModal(category)}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-                        title="Visualizar"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => openCategoryModal(category)}
-                        className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
-                        title="Editar"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button 
-                        onClick={() => deleteCategory(category.id.toString())}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-4">{category.description}</p>
-                  <div className="text-xs text-gray-500">
-                    Slug: {category.slug}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Pagination for Categories */}
-            {categories.length > itemsPerPage && (
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, categories.length)} de {categories.length} categorias
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={goToPreviousPage}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  
-                  {Array.from({ length: getTotalPages(categories.length) }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => goToPage(page)}
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white text-gray-500 hover:bg-gray-50 border border-gray-300'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  
-                  <button
-                    onClick={() => goToNextPage(getTotalPages(categories.length))}
-                    disabled={currentPage === getTotalPages(categories.length)}
-                    className="p-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <CategoryManager 
+            onCategorySelect={(category) => {
+              // Handle category selection if needed
+              console.log('Categoria selecionada:', category);
+            }}
+            selectedCategory={editingCategory}
+          />
         )}
 
         {/* Leads Tab */}
@@ -2037,263 +2439,25 @@ const Admin: React.FC = () => {
 
       {/* Product Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingProduct ? 'Editar Produto' : 'Novo Produto'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowProductModal(false);
-                    setEditingProduct(null);
-                    resetProductForm();
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <form onSubmit={(e) => { e.preventDefault(); saveProduct(); }} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nome *
-                    </label>
-                    <input
-                      type="text"
-                      value={productForm.product_name}
-                      onChange={(e) => setProductForm({ ...productForm, product_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Categoria Principal *
-                    </label>
-                    <select
-                      value={productForm.category_id}
-                      onChange={(e) => handleParentCategoryChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Selecione uma categoria principal</option>
-                      {parentCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Subcategoria - só aparece quando categoria pai é selecionada */}
-                {productForm.category_id && (
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Subcategoria *
-                      </label>
-                      <select
-                        value={productForm.subcategory_id}
-                        onChange={(e) => setProductForm({ ...productForm, subcategory_id: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Selecione uma subcategoria</option>
-                        {filteredSubcategories.map((subcategory) => (
-                          <option key={subcategory.id} value={subcategory.id}>
-                            {subcategory.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Descrição *
-                    </label>
-                    <WysiwygEditor
-                      value={productForm.description}
-                      onChange={(value) => setProductForm({ ...productForm, description: value })}
-                      placeholder="Digite a descrição do produto..."
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
-                    <strong>Preços:</strong> Entre em contato para consultar preços dos produtos.
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Imagens do Produto (máximo 5)
-                      </label>
-                      <MultipleImageUpload
-                        images={productForm.images.map(img => img.image_url)}
-                        onImagesChange={(imageUrls: string[]) => {
-                          const newImages: ProductImageForm[] = imageUrls.map((url, index) => {
-                            const existingImage = productForm.images.find(img => img.image_url === url);
-                            return {
-                              id: existingImage?.id,
-                              image_url: url,
-                              alt_text: existingImage?.alt_text || productForm.product_name,
-                              sort_order: index,
-                              is_primary: index === 0
-                            };
-                          });
-                          setProductForm({ ...productForm, images: newImages });
-                        }}
-                        maxImages={5}
-                      />
-                    </div>
-
-                    {/* Separador visual */}
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300" />
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">ou</span>
-                      </div>
-                    </div>
-
-                    {/* Campo de URL de Imagem */}
-                     <div>
-                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                         URLs de Imagens
-                       </label>
-                       <p className="text-xs text-gray-500 mb-3">
-                         Adicione imagens através de URLs externas. Use o botão "+" para adicionar múltiplas URLs. As imagens serão validadas automaticamente.
-                       </p>
-                       <ImageUrlInput
-                         placeholder="Cole a URL da imagem aqui (ex: https://exemplo.com/imagem.jpg)"
-                         onChange={(urls: string[]) => {
-                           // Converter URLs para o formato ProductImageForm
-                           const urlImages: ProductImageForm[] = urls.map((url, index) => ({
-                             image_url: url,
-                             alt_text: productForm.product_name || 'Imagem do produto',
-                             sort_order: productForm.images.length + index,
-                             is_primary: productForm.images.length === 0 && index === 0
-                           }));
-
-                           // Manter imagens existentes (não-URL) e adicionar as novas URLs
-                           const existingNonUrlImages = productForm.images.filter(img => 
-                             !img.image_url.startsWith('http')
-                           );
-
-                           const totalImages = existingNonUrlImages.length + urlImages.length;
-                           
-                           if (totalImages <= 5) {
-                             setProductForm({ 
-                               ...productForm, 
-                               images: [...existingNonUrlImages, ...urlImages]
-                             });
-                           }
-                         }}
-                         showPreview={true}
-                         maxUrls={5 - productForm.images.filter(img => !img.image_url.startsWith('http')).length}
-                       />
-                     </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Checkbox principal - Produto Ativo */}
-                  <div className="border-b pb-3">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={productForm.active}
-                        onChange={(e) => setProductForm({ ...productForm, active: e.target.checked })}
-                        className="mr-2"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Produto Ativo</span>
-                    </label>
-                    <p className="text-xs text-gray-500 mt-1 ml-6">Quando desmarcado, o produto será considerado desativado</p>
-                  </div>
-
-                  {/* Opções de destaque */}
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Opções de Destaque:</h4>
-                    <div className="space-y-3">
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={productForm.featured_in_dropdown}
-                          onChange={(e) => setProductForm({ ...productForm, featured_in_dropdown: e.target.checked })}
-                          className="mr-2"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm text-gray-700">Produto em destaque no dropdown</span>
-                          <span className="text-xs text-gray-500">Exibe o produto no menu dropdown</span>
-                        </div>
-                      </label>
-
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={productForm.featured_on_homepage}
-                          onChange={(e) => setProductForm({ ...productForm, featured_on_homepage: e.target.checked })}
-                          className="mr-2"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm text-gray-700">Produto em destaque na página Home</span>
-                          <span className="text-xs text-gray-500">Exibe o produto na página inicial</span>
-                        </div>
-                      </label>
-
-                      <label className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={productForm.clearance_sale}
-                          onChange={(e) => setProductForm({ ...productForm, clearance_sale: e.target.checked })}
-                          className="mr-2"
-                        />
-                        <div className="flex flex-col">
-                          <span className="text-sm text-gray-700">Produto em Queima de Estoque</span>
-                          <span className="text-xs text-gray-500">Exibe o produto na seção de queima de estoque</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowProductModal(false);
-                      setEditingProduct(null);
-                      resetProductForm();
-                    }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {formLoading ? 'Salvando...' : 'Salvar'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
+        <ProductFormWrapper
+          showProductModal={showProductModal}
+          productForm={productForm}
+          setProductForm={setProductForm}
+          categories={categories}
+          subcategories={subcategories}
+          onCategoryChange={handleParentCategoryChange}
+          onSaveProduct={saveProduct}
+          onCloseModal={() => {
+            setShowProductModal(false);
+            setEditingProduct(null);
+            resetProductForm();
+          }}
+          onAiGenerate={generateAIContent}
+          aiLoading={aiLoading}
+          aiError={aiError}
+          loading={formLoading}
+          isEditing={!!editingProduct}
+        />
       )}
 
       {/* Category Modal */}
@@ -2554,266 +2718,28 @@ const Admin: React.FC = () => {
       )}
 
       {/* Banner Modal */}
-      {showBannerModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingBanner ? 'Editar Banner' : 'Novo Banner'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowBannerModal(false);
-                    setEditingBanner(null);
-                    setBannerForm({
-                      title: '',
-                      image_url: '',
-                      link_url: '',
-                      active: true,
-                      sort_order: banners.length + 1
-                    });
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              {bannerError && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                  {bannerError}
-                </div>
-              )}
+      <BannerModal
+        isOpen={showBannerModal}
+        editingBanner={editingBanner}
+        bannerForm={bannerForm}
 
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                setFormLoading(true);
-                try {
-                  if (editingBanner) {
-                    await updateBanner(editingBanner.id, bannerForm);
-                  } else {
-                    await createBanner(bannerForm);
-                  }
-                  setShowBannerModal(false);
-                  setEditingBanner(null);
-                  setBannerForm({
-                    title: '',
-                    image_url: '',
-                    link_url: '',
-                    active: true,
-                    sort_order: banners.length + 1
-                  });
-                } catch (error) {
-                  console.error('Erro ao salvar banner:', error);
-                  // O erro já é tratado no hook useBanners
-                }
-                setFormLoading(false);
-              }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Título *
-                  </label>
-                  <input
-                    type="text"
-                    value={bannerForm.title}
-                    onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                    placeholder="Título do banner"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    URL da Imagem *
-                  </label>
-                  <input
-                    type="url"
-                    value={bannerForm.image_url}
-                    onChange={(e) => setBannerForm({ ...bannerForm, image_url: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                    required
-                    placeholder="https://exemplo.com/imagem.jpg"
-                  />
-                  {bannerForm.image_url && (
-                    <div className="mt-2">
-                      <img
-                        src={bannerForm.image_url}
-                        alt="Preview"
-                        className="w-full h-32 object-cover rounded border"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    URL do Link
-                  </label>
-                  <input
-                    type="url"
-                    value={bannerForm.link_url}
-                    onChange={(e) => setBannerForm({ ...bannerForm, link_url: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="https://exemplo.com (opcional)"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ordem de Exibição
-                    </label>
-                    <input
-                      type="number"
-                      value={bannerForm.sort_order}
-                      onChange={(e) => setBannerForm({ ...bannerForm, sort_order: parseInt(e.target.value) || 1 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                      min="1"
-                    />
-                  </div>
-
-                  <div className="flex items-center">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={bannerForm.active}
-                        onChange={(e) => setBannerForm({ ...bannerForm, active: e.target.checked })}
-                        className="mr-2 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Banner Ativo</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowBannerModal(false);
-                      setEditingBanner(null);
-                      setBannerForm({
-                        title: '',
-                        image_url: '',
-                        link_url: '',
-                        active: true,
-                        sort_order: banners.length + 1
-                      });
-                    }}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {formLoading ? 'Salvando...' : (editingBanner ? 'Atualizar Banner' : 'Criar Banner')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+        bannerError={bannerError}
+        formLoading={formLoading}
+        onClose={handleBannerModalClose}
+        onSubmit={handleBannerSubmit}
+        onFormChange={handleBannerFormChange}
+      />
 
       {/* Lead Modal */}
-      {showLeadModal && viewingLead && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Detalhes do Lead
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowLeadModal(false);
-                    setViewingLead(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nome
-                    </label>
-                    <p className="text-gray-900">{viewingLead.client_name}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <p className="text-gray-900">{viewingLead.email}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Telefone
-                    </label>
-                    <p className="text-gray-900">{viewingLead.phone || '-'}</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Produto de Interesse
-                    </label>
-                    <p className="text-gray-900">{viewingLead.product_name || '-'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mensagem
-                  </label>
-                  <p className="text-gray-900 bg-gray-50 p-3 rounded-md">
-                    {viewingLead.message || 'Nenhuma mensagem fornecida.'}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Data de Criação
-                  </label>
-                  <p className="text-gray-900">
-                    {new Date(viewingLead.created_at).toLocaleString('pt-BR')}
-                  </p>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={() => {
-                      setShowLeadModal(false);
-                      setViewingLead(null);
-                    }}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                  >
-                    Fechar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-        </div>
+      <LeadModal
+        isOpen={showLeadModal}
+        viewingLead={viewingLead}
+        onClose={handleLeadModalClose}
+      />
       </div>
     </div>
+  </div>
   );
-};
+}
 
 export default Admin;

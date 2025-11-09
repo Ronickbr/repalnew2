@@ -15,6 +15,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppStoreSelector from './components/WhatsAppStoreSelector';
 import { AuthProvider } from './hooks/useAuth';
 import { WhatsAppProvider } from './contexts/WhatsAppContext';
+import { BudgetProvider } from './contexts/BudgetContext';
 import { queryClient } from './lib/react-query';
 
 function App() {
@@ -23,8 +24,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <AuthProvider>
-          <WhatsAppProvider>
-            <Router>
+          <BudgetProvider>
+            <WhatsAppProvider>
+              <Router>
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
@@ -52,20 +54,21 @@ function App() {
               } 
             />
           </Routes>
-            </Router>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#fff',
-                  color: '#333',
-                  border: '1px solid #e5e7eb',
-                },
-              }}
-            />
-            <WhatsAppStoreSelector />
-          </WhatsAppProvider>
+              </Router>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#fff',
+                    color: '#333',
+                    border: '1px solid #e5e7eb',
+                  },
+                }}
+              />
+              <WhatsAppStoreSelector />
+            </WhatsAppProvider>
+          </BudgetProvider>
         </AuthProvider>
       </HelmetProvider>
     </QueryClientProvider>
