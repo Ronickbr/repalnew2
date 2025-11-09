@@ -1,6 +1,7 @@
-import React, { memo } from 'react';
-import { Search, DollarSign } from 'lucide-react';
+import React, { memo, useState, useEffect } from 'react';
+import { Search, Plus, Check } from 'lucide-react';
 import { ProductWithCategory } from '../types/product';
+import { useBudget } from '../contexts/BudgetContext';
 
 interface ProductCardProps {
   product: ProductWithCategory;
@@ -18,8 +19,32 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   className = ''
 }) => {
 
+  const { state, addItem } = useBudget();
+  const [isAddedToBudget, setIsAddedToBudget] = useState(false);
 
+  // Verifica se o produto já está na lista
+  useEffect(() => {
+    const isInBudget = state.items && Array.isArray(state.items) && state.items.some(item => item.id === product.id);
+    setIsAddedToBudget(!!isInBudget);
+  }, [state.items, product.id]);
 
+  const handleAddToBudget = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Log 1: Iniciando processo de adicionar à lista
+    console.log(`[ProductCard] Adicionando produto à lista: ${product.product_name} (ID: ${product.id})`);
+    
+    addItem({
+      id: product.id,
+      name: product.product_name,
+      image: product.product_images?.[0]?.image_url || product.image_url || '/placeholder-product.png'
+    });
+    
+    // Log 2: Produto adicionado com sucesso
+    console.log(`[ProductCard] Produto adicionado com sucesso: ${product.product_name}`);
+    
+    setIsAddedToBudget(true);
+  };
 
   const handleViewDetails = () => {
     onViewDetails?.(product);
@@ -86,17 +111,28 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                 <span>Ver Detalhes</span>
               </button>
               
-              {/* Botão Solicitar Orçamento com ícone de cifrão */}
+              {/* Botão Incluir na Lista com ícone de + */}
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.href = `/contato?produto=${product.id}`;
-                }}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] text-white font-medium rounded-lg hover:bg-[#20b85a] active:bg-[#1ba04e] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#25D366] focus:ring-opacity-50"
-                aria-label={`Solicitar orçamento para ${product.product_name}`}
+                onClick={handleAddToBudget}
+                disabled={isAddedToBudget}
+                className={`flex items-center justify-center gap-2 px-4 py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 ${
+                  isAddedToBudget
+                    ? 'bg-green-600 text-white cursor-not-allowed focus:ring-green-600'
+                    : 'bg-[#25D366] text-white hover:bg-[#20b85a] active:bg-[#1ba04e] focus:ring-[#25D366]'
+                }`}
+                aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.product_name}`}
               >
-                <DollarSign className="w-4 h-4" />
-                <span>Solicitar Orçamento</span>
+                {isAddedToBudget ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Adicionado à Lista</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    <span>Incluir na Lista</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -165,17 +201,28 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
             <span>Ver Detalhes</span>
           </button>
           
-          {/* Botão Solicitar Orçamento com ícone de cifrão */}
+          {/* Botão Incluir na Lista com ícone de + */}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = `/contato?produto=${product.id}`;
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#25D366] text-white font-medium rounded-lg hover:bg-[#20b85a] active:bg-[#1ba04e] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#25D366] focus:ring-opacity-50"
-            aria-label={`Solicitar orçamento para ${product.product_name}`}
+            onClick={handleAddToBudget}
+            disabled={isAddedToBudget}
+            className={`flex items-center justify-center gap-2 px-4 py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 ${
+              isAddedToBudget
+                ? 'bg-green-600 text-white cursor-not-allowed focus:ring-green-600'
+                : 'bg-[#25D366] text-white hover:bg-[#20b85a] active:bg-[#1ba04e] focus:ring-[#25D366]'
+            }`}
+            aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.product_name}`}
           >
-            <DollarSign className="w-4 h-4" />
-            <span>Solicitar Orçamento</span>
+            {isAddedToBudget ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Adicionado à Lista</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Incluir na Lista</span>
+              </>
+            )}
           </button>
         </div>
       </div>
