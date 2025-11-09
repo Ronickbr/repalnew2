@@ -1,13 +1,15 @@
 import React, { useState } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Star, Shield, Truck, Award, Clock, X, ZoomIn, Plus, Check } from 'lucide-react'
-import { useProductBySlug } from '../hooks/useProducts'
+import { useProductBySlug, useSimilarProducts } from '../hooks/useProducts'
 import WhatsAppButton from '../components/WhatsAppButton'
 import { useBudget } from '../contexts/BudgetContext'
+import ProductCard from '../components/ProductCard'
 
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
   const { data: product, isLoading: loading, error } = useProductBySlug(slug || '')
+  const { data: similarProducts, isLoading: loadingSimilar } = useSimilarProducts(product?.id || '', product?.subcategory_id, 4)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
@@ -497,6 +499,54 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {/* Similar Products Section */}
+        {similarProducts && similarProducts.length > 0 && (
+          <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100 border-t">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-[#333333] mb-4">
+                  Produtos Similares
+                </h2>
+                <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                  Confira outros produtos da mesma categoria que podem te interessar
+                </p>
+              </div>
+              
+              {loadingSimilar ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl shadow-lg p-4 animate-pulse">
+                      <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+                      <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {similarProducts.map((similarProduct) => (
+                    <ProductCard
+                      key={similarProduct.id}
+                      product={similarProduct}
+                      viewMode="grid"
+                    />
+                  ))}
+                </div>
+              )}
+              
+              <div className="text-center mt-12">
+                <Link
+                  to={`/categorias/${product.category?.slug}`}
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-[#8B0000] to-[#B22222] text-white px-8 py-3 rounded-xl font-semibold hover:from-[#B22222] hover:to-[#DC143C] transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 transform"
+                >
+                  <span>Ver todos os produtos da categoria</span>
+                  <ArrowLeft className="h-5 w-5 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Image Modal */}
         {isModalOpen && (

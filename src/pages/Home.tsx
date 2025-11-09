@@ -5,6 +5,7 @@ import BannerCarousel from '../components/BannerCarousel';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../lib/supabase';
 import { useBudget } from '../contexts/BudgetContext';
+import { useLatestProducts } from '../hooks/useProducts';
 
 import WhatsAppButton from '../components/WhatsAppButton';
 
@@ -13,6 +14,7 @@ const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useBudget();
+  const { data: latestProducts, isLoading: loadingLatest } = useLatestProducts(6);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -227,130 +229,60 @@ const Home: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Novidades</h2>
-            <p className="text-gray-600">Conheça nossos lançamentos e inovações</p>
+            <p className="text-gray-600">Conheça nossos últimos lançamentos</p>
           </div>
           
+          {/* Loading State */}
+          {loadingLatest && (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{borderColor: '#8B0000'}}></div>
+            </div>
+          )}
+          
           {/* Grid de Novidades */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Novidade 1 - Lançamento */}
-            <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-              <div className="relative">
-                <img
-                  src="/images/liquidificador-maxi-blender-copo-tritan-alta-rota-o-com-variador-de-velocidade-2-0-litros_2041.jpg"
-                  alt="Novo Liquidificador Maxi Blender"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">NOVO</span>
+          {!loadingLatest && latestProducts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {latestProducts.map((product, index) => (
+                <div key={product.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+                  <div className="relative">
+                    <img
+                      src={product.product_images?.[0]?.image_url || product.image_url || 'https://via.placeholder.com/400x300?text=Produto'}
+                      alt={product.product_name}
+                      className="w-full h-48 object-contain bg-gray-50"
+                    />
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                        {index === 0 ? 'NOVO' : index === 1 ? 'LANÇAMENTO' : 'RECENTE'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">{product.product_name}</h3>
+                    <div className="space-y-3">
+                      <Link
+                        to={`/produto/${product.slug}`}
+                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
+                      >
+                        Ver Detalhes
+                      </Link>
+                      <button 
+                        onClick={() => addItem({
+                          id: product.id,
+                          name: product.product_name,
+                          image: product.product_images?.[0]?.image_url || product.image_url
+                        })}
+                        className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                      >
+                        Incluir na Lista
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Liquidificador Maxi Blender 2.0L</h3>
-                <p className="text-gray-600 mb-4">Potência de 2238W com copo Tritan de 2 litros e variador de velocidade.</p>
-                <div className="flex items-center justify-between">
-                  <Link
-                    to="/produto/liquidificador-maxi-blender-2-litros"
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                  >
-                    Ver Detalhes
-                  </Link>
-                  <button 
-                     onClick={() => addItem({
-                       id: 'novidade-1',
-                       name: 'Liquidificador Maxi Blender 2.0L',
-                       image: '/images/liquidificador-maxi-blender-copo-tritan-alta-rota-o-com-variador-de-velocidade-2-0-litros_2041.jpg'
-                     })}
-                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
-                   >
-                     Incluir na Lista
-                   </button>
-                </div>
-              </div>
+              ))}
             </div>
+          )}
 
-            {/* Novidade 2 - Inovação */}
-            <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-              <div className="relative">
-                <img
-                  src="/images/discovery-10-forno-turbo-eletrico-para-10-assadeiras-20-000-w-220-v_5983.png"
-                  alt="Forno Turbo Discovery 10"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-bold">INOVADOR</span>
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Forno Turbo Discovery 10</h3>
-                <p className="text-gray-600 mb-4">Capacidade para 10 assadeiras com 20.000W de potência e tecnologia turbo.</p>
-                <div className="flex items-center justify-between">
-                  <Link
-                    to="/produto/forno-turbo-discovery-10"
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                  >
-                    Ver Detalhes
-                  </Link>
-                  <button 
-                     onClick={() => addItem({
-                       id: 'novidade-2',
-                       name: 'Forno Turbo Discovery 10',
-                       image: '/images/discovery-10-forno-turbo-eletrico-para-10-assadeiras-20-000-w-220-v_5983.png'
-                     })}
-                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
-                   >
-                     Incluir na Lista
-                   </button>
-                </div>
-              </div>
-            </div>
 
-            {/* Novidade 3 - Promoção */}
-            <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
-              <div className="relative">
-                <img
-                  src="/images/ps-22-picador-de-carne-inox-boca-22-1-5-hp-cv-220-v_4929.png"
-                  alt="Picador de Carne PS-22"
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold">PROMOÇÃO</span>
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Picador de Carne PS-22</h3>
-                <p className="text-gray-600 mb-4">Boca de 22cm em inox com 1,5 HP de potência para processamento eficiente.</p>
-                <div className="flex items-center justify-between">
-                  <Link
-                    to="/produto/picador-de-carne-ps-22"
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                  >
-                    Ver Detalhes
-                  </Link>
-                  <button 
-                     onClick={() => addItem({
-                       id: 'novidade-3',
-                       name: 'Picador de Carne PS-22',
-                       image: '/images/ps-22-picador-de-carne-inox-boca-22-1-5-hp-cv-220-v_4929.png'
-                     })}
-                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
-                   >
-                     Incluir na Lista
-                   </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Botão Ver Todas as Novidades */}
-          <div className="text-center mt-8">
-            <Link
-              to="/produtos"
-              className="bg-red-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition-colors inline-flex items-center"
-            >
-              Ver Todas as Novidades
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Link>
-          </div>
         </div>
       </section>
 

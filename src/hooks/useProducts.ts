@@ -434,4 +434,202 @@ export const useFeaturedProductsByCategory = (categoryId: string | number) => {
   }), [featuredProducts, isLoading, error])
 }
 
+// Hook para buscar os produtos mais recentes (últimos inseridos)
+export const useLatestProducts = (limit: number = 6) => {
+  const [products, setProducts] = useState<ProductWithCategory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchLatestProducts = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // Buscar produtos ordenados por data de criação (mais recentes primeiro)
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select(`
+          id,
+          product_name,
+          description,
+          benefits,
+          category_id,
+          subcategory_id,
+          featured,
+          featured_in_dropdown,
+          is_disabled,
+          featured_on_homepage,
+          clearance_sale,
+          image_url,
+          created_at,
+          category:categories!products_category_id_fkey(
+            id,
+            name,
+            slug
+          ),
+          subcategory:categories!products_subcategory_id_fkey(
+            id,
+            name,
+            slug
+          )
+        `)
+        .eq('active', true)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (productsError) {
+        throw new Error(`Falha ao carregar produtos recentes: ${productsError.message}`)
+      }
+
+      // Transformar os dados para manter compatibilidade com a interface existente
+      const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
+        id: product.id,
+        product_name: product.product_name,
+        description: product.description || undefined,
+        benefits: product.benefits || undefined,
+        category_id: product.category_id,
+        subcategory_id: product.subcategory_id,
+        slug: generateSlug(product.product_name),
+        featured: product.featured || false,
+        featured_in_dropdown: product.featured_in_dropdown || false,
+        is_disabled: product.is_disabled || false,
+        featured_on_homepage: product.featured_on_homepage || false,
+        clearance_sale: product.clearance_sale || false,
+        active: true,
+        created_at: product.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        category: Array.isArray(product.category) ? undefined : product.category,
+        subcategory: Array.isArray(product.subcategory) ? undefined : product.subcategory,
+        product_images: product.image_url ? [{ 
+          id: '1', 
+          product_id: product.id, 
+          image_url: product.image_url, 
+          sort_order: 1, 
+          created_at: new Date().toISOString() 
+        }] : []
+      }))
+
+      setProducts(transformedProducts)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [limit])
+
+  useEffect(() => {
+    fetchLatestProducts()
+  }, [fetchLatestProducts])
+
+  return useMemo(() => ({
+    data: products,
+    isLoading,
+    error,
+    refetch: fetchLatestProducts
+  }), [products, isLoading, error, fetchLatestProducts])
+}
+
+// Hook para buscar produtos similares da mesma subcategoria (excluindo o produto atual)
+export const useSimilarProducts = (currentProductId: string | number, subcategoryId: string | number | null | undefined, limit: number = 4) => {
+  const [products, setProducts] = useState<ProductWithCategory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchSimilarProducts = useCallback(async () => {
+    if (!subcategoryId) {
+      setProducts([])
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      // Buscar produtos da mesma subcategoria, excluindo o produto atual
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select(`
+          id,
+          product_name,
+          description,
+          benefits,
+          category_id,
+          subcategory_id,
+          featured,
+          featured_in_dropdown,
+          is_disabled,
+          featured_on_homepage,
+          clearance_sale,
+          image_url,
+          created_at,
+          category:categories!products_category_id_fkey(
+            id,
+            name,
+            slug
+          ),
+          subcategory:categories!products_subcategory_id_fkey(
+            id,
+            name,
+            slug
+          )
+        `)
+        .eq('active', true)
+        .eq('subcategory_id', subcategoryId)
+        .neq('id', currentProductId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (productsError) {
+        throw new Error(`Falha ao carregar produtos similares: ${productsError.message}`)
+      }
+
+      // Transformar os dados para manter compatibilidade com a interface existente
+      const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
+        id: product.id,
+        product_name: product.product_name,
+        description: product.description || undefined,
+        benefits: product.benefits || undefined,
+        category_id: product.category_id,
+        subcategory_id: product.subcategory_id,
+        slug: generateSlug(product.product_name),
+        featured: product.featured || false,
+        featured_in_dropdown: product.featured_in_dropdown || false,
+        is_disabled: product.is_disabled || false,
+        featured_on_homepage: product.featured_on_homepage || false,
+        clearance_sale: product.clearance_sale || false,
+        active: true,
+        created_at: product.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        category: Array.isArray(product.category) ? undefined : product.category,
+        subcategory: Array.isArray(product.subcategory) ? undefined : product.subcategory,
+        product_images: product.image_url ? [{ 
+          id: '1', 
+          product_id: product.id, 
+          image_url: product.image_url, 
+          sort_order: 1, 
+          created_at: new Date().toISOString() 
+        }] : []
+      }))
+
+      setProducts(transformedProducts)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [currentProductId, subcategoryId, limit])
+
+  useEffect(() => {
+    fetchSimilarProducts()
+  }, [fetchSimilarProducts])
+
+  return useMemo(() => ({
+    data: products,
+    isLoading,
+    error,
+    refetch: fetchSimilarProducts
+  }), [products, isLoading, error, fetchSimilarProducts])
+}
+
 export default useProducts;
