@@ -341,7 +341,7 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
               
               {/* Coluna 2: Produtos em Destaque */}
               <div className="px-4">
-                <h4 className="font-semibold text-[#D0021B] mb-4">Produtos em Destaque</h4>
+                <h4 className="font-semibold text-[#D0021B] mb-4">Produto em Destaque</h4>
                 <FeaturedProductDisplay categoryId={category.id} isOpen={true} />
               </div>
             </div>
