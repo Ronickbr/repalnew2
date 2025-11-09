@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFeaturedProductByCategory, useProductsByCategory } from '../hooks/useProducts';
+
 import { Search } from 'lucide-react';
 
 interface FeaturedProductDisplayProps {
@@ -8,13 +9,23 @@ interface FeaturedProductDisplayProps {
 }
 
 const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categoryId, isOpen }) => {
-  const { data: featuredProduct, isLoading: isLoadingFeatured } = useFeaturedProductByCategory(categoryId);
-  const { data: allProducts, isLoading: isLoadingAll } = useProductsByCategory(categoryId);
+  const { data: featuredProduct, isLoading: isLoadingFeatured, error: featuredError } = useFeaturedProductByCategory(categoryId);
+  const { data: allProducts, isLoading: isLoadingAll, error: allProductsError } = useProductsByCategory(categoryId);
+
+  // Mostrar apenas produtos featured - não usar fallback para produtos normais
+  const displayProduct = featuredProduct;
+
+  console.log('🎯 FeaturedProductDisplay: Supabase configurado?', Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
+  console.log('🎯 FeaturedProductDisplay: Produto selecionado:', displayProduct?.product_name, 'Categoria:', categoryId);
+  console.log('🎯 FeaturedProductDisplay: Produto featured encontrado:', featuredProduct?.product_name);
+  console.log('🎯 FeaturedProductDisplay: Fallback ativado?', !featuredProduct && allProducts && allProducts.length > 0);
 
   console.log('🎯 FeaturedProductDisplay: Componente montado!');
   console.log('🎯 FeaturedProductDisplay: categoryId recebido:', categoryId, 'isOpen:', isOpen);
   console.log('🎯 FeaturedProductDisplay: featuredProduct:', featuredProduct);
+  console.log('🎯 FeaturedProductDisplay: featuredError:', featuredError);
   console.log('🎯 FeaturedProductDisplay: allProducts na categoria:', allProducts?.length);
+  console.log('🎯 FeaturedProductDisplay: allProductsError:', allProductsError);
   console.log('🎯 FeaturedProductDisplay: isLoadingFeatured:', isLoadingFeatured);
   console.log('🎯 FeaturedProductDisplay: isLoadingAll:', isLoadingAll);
    
@@ -34,32 +45,40 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
     console.log('💡 Para restaurar o banco de dados: crie um novo projeto em https://supabase.com');
   }
    
-  // Se não houver produto em destaque, usar o primeiro produto da categoria
-  const displayProduct = featuredProduct || (allProducts && allProducts.length > 0 ? allProducts[0] : null);
   const isLoading = isLoadingFeatured || isLoadingAll;
-  const isFallback = !featuredProduct && !!displayProduct; // É um fallback se não houver produto em destaque mas houver produtos na categoria
+  const hasFeaturedProduct = !!featuredProduct;
   
-  console.log('🎯 FeaturedProductDisplay: displayProduct final:', displayProduct);
-  console.log('🎯 FeaturedProductDisplay: isFallback:', isFallback);
+  console.log('🎯 FeaturedProductDisplay: hasFeaturedProduct:', hasFeaturedProduct);
    
-  // Forçar modo de demonstração quando não há Supabase configurado ou erro de API
-  const shouldUseDemo = !isSupabaseConfigured || hasApiError || (!featuredProduct && (!allProducts || allProducts.length === 0));
+  // Forçar modo de demonstração apenas quando não há Supabase configurado ou erro de API
+  // TEMPORÁRIO: Desativar modo demo forçado para testar produtos do banco
+  const shouldUseDemo = false; // !isSupabaseConfigured || hasApiError;
   console.log('🎭 Usar modo demonstração:', shouldUseDemo);
-  if (shouldUseDemo) {
-    console.log('🎯 Motivo do modo demonstração:', 
-      !isSupabaseConfigured ? 'Supabase não configurado' :
-      hasApiError ? 'Erro de API (possível chave inválida)' :
-      'Sem produtos disponíveis'
-    );
-  }
   
-  // Produto de exemplo para debug quando não há produtos ou Supabase não configurado
-  const mockProduct = {
-    id: 1,
-    product_name: 'Liquidificador Maxi Blender',
-    image_url: '/images/bm2-liquidificador-maxi-blender-copo-tritan-alta-rotacao-com-variador-de-velocidade-2-0-litros-2-238-w-220-240-v_4549.jpg',
-    slug: 'liquidificador-maxi-blender'
+  // Produtos de exemplo para debug quando não há produtos ou Supabase não configurado
+  const mockProductsByCategory = {
+    '1': { // Eletroportáteis
+      id: 1,
+      product_name: 'Liquidificador Maxi Blender 2.0L',
+      image_url: '/images/bm2-liquidificador-maxi-blender-copo-tritan-alta-rotacao-com-variador-de-velocidade-2-0-litros-2-238-w-220-240-v_4549.jpg',
+      slug: 'liquidificador-maxi-blender-2l'
+    },
+    '2': { // Panelas
+      id: 2,
+      product_name: 'Panela de Pressão Elétrica 6L',
+      image_url: '/images/panela-pressao-eletrica-6l.jpg',
+      slug: 'panela-pressao-eletrica-6l'
+    },
+    '3': { // Utensílios
+      id: 3,
+      product_name: 'Conjunto de Facas Profissionais 5 peças',
+      image_url: '/images/conjunto-facas-profissionais.jpg',
+      slug: 'conjunto-facas-profissionais'
+    }
   };
+
+  // Selecionar produto de exemplo baseado na categoria
+  const mockProduct = mockProductsByCategory[categoryId as keyof typeof mockProductsByCategory] || mockProductsByCategory['1'];
 
   // Teste: verificar se categoryId é válido
   if (!categoryId) {
@@ -79,7 +98,66 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
     );
   }
 
-  if (!displayProduct || shouldUseDemo) {
+  if (!displayProduct && !shouldUseDemo) {
+    // Nenhum produto featured encontrado para esta categoria
+    return (
+      <div className="text-center p-4 text-gray-500">
+        <div className="flex flex-col items-center justify-center h-full">
+          <Search className="w-12 h-12 mb-3 opacity-50" />
+          <p className="text-sm font-medium">Nenhum produto em destaque</p>
+          <p className="text-xs mt-1">Marque um produto como "Destaque no Menu Dropdown" para exibir aqui</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se houver produto em destaque do banco, exibir ele
+  if (hasFeaturedProduct && !shouldUseDemo && displayProduct) {
+    return (
+      <div className="p-4">
+        <div className="text-center">
+          {/* Imagem do produto em alta resolução */}
+          <div className="relative overflow-hidden rounded-lg mb-4 group">
+            <img
+              src={displayProduct.image_url || '/placeholder-product.png'}
+              alt={displayProduct.product_name}
+              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder-product.png';
+                target.alt = 'Imagem indisponível';
+              }}
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
+          
+          {/* Nome/título do item em destaque */}
+          <div className="mb-4">
+            <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
+              {displayProduct.product_name}
+            </h4>
+          </div>
+          
+          {/* Botão Ver Detalhes */}
+          <button
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#2E86AB] text-white font-medium rounded-lg hover:bg-[#267399] active:bg-[#1f5e7f] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2E86AB] focus:ring-opacity-50"
+            onClick={() => {
+              // Navegar para página de detalhes do produto
+              window.location.href = `/produto/${displayProduct.id}`;
+            }}
+            aria-label={`Ver detalhes de ${displayProduct.product_name}`}
+          >
+            <Search className="w-4 h-4" />
+            <span>Ver Detalhes</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (shouldUseDemo) {
     // Para debug, vamos mostrar o produto de exemplo
     console.log('🎯 Mostrando produto de exemplo para debug');
     return (
@@ -100,7 +178,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
             {mockProduct.product_name}
           </h4>
           <p className="text-xs text-orange-500 mt-1">
-            {!isSupabaseConfigured ? 'Supabase não configurado' : 'Modo de demonstração - Adicione produtos à categoria'}
+            {!isSupabaseConfigured ? 'Supabase não configurado' : 'Modo de demonstração - Marque um produto como "Destaque no Menu Dropdown"'}
           </p>
         </div>
         
@@ -119,45 +197,44 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
 
   return (
     <div className="p-4">
-      {/* Imagem do produto em alta resolução */}
-      <div className="relative overflow-hidden rounded-lg mb-4 group">
-        <img
-          src={displayProduct.image_url || '/placeholder-product.png'}
-          alt={displayProduct.product_name}
-          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder-product.png';
-            target.alt = 'Imagem indisponível';
+      <div className="text-center">
+        {/* Imagem do produto em alta resolução */}
+        <div className="relative overflow-hidden rounded-lg mb-4 group">
+          <img
+            src={displayProduct?.image_url || '/placeholder-product.png'}
+            alt={displayProduct?.product_name || 'Produto'}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = '/placeholder-product.png';
+              target.alt = 'Imagem indisponível';
+            }}
+            loading="lazy"
+            decoding="async"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        </div>
+        
+        {/* Nome/título do item em destaque */}
+        <div className="mb-4">
+          <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
+            {displayProduct?.product_name || 'Produto'}
+          </h4>
+        </div>
+        
+        {/* Botão Ver Detalhes */}
+        <button
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-[#2E86AB] text-white font-medium rounded-lg hover:bg-[#267399] active:bg-[#1f5e7f] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2E86AB] focus:ring-opacity-50"
+          onClick={() => {
+            // Navegar para página de detalhes do produto
+            window.location.href = `/produto/${displayProduct?.id}`;
           }}
-          loading="lazy"
-          decoding="async"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          aria-label={`Ver detalhes de ${displayProduct?.product_name || 'produto'}`}
+        >
+          <Search className="w-4 h-4" />
+          <span>Ver Detalhes</span>
+        </button>
       </div>
-      
-      {/* Nome/título do item em destaque */}
-      <div className="mb-4">
-        <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
-          {displayProduct.product_name}
-        </h4>
-        {isFallback && (
-          <p className="text-xs text-gray-500 mt-1">Este produto foi selecionado automaticamente</p>
-        )}
-      </div>
-      
-      {/* Botão Ver Detalhes */}
-      <button
-        className="flex items-center justify-center gap-2 px-4 py-3 bg-[#2E86AB] text-white font-medium rounded-lg hover:bg-[#267399] active:bg-[#1f5e7f] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2E86AB] focus:ring-opacity-50"
-        onClick={() => {
-          // Navegar para página de detalhes do produto
-          window.location.href = `/produto/${displayProduct.id}`;
-        }}
-        aria-label={`Ver detalhes de ${displayProduct.product_name}`}
-      >
-        <Search className="w-4 h-4" />
-        <span>Ver Detalhes</span>
-      </button>
     </div>
   );
 };
