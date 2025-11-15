@@ -684,7 +684,8 @@ PALAVRAS-CHAVE:
       console.error('Erro ao gerar conteúdo:', error);
       addNotification('error', 'Erro ao gerar conteúdo. Por favor, tente novamente.');
     } finally {
-      stopLoading();
+      setIsGeneratingAI(false);
+      setAiGenerationMessage('');
     }
   };
 
