@@ -235,6 +235,13 @@ export interface Category {
   parent_id?: number;
   is_parent?: boolean;
   level?: number;
+  image_url?: string;
+  active?: boolean;
+  featured?: boolean;
+  show_on_homepage?: boolean;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
 }
 
 export interface Product {

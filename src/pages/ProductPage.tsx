@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Phone, Mail, MessageCircle, Star, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { table } from '../lib/schema';
 import type { Product, ProductImage } from '../lib/supabase';
 import WhatsAppButton from '../components/WhatsAppButton';
 
@@ -28,7 +29,7 @@ const ProductPage: React.FC = () => {
       try {
         // Fetch product with category info
         const { data: productData } = await supabase
-          .from('products')
+          .from(table('products'))
           .select(`
             *,
             category:categories(id, name, slug)
@@ -42,7 +43,7 @@ const ProductPage: React.FC = () => {
 
           // Fetch product images
           const { data: imagesData } = await supabase
-            .from('product_images')
+            .from(table('product_images'))
             .select('*')
             .eq('product_id', productData.id)
             .order('id');
@@ -68,7 +69,7 @@ const ProductPage: React.FC = () => {
     setSubmitting(true);
     try {
       const { error } = await supabase
-        .from('leads')
+        .from(table('leads'))
         .insert({
           client_name: formData.client_name,
           email: formData.email,

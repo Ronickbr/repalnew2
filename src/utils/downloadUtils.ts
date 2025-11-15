@@ -1,4 +1,4 @@
-// Utilitários para download de arquivos de backup
+// Utilitários para download de arquivos
 
 export interface DownloadOptions {
   filename?: string;
@@ -48,10 +48,10 @@ export const downloadFile = (
 };
 
 /**
- * Gera nome de arquivo para backup baseado nas configurações
+ * Gera nome de arquivo baseado nas configurações
  */
-export const generateBackupFilename = (
-  tables: string[],
+export const generateFilename = (
+  prefix: string,
   format: string,
   timestamp?: Date
 ): string => {
@@ -59,11 +59,7 @@ export const generateBackupFilename = (
   const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
   const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
   
-  const tablesStr = tables.length > 3 
-    ? `${tables.slice(0, 3).join('-')}-e-mais-${tables.length - 3}`
-    : tables.join('-');
-
-  return `backup-${tablesStr}-${dateStr}-${timeStr}.${format}`;
+  return `${prefix}-${dateStr}-${timeStr}.${format}`;
 };
 
 /**
@@ -82,31 +78,30 @@ export const getMimeType = (format: string): string => {
 };
 
 /**
- * Faz download de backup a partir de dados do job
+ * Faz download de arquivo a partir de dados
  */
-export const downloadBackup = async (
-  _jobId: string,
-  tables: string[],
+export const downloadFileData = async (
+  prefix: string,
   format: string,
-  backupData: string | Blob | ArrayBuffer
+  fileData: string | Blob | ArrayBuffer
 ): Promise<void> => {
   try {
-    const filename = generateBackupFilename(tables, format);
+    const filename = generateFilename(prefix, format);
     const mimeType = getMimeType(format);
 
-    downloadFile(backupData, filename, mimeType);
+    downloadFile(fileData, filename, mimeType);
     
     console.log(`Download iniciado: ${filename}`);
   } catch (error) {
-    console.error('Erro ao fazer download do backup:', error);
+    console.error('Erro ao fazer download do arquivo:', error);
     throw error;
   }
 };
 
 /**
- * Converte dados de backup para formato apropriado para download
+ * Converte dados para formato apropriado para download
  */
-export const prepareBackupData = (
+export const prepareData = (
   data: any,
   format: string
 ): string => {

@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
 import '../styles/wysiwyg-editor.css';
 
 interface WysiwygEditorProps {
@@ -16,82 +18,101 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
   className = '',
   required = false
 }) => {
-  const [ReactQuill, setReactQuill] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const quillRef = useRef<Quill | null>(null);
 
+  // Inicializar editor Quill uma única vez
   useEffect(() => {
-    // Carregar ReactQuill apenas no cliente
-    const loadReactQuill = async () => {
-      try {
-        // Importar CSS
-        await import('react-quill/dist/quill.snow.css');
-        
-        // Importar componente
-        const module = await import('react-quill');
-        setReactQuill(() => module.default);
-      } catch (error) {
-        console.error('Erro ao carregar ReactQuill:', error);
-      } finally {
-        setIsLoading(false);
+    const container = containerRef.current;
+    if (container) {
+      // Prevenir duplicação em StrictMode: limpar qualquer resquício de inicializações anteriores
+      // Remove toolbars anteriores inseridas pelo Quill
+      const prevSibling = container.previousElementSibling as HTMLElement | null;
+      if (prevSibling && prevSibling.classList.contains('ql-toolbar')) {
+        prevSibling.remove();
+      }
+      // Limpar conteúdo do container antes de inicializar
+      container.innerHTML = '';
+    }
+
+    if (containerRef.current && !quillRef.current) {
+      quillRef.current = new Quill(containerRef.current, {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['link'],
+            ['clean']
+          ],
+        },
+        placeholder,
+      });
+
+      // Definir conteúdo inicial a partir da prop
+      const initialHtml = (value || '').trim();
+      if (initialHtml) {
+        quillRef.current.clipboard.dangerouslyPasteHTML(initialHtml);
+      }
+
+      // Propagar mudanças do usuário
+      quillRef.current.on('text-change', (_delta, _oldDelta, source) => {
+        if (source === 'user') {
+          const html = quillRef.current?.root.innerHTML || '';
+          onChange(html);
+        }
+      });
+    }
+
+    // Cleanup
+    return () => {
+      const quill = quillRef.current;
+      const container = containerRef.current;
+      if (quill) {
+        quill.off('text-change');
+        // Remover toolbar e conteúdo para evitar duplicação em novos mounts
+        const toolbar = quill.root.parentElement?.previousElementSibling as HTMLElement | null;
+        if (toolbar && toolbar.classList.contains('ql-toolbar')) {
+          toolbar.remove();
+        }
+        quillRef.current = null;
+      }
+      if (container) {
+        container.innerHTML = '';
+        const prevSibling = container.previousElementSibling as HTMLElement | null;
+        if (prevSibling && prevSibling.classList.contains('ql-toolbar')) {
+          prevSibling.remove();
+        }
       }
     };
-
-    loadReactQuill();
   }, []);
 
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      ['link'],
-      ['clean']
-    ],
-  };
+  // Sincronizar alterações externas (por exemplo, geração via IA)
+  useEffect(() => {
+    const quill = quillRef.current;
+    if (!quill) return;
 
-  const formats = [
-    'header',
-    'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
-    'link'
-  ];
+    const currentHtml = quill.root.innerHTML || '';
+    const nextHtml = value || '';
 
-  if (isLoading || !ReactQuill) {
-    return (
-      <div className={`wysiwyg-editor ${className}`}>
-        <div 
-          className="p-4 border rounded bg-white min-h-[120px] flex items-center justify-center text-gray-500"
-          style={{
-            backgroundColor: 'white',
-            borderRadius: '6px',
-            border: '1px solid #d1d5db'
-          }}
-        >
-          Carregando editor...
-        </div>
-        {required && !value.trim() && (
-          <p className="text-red-500 text-sm mt-1">Este campo é obrigatório</p>
-        )}
-      </div>
-    );
-  }
+    if (currentHtml !== nextHtml) {
+      quill.clipboard.dangerouslyPasteHTML(nextHtml);
+    }
+  }, [value]);
 
   return (
     <div className={`wysiwyg-editor ${className}`}>
-      <ReactQuill
-        theme="snow"
-        value={value}
-        onChange={onChange}
-        modules={modules}
-        formats={formats}
-        placeholder={placeholder}
+      <div
+        ref={containerRef}
         style={{
           backgroundColor: 'white',
           borderRadius: '6px',
-          border: '1px solid #d1d5db'
+          border: '1px solid #d1d5db',
+          minHeight: '120px'
         }}
       />
-      {required && !value.trim() && (
+      {required && !(value || '').trim() && (
         <p className="text-red-500 text-sm mt-1">Este campo é obrigatório</p>
       )}
     </div>

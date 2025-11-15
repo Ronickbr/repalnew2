@@ -11,7 +11,7 @@ interface ProductFormWrapperProps {
   onCategoryChange: (categoryId: string) => void;
   onSaveProduct: () => void;
   onCloseModal: () => void;
-  onAiGenerate: () => void;
+  onAiGenerate: (data: ProductFormData) => void;
   aiLoading: boolean;
   aiError: string | null;
   loading: boolean;
@@ -65,7 +65,12 @@ const ProductFormWrapper: React.FC<ProductFormWrapperProps> = ({
             onSubmit={handleSubmit}
             onCancel={onCloseModal}
             onCategoryChange={onCategoryChange}
-            onAiGenerate={onAiGenerate}
+            onAiGenerate={(data) => {
+              // Sincronizar o estado do Admin com os dados atuais do formulário
+              setProductForm(data);
+              // Disparar a geração de IA com os dados atualizados
+              onAiGenerate(data);
+            }}
             aiLoading={aiLoading}
             aiError={aiError}
             loading={loading}

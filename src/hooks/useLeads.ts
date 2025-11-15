@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { table } from '../lib/schema'
 import { queryKeys } from '../lib/react-query'
 import type { Lead } from '../lib/supabase'
 import { toast } from 'sonner'
@@ -18,7 +19,7 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: async (leadData: CreateLeadData): Promise<Lead> => {
       const { data, error } = await supabase
-        .from('leads')
+        .from(table('leads'))
         .insert([leadData])
         .select()
         .single()
@@ -44,7 +45,7 @@ export function useLeads() {
     queryKey: queryKeys.leads,
     queryFn: async (): Promise<Lead[]> => {
       const { data, error } = await supabase
-        .from('leads')
+        .from(table('leads'))
         .select('*')
         .order('created_at', { ascending: false })
       
@@ -63,7 +64,7 @@ export function useUpdateLeadStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }): Promise<Lead> => {
       const { data, error } = await supabase
-        .from('leads')
+        .from(table('leads'))
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()

@@ -35,7 +35,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
     console.log(`[ProductCard] Adicionando produto à lista: ${product.product_name} (ID: ${product.id})`);
     
     addItem({
-      id: product.id,
+      id: product.id.toString(),
       name: product.product_name,
       image: product.product_images?.[0]?.image_url || product.image_url || '/placeholder-product.png'
     });

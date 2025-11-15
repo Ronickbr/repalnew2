@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { table } from '../lib/schema'
 import { queryKeys } from '../lib/react-query'
 import type { Category } from '../lib/supabase'
 
@@ -9,7 +10,7 @@ export function useCategories() {
     queryFn: async (): Promise<Category[]> => {
       console.log('🔍 useCategories: Buscando categorias...');
       const { data, error } = await supabase
-        .from('categories')
+        .from(table('categories'))
         .select('*')
         .order('sort_order', { ascending: true })
       

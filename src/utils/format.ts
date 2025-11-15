@@ -142,58 +142,13 @@ export const formatStatus = (status: string): string => {
   }
 };
 
-// Função para formatar tipo de backup
-export const formatBackupType = (type: string): string => {
-  switch (type) {
-    case 'manual':
-      return 'Manual';
-    case 'scheduled':
-      return 'Agendado';
-    default:
-      return type;
-  }
-};
 
-// Função para formatar frequência
-export const formatFrequency = (frequency: string): string => {
-  switch (frequency) {
-    case 'daily':
-      return 'Diário';
-    case 'weekly':
-      return 'Semanal';
-    case 'monthly':
-      return 'Mensal';
-    default:
-      return frequency;
-  }
-};
 
-// Função para formatar formato de arquivo
-export const formatFileFormat = (format: string): string => {
-  switch (format) {
-    case 'sql':
-      return 'SQL';
-    case 'json':
-      return 'JSON';
-    case 'csv':
-      return 'CSV';
-    default:
-      return format.toUpperCase();
-  }
-};
 
-// Função para formatar lista de tabelas
-export const formatTablesList = (tables: string[]): string => {
-  if (!tables || tables.length === 0) return 'Nenhuma';
-  
-  if (tables.length === 1) return tables[0];
-  
-  if (tables.length <= 3) {
-    return tables.join(', ');
-  }
-  
-  return `${tables.slice(0, 2).join(', ')} e mais ${tables.length - 2}`;
-};
+
+
+
+
 
 // Função para formatar porcentagem
 export const formatPercentage = (value: number): string => {

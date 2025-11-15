@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { table } from '../lib/schema';
 
 // Flags de ambiente para permitir bypass de autenticação em desenvolvimento
 const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -20,6 +21,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,7 +68,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           
           // Verificar se o token ainda é válido
           const { data, error } = await supabase
-            .from('admin_users')
+            .from(table('admin_users'))
             .select('id, email, name, role, active')
             .eq('id', userData.id)
             .eq('active', true)
@@ -112,15 +114,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       // Buscar usuário pelo email
-      const { data: userData, error: userError } = await supabase
-        .from('admin_users')
+      const emailLower = email.toLowerCase();
+      let { data: userData, error: userError } = await supabase
+        .from(table('admin_users'))
         .select('id, email, password_hash, name, role, active')
-        .eq('email', email.toLowerCase())
+        .eq('email', emailLower)
         .eq('active', true)
         .single();
-      
+
       if (userError || !userData) {
-        return { success: false, error: 'Credenciais inválidas' };
+        // Fallback: tentar variação .com.br quando informado .com
+        if (emailLower.endsWith('.com')) {
+          const altEmail = `${emailLower}.br`;
+          const alt = await supabase
+            .from(table('admin_users'))
+            .select('id, email, password_hash, name, role, active')
+            .eq('email', altEmail)
+            .eq('active', true)
+            .single();
+          userData = alt.data as any;
+        }
+        if (!userData) {
+          return { success: false, error: 'Credenciais inválidas' };
+        }
       }
       
       // Verificar senha
@@ -175,13 +191,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   
+  // Função simples de permissões baseada no papel do usuário
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    
+    // Super admin tem todas as permissões
+    if (user.role === 'super_admin') return true;
+    
+    // Admin tem permissões administrativas
+    if (user.role === 'admin') {
+      const adminPermissions = [
+        'manage_settings',
+        'manage_users',
+        'manage_content',
+        'view_dashboard'
+      ];
+      return adminPermissions.includes(permission);
+    }
+    
+    // Outros papéis podem ter permissões específicas
+    if (user.role === 'editor') {
+      const editorPermissions = [
+        'manage_content',
+        'view_dashboard'
+      ];
+      return editorPermissions.includes(permission);
+    }
+    
+    return false;
+  };
+  
   const value: AuthContextType = {
     user,
     loading,
     login,
     logout,
     isAuthenticated,
-    isAdmin
+    isAdmin,
+    hasPermission
   };
   
   return (

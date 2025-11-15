@@ -1,0 +1,74 @@
+[auth]
+# Set this to "true" to enable email confirmations
+enable_email_confirmations = false
+
+# Set this to "true" to enable phone confirmations
+enable_phone_confirmations = false
+
+[auth.external]
+# Set this to "true" to enable Google OAuth
+enable_google_oauth = false
+
+# Set this to "true" to enable GitHub OAuth
+enable_github_oauth = false
+
+# Set this to "true" to enable GitLab OAuth
+enable_gitlab_oauth = false
+
+# Set this to "true" to enable Bitbucket OAuth
+enable_bitbucket_oauth = false
+
+# Set this to "true" to enable Facebook OAuth
+enable_facebook_oauth = false
+
+# Set this to "true" to enable Twitter OAuth
+enable_twitter_oauth = false
+
+# Set this to "true" to enable Apple OAuth
+enable_apple_oauth = false
+
+# Set this to "true" to enable Azure OAuth
+enable_azure_oauth = false
+
+# Set this to "true" to enable Discord OAuth
+enable_discord_oauth = false
+
+# Set this to "true" to enable Twitch OAuth
+enable_twitch_oauth = false
+
+# Set this to "true" to enable Spotify OAuth
+enable_spotify_oauth = false
+
+# Set this to "true" to enable LinkedIn OAuth
+enable_linkedin_oauth = false
+
+# Set this to "true" to enable Notion OAuth
+enable_notion_oauth = false
+
+# Set this to "true" to enable Slack OAuth
+enable_slack_oauth = false
+
+# Set this to "true" to enable Zoom OAuth
+enable_zoom_oauth = false
+
+# Set this to "true" to enable WorkOS OAuth
+enable_workos_oauth = false
+
+# Set this to "true" to enable Keycloak OAuth
+enable_keycloak_oauth = false
+
+[studio]
+# Set this to "true" to enable the Supabase Studio
+enabled = true
+
+[storage]
+# Set this to "true" to enable storage
+enabled = true
+
+[realtime]
+# Set this to "true" to enable realtime
+enabled = true
+
+[functions]
+# Set this to "true" to enable edge functions
+enabled = false

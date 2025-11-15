@@ -5,6 +5,7 @@ import { useProductsByCategory } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import ProductCard from '../components/ProductCard';
 import LoadingSpinner from '../components/LoadingSpinner';
+import type { ProductWithCategory } from '../types/product';
 
 interface CategoryWithSubcategories {
   id: string;
@@ -114,7 +115,7 @@ const CategoryProducts: React.FC = () => {
   }, [subcategorySlug]);
 
   // Função para navegar para a página de detalhes do produto
-  const handleViewDetails = (product: any) => {
+  const handleViewDetails = (product: ProductWithCategory) => {
     navigate(`/produto/${product.slug}`);
   };
 

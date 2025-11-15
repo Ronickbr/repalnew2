@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import dotenv from 'dotenv';
-import backupRoutes from './api/routes/backup.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -24,7 +23,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rotas da API
-app.use('/api/backup', backupRoutes);
 
 // Configurar multer para armazenamento em memória
 const upload = multer({
@@ -33,8 +31,8 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024, // 5MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
+    // Permitir qualquer tipo que comece com image/
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
       cb(new Error('Tipo de arquivo não suportado'), false);
@@ -58,6 +56,12 @@ const ensureDirectoryExists = (dirPath) => {
 };
 
 // Rota de upload de imagem
+app.options('/api/upload-image', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  return res.status(200).end();
+});
 app.post('/api/upload-image', upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
@@ -129,8 +133,13 @@ app.get('/api/test', (req, res) => {
 });
 
 // Iniciar servidor
-app.listen(PORT, () => {
-  // Servidor iniciado
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor de upload iniciado em http://localhost:${PORT}`);
+});
+
+// Tratar erros do servidor
+app.on('error', (err) => {
+  console.error('Erro no servidor Express:', err);
 });
 
 export default app;

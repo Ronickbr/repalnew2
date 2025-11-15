@@ -9,7 +9,7 @@ import ProductCard from '../components/ProductCard'
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
   const { data: product, isLoading: loading, error } = useProductBySlug(slug || '')
-  const { data: similarProducts, isLoading: loadingSimilar } = useSimilarProducts(product?.id || '', product?.subcategory_id, 4)
+  const { data: similarProducts, isLoading: loadingSimilar } = useSimilarProducts(product?.id || '', product?.subcategory?.id, 4)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)

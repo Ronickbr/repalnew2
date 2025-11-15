@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { table } from '../lib/schema';
 
 export interface SiteSettings {
   id: number;
@@ -40,7 +41,7 @@ export const useSiteSettings = () => {
       setError(null);
       
       const { data, error: fetchError } = await supabase
-        .from('site_settings')
+        .from(table('site_settings'))
         .select('*')
         .limit(1)
         .single();
@@ -66,7 +67,7 @@ export const useSiteSettings = () => {
       setError(null);
       
       const { data, error: updateError } = await supabase
-        .from('site_settings')
+        .from(table('site_settings'))
         .update(newSettings)
         .eq('id', settings.id)
         .select()
@@ -113,7 +114,7 @@ export const useSiteSettings = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'site_settings'
+          table: table('site_settings')
         },
         () => {
           // Configurações atualizadas

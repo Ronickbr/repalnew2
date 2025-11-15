@@ -3,15 +3,27 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Award, Truck, Shield, MessageCircle } from 'lucide-react';
 import BannerCarousel from '../components/BannerCarousel';
 import { supabase } from '../lib/supabase';
-import type { Product } from '../lib/supabase';
+import { table } from '../lib/schema';
 import { useBudget } from '../contexts/BudgetContext';
 import { useLatestProducts } from '../hooks/useProducts';
 
 import WhatsAppButton from '../components/WhatsAppButton';
 
+interface FeaturedProduct {
+  id: number;
+  product_name: string;
+  image_url: string | null;
+  slug: string;
+  category_id?: number;
+  featured_on_homepage?: boolean;
+  active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const Home: React.FC = () => {
 
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const { addItem } = useBudget();
   const { data: latestProducts, isLoading: loadingLatest } = useLatestProducts(6);
@@ -19,24 +31,30 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: productsData } = await supabase
-          .from('products')
+        const { data: productsData, error: productsError } = await supabase
+          .from(table('products'))
           .select(`
             id,
-            product_name,
+            name,
             description,
-            image_url,
+            image,
             slug,
             featured,
             category_id,
-            categories!products_category_id_fkey(name)
+            category:categories!fk_products_category(name)
           `)
-          .eq('featured_on_homepage', true)
+          .eq('featured', true)
           .limit(8);
+
+        if (productsError) {
+          console.error('Erro ao buscar produtos em destaque:', productsError);
+          return;
+        }
 
         if (productsData) {
           const transformedProducts = productsData.map((product: any) => ({
             ...product,
+            image_url: product.image, // Mapear image para image_url
             active: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -104,9 +122,9 @@ const Home: React.FC = () => {
                     </Link>
                     <button 
                       onClick={() => addItem({
-                        id: product.id,
+                        id: product.id.toString(),
                         name: product.product_name,
-                        image: product.image_url
+                        image: product.image_url || undefined
                       })}
                       className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
                     >
@@ -267,9 +285,9 @@ const Home: React.FC = () => {
                       </Link>
                       <button 
                         onClick={() => addItem({
-                          id: product.id,
+                          id: product.id.toString(),
                           name: product.product_name,
-                          image: product.product_images?.[0]?.image_url || product.image_url
+                          image: product.product_images?.[0]?.image_url || product.image_url || undefined
                         })}
                         className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
                       >

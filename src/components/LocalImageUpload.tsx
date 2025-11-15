@@ -20,11 +20,12 @@ const LocalImageUpload: React.FC<LocalImageUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const allowedTypes = [
-    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
-    'image/svg+xml', 'image/bmp', 'image/tiff', 'image/x-icon', 
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    'image/svg+xml', 'image/bmp', 'image/tiff', 'image/x-icon',
     'image/vnd.microsoft.icon', 'image/avif', 'image/heic', 'image/heif',
     'image/x-ms-bmp', 'image/x-bmp', 'image/x-bitmap', 'image/pjpeg',
-    'image/apng', 'image/x-png'
+    'image/apng', 'image/x-png', 'image/vnd.adobe.photoshop',
+    'image/jxl', 'image/x-canon-cr2', 'image/x-nikon-nef'
   ];
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
 

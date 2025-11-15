@@ -1,3 +1,9 @@
 export { default as BannerModal } from './BannerModal';
 export { default as LeadModal } from './LeadModal';
+export { default as LeadManager } from './LeadManager';
+export { default as UserManager } from './UserManager';
+export { default as RecentLeads } from './RecentLeads';
 export { default as CategoryManager } from './CategoryManager';
+export { default as SubcategoryForm } from './SubcategoryForm';
+export { default as BrandManager } from './BrandManager';
+export { default as SettingsModal } from './SettingsModal';

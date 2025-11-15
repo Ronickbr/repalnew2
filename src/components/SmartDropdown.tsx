@@ -126,7 +126,7 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
       // Pequeno delay para garantir que o DOM foi atualizado
       const timer = setTimeout(() => {
         calculatePosition();
-      }, 10);
+      }, 50); // Aumentado de 10ms para 50ms para garantir renderização
 
       return () => clearTimeout(timer);
     }

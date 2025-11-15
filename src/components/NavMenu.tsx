@@ -172,7 +172,10 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
+        // Adicionar pequeno delay para permitir que o clique no botão seja processado
+        setTimeout(() => {
+          setOpenDropdown(null);
+        }, 150);
       }
     };
 
@@ -233,6 +236,12 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
     setOpenDropdown(openDropdown === categorySlug ? null : categorySlug);
   };
 
+  const handleDropdownClick = (e: React.MouseEvent, categorySlug: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleDropdownToggle(categorySlug);
+  };
+
   const handleHamburgerClick = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -290,7 +299,7 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
                 ? 'text-[#D0021B] bg-red-50'
                 : 'text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50'
             }`}
-            onClick={() => handleDropdownToggle(category.slug)}
+            onClick={(e) => handleDropdownClick(e, category.slug)}
             onKeyDown={(e) => handleKeyDown(e, () => handleDropdownToggle(category.slug))}
             aria-expanded={openDropdown === category.slug}
             aria-haspopup="true"

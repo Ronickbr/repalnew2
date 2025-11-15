@@ -3,6 +3,8 @@ import { Package, Camera, Tag, FileText, Settings, Check, AlertCircle, ChevronRi
 import WysiwygEditor from './WysiwygEditor';
 import MultipleImageUpload from './MultipleImageUpload';
 import ImageUrlInput from './ImageUrlInput';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { table } from '../lib/schema';
 
 export interface ProductFormData {
   id?: string;
@@ -41,6 +43,13 @@ export interface Category {
   parent_id?: string | number;
 }
 
+// Tabela de marcas no Supabase
+interface Brand {
+  id: string | number;
+  name: string;
+  slug?: string;
+}
+
 interface ProductFormProps {
   initialData?: ProductFormData;
   categories: Category[];
@@ -48,7 +57,7 @@ interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
   onCancel: () => void;
   onCategoryChange: (categoryId: string) => void;
-  onAiGenerate?: () => void;
+  onAiGenerate?: (data: ProductFormData) => void;
   aiLoading?: boolean;
   aiError?: string | null;
   loading?: boolean;
@@ -90,20 +99,138 @@ const ProductForm: React.FC<ProductFormProps> = ({
       technical_specifications: '',
       meta_title: '',
       meta_description: '',
-      meta_keywords: '',
-      short_description: '',
-      key_features: '',
-      model: '',
-      sku_code: ''
+      meta_keywords: ''
     };
     
     return initialData ? { ...defaultData, ...initialData } : defaultData;
   });
 
+  // Sincronizar dados iniciais vindos do Admin sem sobrescrever campos já digitados pelo usuário.
+  // Evita o bug onde ao mudar a categoria os campos (ex.: nome do produto) eram apagados.
+  const initializedFromPropsRef = useRef(false);
+  useEffect(() => {
+    if (!initialData) return;
+
+    setFormData(prev => {
+      // Primeira hidratação: aplica as props recebidas (abrir modal ao editar produto, etc.)
+      if (!initializedFromPropsRef.current) {
+        initializedFromPropsRef.current = true;
+        return { ...prev, ...initialData };
+      }
+
+      // Atualizações subsequentes: aplicar apenas campos esperados de atualizações externas
+      // (ex.: mudança de categoria no Admin, conteúdo gerado pela IA), sem sobrescrever entradas locais.
+      const allowlist: (keyof ProductFormData)[] = [
+        'category_id',
+        'subcategory_id',
+        'images',
+        'description',
+        'technical_specifications',
+        'meta_title',
+        'meta_description',
+        'meta_keywords',
+        'brand',
+        'short_description',
+        'key_features',
+        'model',
+        'sku_code'
+      ];
+
+      const changes: Partial<ProductFormData> = {};
+      for (const key of allowlist) {
+        const nextVal = initialData[key];
+        // Apenas atualiza se o valor vindo de fora for diferente
+        if (typeof nextVal !== 'undefined' && nextVal !== prev[key]) {
+          (changes as any)[key] = nextVal as any;
+        }
+      }
+
+      return { ...prev, ...changes };
+    });
+  }, [initialData]);
+
   const [activeSection, setActiveSection] = useState<string>('basic');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState<number>(0);
   const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Estado local para marcas
+  const [brandOptions, setBrandOptions] = useState<Brand[]>([]);
+  const [showNewBrandInput, setShowNewBrandInput] = useState(false);
+  const [newBrandName, setNewBrandName] = useState('');
+
+  // Carregar marcas do banco
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        const { data, error } = await supabase
+          .from(table('brands'))
+          .select('id,name,slug')
+          .order('name');
+
+        if (!error && Array.isArray(data)) {
+          const merged = [...data];
+          if (initialData?.brand && !merged.some(b => b.name === initialData.brand)) {
+            merged.unshift({ id: initialData.brand, name: initialData.brand });
+          }
+          setBrandOptions(merged);
+        } else {
+          // Fallback local
+          if (initialData?.brand) {
+            setBrandOptions([{ id: initialData.brand, name: initialData.brand }]);
+          }
+        }
+      } catch {
+        if (initialData?.brand) {
+          setBrandOptions([{ id: initialData.brand, name: initialData.brand }]);
+        }
+      }
+    };
+    loadBrands();
+  }, [initialData?.brand]);
+
+  const slugify = (text: string) =>
+    text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+  const saveNewBrand = async () => {
+    const name = newBrandName.trim();
+    if (!name) return;
+    try {
+      let newOption: Brand = { id: name, name };
+      if (isSupabaseConfigured) {
+        const { data, error } = await supabase
+          .from(table('brands'))
+          .insert([{ name, slug: slugify(name) }])
+          .select('id,name,slug')
+          .single();
+        if (!error && data) {
+          newOption = data as Brand;
+        }
+      }
+      setBrandOptions(prev => {
+        const map = new Map<string, Brand>();
+        [...prev, newOption].forEach(b => map.set(b.name, b));
+        return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+      });
+      handleInputChange('brand', name);
+      setShowNewBrandInput(false);
+      setNewBrandName('');
+    } catch {
+      // Fallback local
+      setBrandOptions(prev => {
+        if (prev.some(b => b.name === name)) return prev;
+        return [{ id: name, name }, ...prev];
+      });
+      handleInputChange('brand', name);
+      setShowNewBrandInput(false);
+      setNewBrandName('');
+    }
+  };
 
   const sections: FormSection[] = [
     {
@@ -111,14 +238,14 @@ const ProductForm: React.FC<ProductFormProps> = ({
       title: 'Informações Básicas',
       icon: <Package className="w-5 h-5" />,
       completed: false,
-      fields: ['product_name', 'category_id', 'subcategory_id', 'slug']
+      fields: ['product_name', 'category_id', 'subcategory_id', 'slug', 'brand']
     },
     {
       id: 'content',
       title: 'Conteúdo do Produto',
       icon: <FileText className="w-5 h-5" />,
       completed: false,
-      fields: ['description', 'short_description', 'key_features', 'technical_specifications']
+      fields: ['description', 'technical_specifications']
     },
     {
       id: 'media',
@@ -139,7 +266,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       title: 'Informações Adicionais',
       icon: <Settings className="w-5 h-5" />,
       completed: false,
-      fields: ['brand', 'model', 'sku_code', 'active', 'featured_in_dropdown', 'featured_on_homepage', 'clearance_sale']
+      fields: ['active', 'featured_in_dropdown', 'featured_on_homepage', 'clearance_sale']
     }
   ];
 
@@ -482,6 +609,58 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   />
                   <p className="mt-1 text-xs text-gray-500">URL amigável do produto</p>
                 </div>
+
+                <div>
+                  <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-2">
+                    Marca
+                  </label>
+                  <select
+                    id="brand"
+                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors border-gray-300"
+                    value={formData.brand || ''}
+                    onChange={(e) => handleInputChange('brand', e.target.value)}
+                  >
+                    <option value="">Selecione uma marca</option>
+                    {brandOptions.map((b) => (
+                      <option key={b.id} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
+                  <div className="mt-2">
+                    {!showNewBrandInput ? (
+                      <button
+                        type="button"
+                        onClick={() => { setShowNewBrandInput(true); setNewBrandName(''); }}
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        + Adicionar nova marca
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="text"
+                          value={newBrandName}
+                          onChange={(e) => setNewBrandName(e.target.value)}
+                          placeholder="Nome da nova marca"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={saveNewBrand}
+                          className="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                          Salvar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowNewBrandInput(false); setNewBrandName(''); }}
+                          className="px-3 py-2 text-sm bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -500,7 +679,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 {onAiGenerate && (
                   <button
                     type="button"
-                    onClick={onAiGenerate}
+                    onClick={() => onAiGenerate && onAiGenerate(formData)}
                     disabled={aiLoading || !formData.product_name || !formData.category_id}
                     className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                       aiLoading || !formData.product_name || !formData.category_id
@@ -543,37 +722,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   <p className="mt-1 text-xs text-gray-500">Uma descrição detalhada ajuda na conversão</p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-2">
-                      Descrição Curta
-                    </label>
-                    <textarea
-                      id="short_description"
-                      value={formData.short_description || ''}
-                      onChange={(e) => handleInputChange('short_description', e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Resumo curto do produto para listagens..."
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Máximo 200 caracteres</p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="key_features" className="block text-sm font-medium text-gray-700 mb-2">
-                      Principais Características
-                    </label>
-                    <textarea
-                      id="key_features"
-                      value={formData.key_features || ''}
-                      onChange={(e) => handleInputChange('key_features', e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Liste os principais diferenciais do produto..."
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Separe por vírgulas ou quebras de linha</p>
-                  </div>
-                </div>
+                
 
                 <div>
                   <label htmlFor="technical_specifications" className="block text-sm font-medium text-gray-700 mb-2">
@@ -720,49 +869,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div>
-                  <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-2">
-                    Marca
-                  </label>
-                  <input
-                    id="brand"
-                    type="text"
-                    value={formData.brand || ''}
-                    onChange={(e) => handleInputChange('brand', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Marca do produto"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-2">
-                    Modelo
-                  </label>
-                  <input
-                    id="model"
-                    type="text"
-                    value={formData.model || ''}
-                    onChange={(e) => handleInputChange('model', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Código do modelo"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="sku_code" className="block text-sm font-medium text-gray-700 mb-2">
-                    Código SKU
-                  </label>
-                  <input
-                    id="sku_code"
-                    type="text"
-                    value={formData.sku_code || ''}
-                    onChange={(e) => handleInputChange('sku_code', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Código único do produto"
-                  />
-                </div>
-              </div>
+              
 
               <div className="bg-gray-50 rounded-lg p-6">
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Status e Visibilidade</h4>

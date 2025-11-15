@@ -18,7 +18,7 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useAuth } from '../hooks/useAuth';
 import SearchBar from './SearchBar';
 import { useCategories } from '../hooks/useCategories';
-import NavMenu from './NavMenu';
+import CategoryNav from './CategoryNav';
 import { useBudget } from '../contexts/BudgetContext';
 import SideQuoteList from './SideQuoteList';
 
@@ -318,8 +318,8 @@ const Header: React.FC = () => {
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4 xl:px-8">
           <div className="py-1 sm:py-1 lg:py-2">
-            {/* Novo NavMenu Component */}
-            <NavMenu className="flex-1" />
+            {/* Novo CategoryNav Component */}
+            <CategoryNav className="flex-1" />
           </div>
         </div>
       </div>
