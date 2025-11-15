@@ -151,7 +151,8 @@ const ProductManager: React.FC = () => {
         .from('products')
         .select(`
           *,
-          categories(name)
+          categories(name),
+          product_images(url, sort_order)
         `)
         .order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -181,7 +182,21 @@ const ProductManager: React.FC = () => {
         throw new Error(`Erro ao buscar produtos: ${supabaseError.message}`);
       }
 
-      setProducts(data || []);
+      // Processar dados para converter product_images em additional_images
+      const processedData = (data || []).map((product: any) => {
+        const additionalImages = product.product_images 
+          ? product.product_images
+              .sort((a: any, b: any) => a.sort_order - b.sort_order)
+              .map((img: any) => img.url)
+          : [];
+        
+        return {
+          ...product,
+          additional_images: additionalImages
+        };
+      });
+
+      setProducts(processedData);
       announceToScreenReader(`${data?.length || 0} produtos carregados`, 'polite');
     } catch (err) {
       handleError(err, 'fetchProducts');
@@ -302,10 +317,12 @@ const ProductManager: React.FC = () => {
 
   const createProduct = async () => {
     try {
+      // Remover additional_images dos dados do produto principal
+      const { additional_images, ...productDataWithoutImages } = formData;
+      
       const productData = {
-        ...formData,
+        ...productDataWithoutImages,
         subcategory_id: formData.subcategory_id || undefined,
-        additional_images: formData.additional_images?.filter(img => img.trim() !== '') || [],
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
         seo_keywords: formData.seo_keywords?.trim() || undefined,
@@ -329,6 +346,27 @@ const ProductManager: React.FC = () => {
       }
 
       if (data) {
+        // Salvar imagens adicionais na tabela product_images
+        if (formData.additional_images && formData.additional_images.length > 0) {
+          const validImages = formData.additional_images.filter(img => img && img.trim() !== '');
+          if (validImages.length > 0) {
+            const imageRecords = validImages.map((url, index) => ({
+              product_id: data.id,
+              url: url,
+              sort_order: index
+            }));
+            
+            const { error: imagesError } = await supabase
+              .from('product_images')
+              .insert(imageRecords);
+              
+            if (imagesError) {
+              console.error('Erro ao salvar imagens adicionais:', imagesError);
+              // Não lançar erro para não impedir a criação do produto
+            }
+          }
+        }
+        
         setProducts(prev => [data, ...prev]);
         addNotification('success', 'Produto criado com sucesso');
         announceToScreenReader(`Produto ${data.name} criado com sucesso`, 'polite');
@@ -344,10 +382,12 @@ const ProductManager: React.FC = () => {
     if (!editingProduct) return;
 
     try {
+      // Remover additional_images dos dados do produto principal
+      const { additional_images, ...productDataWithoutImages } = formData;
+      
       const productData = {
-        ...formData,
+        ...productDataWithoutImages,
         subcategory_id: formData.subcategory_id || undefined,
-        additional_images: formData.additional_images?.filter(img => img.trim() !== '') || [],
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
         seo_keywords: formData.seo_keywords?.trim() || undefined,
@@ -371,6 +411,39 @@ const ProductManager: React.FC = () => {
       }
 
       if (data) {
+        // Atualizar imagens adicionais na tabela product_images
+        if (formData.additional_images && formData.additional_images.length > 0) {
+          const validImages = formData.additional_images.filter(img => img && img.trim() !== '');
+          
+          // Primeiro, remover imagens antigas
+          const { error: deleteError } = await supabase
+            .from('product_images')
+            .delete()
+            .eq('product_id', editingProduct.id);
+            
+          if (deleteError) {
+            console.error('Erro ao remover imagens antigas:', deleteError);
+          }
+          
+          // Depois, inserir as novas imagens
+          if (validImages.length > 0) {
+            const imageRecords = validImages.map((url, index) => ({
+              product_id: editingProduct.id,
+              url: url,
+              sort_order: index
+            }));
+            
+            const { error: imagesError } = await supabase
+              .from('product_images')
+              .insert(imageRecords);
+              
+            if (imagesError) {
+              console.error('Erro ao salvar imagens adicionais:', imagesError);
+              // Não lançar erro para não impedir a atualização do produto
+            }
+          }
+        }
+        
         setProducts(prev => prev.map(p => p.id === data.id ? data : p));
         addNotification('success', 'Produto atualizado com sucesso');
         announceToScreenReader(`Produto ${data.name} atualizado com sucesso`, 'polite');

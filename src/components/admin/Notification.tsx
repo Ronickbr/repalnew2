@@ -144,18 +144,18 @@ const Notification: React.FC<NotificationProps> = ({
         role="alert"
         aria-live="polite"
         aria-atomic="true"
-        className={`max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden border ${getBackgroundColor()}`}
+        className={`max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden border ${getBackgroundColor()} ${!persistent && duration > 0 ? 'pb-1' : ''}`}
       >
         <div className="p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">
               {getIcon()}
             </div>
-            <div className="ml-3 w-0 flex-1">
-              <h3 className={`text-sm font-medium ${getTextColor()}`}>
+            <div className="ml-3 flex-1 min-w-0 pr-2">
+              <h3 className={`text-sm font-medium ${getTextColor()} break-words leading-tight`}>
                 {title}
               </h3>
-              <div className={`mt-1 text-sm ${getTextColor()}`}>
+              <div className={`mt-1 text-sm ${getTextColor()} break-words leading-relaxed`}>
                 {message}
               </div>
               {actions.length > 0 && (
@@ -177,7 +177,7 @@ const Notification: React.FC<NotificationProps> = ({
               <button
                 type="button"
                 onClick={handleClose}
-                className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                className="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex-shrink-0"
                 aria-label="Fechar notificação"
               >
                 <span className="sr-only">Fechar</span>
@@ -233,15 +233,15 @@ export const NotificationContainer: React.FC<NotificationContainerProps> = ({
       case 'top-left':
         return 'top-4 left-4';
       case 'top-right':
-        return 'top-4 right-4';
+        return 'top-4 right-4 mr-2';
       case 'bottom-left':
         return 'bottom-4 left-4';
       case 'bottom-right':
-        return 'bottom-4 right-4';
+        return 'bottom-4 right-4 mr-2';
       case 'center':
         return 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2';
       default:
-        return 'top-4 right-4';
+        return 'top-4 right-4 mr-2';
     }
   };
 
@@ -253,7 +253,7 @@ export const NotificationContainer: React.FC<NotificationContainerProps> = ({
       ref={containerRef}
       aria-live="polite"
       aria-atomic="false"
-      className={`fixed z-50 space-y-2 ${getPositionClasses()}`}
+      className={`fixed z-50 space-y-2 ${getPositionClasses()} max-h-screen overflow-y-auto`}
     >
       {visibleNotifications.map((notification) => (
         <Notification
