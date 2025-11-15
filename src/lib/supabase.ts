@@ -53,6 +53,13 @@ function createSupabaseStub() {
     auth: {
       getUser: async () => ({ data: { user: null }, error: new Error('Supabase não configurado (ambiente de desenvolvimento)') }),
     },
+    channel: (_name: string) => ({
+      on: (_event: string, _config: any, _callback: Function) => ({
+        subscribe: () => ({
+          unsubscribe: () => {}
+        })
+      })
+    })
   }
 
   return stubClient
