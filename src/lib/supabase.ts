@@ -51,7 +51,20 @@ function createSupabaseStub() {
   const stubClient: any = {
     from: (_table: string) => builder,
     auth: {
-      getUser: async () => ({ data: { user: null }, error: new Error('Supabase não configurado (ambiente de desenvolvimento)') }),
+      getUser: async () => ({ data: { user: { id: 'dev-user-id', email: 'dev@example.com' } }, error: null }),
+      getSession: async () => ({ data: { session: { user: { id: 'dev-user-id', email: 'dev@example.com' } } }, error: null }),
+    },
+    storage: {
+      from: (_bucket: string) => ({
+        upload: async (_path: string, _file: File) => ({ 
+          data: { path: 'dev-image-path' }, 
+          error: null 
+        }),
+        getPublicUrl: (_path: string) => ({ 
+          data: { publicUrl: `https://via.placeholder.com/300x200?text=${encodeURIComponent(_path)}` } 
+        }),
+        remove: async (_paths: string[]) => ({ data: null, error: null }),
+      })
     },
     channel: (_name: string) => ({
       on: (_event: string, _config: any, _callback: Function) => ({

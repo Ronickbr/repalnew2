@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { uploadProductMainImage, uploadProductAdditionalImage } from '../../services/productImageUpload';
 import { Product, Category, Brand } from '../../types';
 import { 
   Plus, 
@@ -764,45 +765,28 @@ PALAVRAS-CHAVE:
 
   // Image upload functions
   const handleFileUpload = async (index: number, file: File) => {
-    // Aceitar todos os tipos de imagem com validação mais abrangente
-    const validImageTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
-      'image/svg+xml', 'image/bmp', 'image/tiff', 'image/tif', 'image/ico',
-      'image/heic', 'image/heif'
-    ];
+    const result = await uploadProductAdditionalImage(file, index);
     
-    if (!validImageTypes.includes(file.type)) {
-      addNotification('error', 'Por favor, selecione um arquivo de imagem válido (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF, HEIC)');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit aumentado
-      addNotification('error', 'A imagem deve ter no máximo 10MB');
-      return;
-    }
-
-    try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from('products')
-        .upload(`images/${fileName}`, file);
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(data.path);
-
+    if (result.success && result.url) {
       const newImages = [...(formData.additional_images || [])];
-      newImages[index] = publicUrl;
+      newImages[index] = result.url;
       setFormData(prev => ({ ...prev, additional_images: newImages.filter(img => img.trim() !== '') }));
-
       addNotification('success', 'Imagem enviada com sucesso!');
-    } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
-      addNotification('error', 'Erro ao fazer upload da imagem');
+      
+      // Mostrar avisos se houver
+      if (result.details?.validation?.warnings.length) {
+        result.details.validation.warnings.forEach(warning => {
+          addNotification('warning', warning);
+        });
+      }
+    } else {
+      console.error('Erro ao fazer upload da imagem:', result.error);
+      addNotification('error', result.error || 'Erro ao fazer upload da imagem');
+      
+      // Mostrar detalhes do erro para debug
+      if (result.details?.validation?.errors.length) {
+        console.error('Erros de validação:', result.details.validation.errors);
+      }
     }
   };
 
@@ -862,44 +846,33 @@ PALAVRAS-CHAVE:
   };
 
   const handleMainImageUpload = async (file: File) => {
-    // Aceitar todos os tipos de imagem com validação mais abrangente
-    const validImageTypes = [
-      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
-      'image/svg+xml', 'image/bmp', 'image/tiff', 'image/tif', 'image/ico',
-      'image/heic', 'image/heif'
-    ];
-    
-    if (!validImageTypes.includes(file.type)) {
-      addNotification('error', 'Por favor, selecione um arquivo de imagem válido (JPEG, PNG, GIF, WebP, SVG, BMP, TIFF, HEIC)');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit aumentado
-      addNotification('error', 'A imagem deve ter no máximo 10MB');
-      return;
-    }
-
-    startLoading('Enviando imagem principal...');
+    startLoading('Validando e enviando imagem principal...');
 
     try {
-      const fileName = `${Date.now()}-${file.name}`;
-      const { data, error } = await supabase.storage
-        .from('products')
-        .upload(`images/${fileName}`, file);
-
-      if (error) {
-        throw error;
+      const result = await uploadProductMainImage(file);
+      
+      if (result.success && result.url) {
+        setFormData(prev => ({ ...prev, image: result.url }));
+        addNotification('success', 'Imagem principal enviada com sucesso!');
+        
+        // Mostrar avisos se houver
+        if (result.details?.validation?.warnings.length) {
+          result.details.validation.warnings.forEach(warning => {
+            addNotification('warning', warning);
+          });
+        }
+      } else {
+        console.error('Erro ao fazer upload da imagem principal:', result.error);
+        addNotification('error', result.error || 'Erro ao fazer upload da imagem principal');
+        
+        // Mostrar detalhes do erro para debug
+        if (result.details?.validation?.errors.length) {
+          console.error('Erros de validação:', result.details.validation.errors);
+        }
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(data.path);
-
-      setFormData(prev => ({ ...prev, image: publicUrl }));
-      addNotification('success', 'Imagem principal enviada com sucesso!');
     } catch (error) {
-      console.error('Erro ao fazer upload da imagem principal:', error);
-      addNotification('error', 'Erro ao fazer upload da imagem principal');
+      console.error('Erro crítico ao fazer upload da imagem principal:', error);
+      addNotification('error', 'Erro crítico ao fazer upload da imagem principal');
     } finally {
       stopLoading();
     }
