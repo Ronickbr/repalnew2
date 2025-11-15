@@ -137,6 +137,7 @@ const ProductManager: React.FC = () => {
     } catch (err) {
       handleError(err, 'loadInitialData');
     } finally {
+      stopLoading(); // Importante: parar o loading!
       setIsGeneratingAI(false);
       setAiGenerationMessage('');
     }
