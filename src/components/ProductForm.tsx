@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Package, Camera, Tag, FileText, Settings, Check, AlertCircle, ChevronRight, Sparkles } from 'lucide-react';
 import WysiwygEditor from './WysiwygEditor';
-import MultipleImageUpload from './MultipleImageUpload';
-import ImageUrlInput from './ImageUrlInput';
+import UnifiedImageUpload from './UnifiedImageUpload';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { table } from '../lib/schema';
 
@@ -35,6 +34,13 @@ export interface ProductImageForm {
   alt_text?: string;
   sort_order: number;
   is_primary: boolean;
+}
+
+interface ImageItem {
+  id: string;
+  url: string;
+  type: 'file' | 'url';
+  file?: File;
 }
 
 export interface Category {
@@ -153,6 +159,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState<number>(0);
   const firstInputRef = useRef<HTMLInputElement>(null);
+  const [unifiedImages, setUnifiedImagesState] = useState<ImageItem[]>([]);
 
   // Estado local para marcas
   const [brandOptions, setBrandOptions] = useState<Brand[]>([]);
@@ -188,6 +195,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
     };
     loadBrands();
   }, [initialData?.brand]);
+
+  // Converter imagens do formato antigo para novo formato unificado
+  useEffect(() => {
+    if (formData.images && formData.images.length > 0) {
+      const convertedImages: ImageItem[] = formData.images.map((img, index) => ({
+        id: img.id || `img-${index}-${Date.now()}`,
+        url: img.image_url,
+        type: img.image_url.startsWith('http') ? 'url' : 'file'
+      }));
+      setUnifiedImagesState(convertedImages);
+    }
+  }, [formData.images]);
 
   const slugify = (text: string) =>
     text
@@ -333,37 +352,18 @@ const ProductForm: React.FC<ProductFormProps> = ({
     onCategoryChange(categoryId);
   };
 
-  const handleImagesChange = (imageUrls: string[]) => {
-    const newImages: ProductImageForm[] = imageUrls.map((url, index) => {
-      const existingImage = formData.images.find(img => img.image_url === url);
-      return {
-        id: existingImage?.id,
-        image_url: url,
-        alt_text: existingImage?.alt_text || formData.product_name,
-        sort_order: index,
-        is_primary: index === 0
-      };
-    });
-    handleInputChange('images', newImages);
-  };
-
-  const handleImageUrlsChange = (urls: string[]) => {
-    const urlImages: ProductImageForm[] = urls.map((url, index) => ({
-      image_url: url,
-      alt_text: formData.product_name || 'Imagem do produto',
-      sort_order: formData.images.length + index,
-      is_primary: formData.images.length === 0 && index === 0
-    }));
-
-    const existingNonUrlImages = formData.images.filter(img => 
-      !img.image_url.startsWith('http')
-    );
-
-    const totalImages = existingNonUrlImages.length + urlImages.length;
+  const handleUnifiedImagesChange = (newImages: ImageItem[]) => {
+    setUnifiedImagesState(newImages);
     
-    if (totalImages <= 5) {
-      handleInputChange('images', [...existingNonUrlImages, ...urlImages]);
-    }
+    const productImages: ProductImageForm[] = newImages.map((img, index) => ({
+      id: img.id.startsWith('img-') ? undefined : img.id,
+      image_url: img.url,
+      alt_text: formData.product_name || 'Imagem do produto',
+      sort_order: index,
+      is_primary: index === 0
+    }));
+    
+    handleInputChange('images', productImages);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -756,29 +756,17 @@ const ProductForm: React.FC<ProductFormProps> = ({
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload de Imagens
+                    Imagens do Produto
                   </label>
-                  <MultipleImageUpload
-                    images={formData.images.map(img => img.image_url)}
-                    onImagesChange={handleImagesChange}
+                  <UnifiedImageUpload
+                    images={unifiedImages}
+                    onImagesChange={handleUnifiedImagesChange}
                     maxImages={5}
+                    maxSizeInMB={5}
                   />
-                  <p className="mt-1 text-xs text-gray-500">Formatos aceitos: JPG, PNG, GIF</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    URLs de Imagens Externas
-                  </label>
-                  <p className="text-sm text-gray-600 mb-3">
-                    Adicione imagens através de URLs externas. Use o botão "+" para adicionar múltiplas URLs.
+                  <p className="mt-1 text-xs text-gray-500">
+                    Formatos aceitos: JPG, PNG, GIF, WebP • Máximo 5MB por imagem • Arraste para reordenar
                   </p>
-                  <ImageUrlInput
-                    placeholder="https://exemplo.com/imagem.jpg"
-                    onChange={handleImageUrlsChange}
-                    showPreview={true}
-                    maxUrls={5 - formData.images.filter(img => !img.image_url.startsWith('http')).length}
-                  />
                 </div>
               </div>
             </div>

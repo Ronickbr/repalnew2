@@ -10,6 +10,7 @@ import CategoryProducts from './pages/CategoryProducts';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
+import TestUnifiedUpload from './pages/TestUnifiedUpload';
 import AdminLayout from './layouts/AdminLayout';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -46,6 +47,7 @@ function App() {
               <Route path="produto/:slug" element={<ProductDetail />} />
             </Route>
             <Route path="/login" element={<Login />} />
+            <Route path="/test-upload" element={<TestUnifiedUpload />} />
             <Route 
               path="/perfil" 
               element={
