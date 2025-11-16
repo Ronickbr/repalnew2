@@ -34,7 +34,6 @@ export const useSubcategories = () => {
           id,
           name,
           slug,
-          description,
           featured,
           active,
           created_at,

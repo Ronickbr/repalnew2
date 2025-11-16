@@ -66,7 +66,7 @@ export const useProducts = () => {
         const { data: categoriesData } = await supabase
           .from('categories')
           .select('id, name, slug')
-          .eq('active', true);
+          .eq('is_disabled', false);
 
         // Criar mapa de categorias para lookup rápido
         const categoryMap = new Map();
@@ -267,14 +267,14 @@ export const useProductBySlug = (slug: string) => {
           *,
           product_images (
             id,
-            image_url,
+            image,
             alt_text,
             sort_order,
             is_primary
           )
         `)
         .eq('slug', slug)
-        .eq('active', true)
+        .eq('is_disabled', false)
         .single()
 
       // Se não encontrou por slug, tentar buscar por nome convertido para slug
@@ -285,13 +285,13 @@ export const useProductBySlug = (slug: string) => {
             *,
             product_images (
               id,
-              image_url,
+              image,
               alt_text,
               sort_order,
               is_primary
             )
           `)
-          .eq('active', true)
+          .eq('is_disabled', false)
 
         if (nameError) throw nameError
 
@@ -329,7 +329,7 @@ export const useProductBySlug = (slug: string) => {
           product_images: data.product_images && data.product_images.length > 0 
             ? data.product_images.map((img: any) => ({
                 id: img.id,
-                image_url: img.image_url,
+                image_url: img.image,
                 alt_text: img.alt_text,
                 sort_order: img.sort_order,
                 is_primary: img.is_primary,
@@ -380,17 +380,15 @@ export const useFeaturedDropdownProducts = () => {
     // Filtrar apenas produtos ativos E com featured_in_dropdown=true
     const filtered = allProducts.filter(product => {
       const isFeatured = product.featured_in_dropdown === true
-      const isActive = product.active === true
-      const isNotDisabled = !product.is_disabled
+      const isActive = !product.is_disabled
       
       console.log('🏷️ Produto:', product.product_name, {
         featured_in_dropdown: product.featured_in_dropdown,
-        active: product.active,
         is_disabled: product.is_disabled,
-        incluir: isFeatured && isActive && isNotDisabled
+        incluir: isFeatured && isActive
       })
       
-      return isFeatured && isActive && isNotDisabled
+      return isFeatured && isActive
     })
     
     console.log('✅ useFeaturedDropdownProducts: Produtos filtrados:', filtered.length)
@@ -419,17 +417,15 @@ export const useFeaturedProductsByCategory = (categoryId: string | number) => {
     // Filtrar apenas produtos com featured_in_dropdown=true e ativos
     const filtered = allProducts.filter(product => {
       const isFeatured = product.featured_in_dropdown === true
-      const isActive = product.active === true
-      const isNotDisabled = !product.is_disabled
+      const isActive = !product.is_disabled
       
       console.log('🏷️ Produto:', product.product_name, {
         featured_in_dropdown: product.featured_in_dropdown,
-        active: product.active,
         is_disabled: product.is_disabled,
-        incluir: isFeatured && isActive && isNotDisabled
+        incluir: isFeatured && isActive
       })
       
-      return isFeatured && isActive && isNotDisabled
+      return isFeatured && isActive
     })
     
     console.log('✅ Produtos featured encontrados:', filtered.length)
@@ -475,7 +471,7 @@ export const useLatestProducts = (limit: number = 6) => {
           created_at,
           updated_at
         `)
-        .eq('active', true)
+        .eq('is_disabled', false)
         .order('created_at', { ascending: false })
         .limit(limit)
 
@@ -487,7 +483,7 @@ export const useLatestProducts = (limit: number = 6) => {
       const { data: categoriesData } = await supabase
         .from('categories')
         .select('id, name, slug')
-        .eq('active', true);
+        .eq('is_disabled', false);
 
       const categoryMap = new Map();
       categoriesData?.forEach((cat: any) => {
