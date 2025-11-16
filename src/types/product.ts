@@ -23,6 +23,8 @@ export interface Product {
   is_disabled?: boolean;
   featured_on_homepage?: boolean;
   clearance_sale?: boolean;
+  specifications?: string;
+  tags?: string[];
 }
 
 export interface ProductWithCategory {
@@ -44,6 +46,8 @@ export interface ProductWithCategory {
   is_disabled?: boolean;
   featured_on_homepage?: boolean;
   clearance_sale?: boolean;
+  specifications?: string;
+  tags?: string[];
   category?: {
     id: string;
     name: string;

@@ -119,6 +119,15 @@ const ProductDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Hidden SEO Tags */}
+      {product?.tags && product.tags.length > 0 && (
+        <div className="hidden" aria-hidden="true">
+          {product.tags.map((tag, index) => (
+            <span key={index} itemProp="keywords">{tag}</span>
+          ))}
+        </div>
+      )}
+      
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-8 bg-white/70 backdrop-blur-sm rounded-full px-6 py-3 shadow-sm border border-gray-200/50">
@@ -441,6 +450,22 @@ const ProductDetail: React.FC = () => {
           </div>
         )}
 
+        {/* Technical Specifications - Full Width Section */}
+        {product?.specifications && (
+          <div className="xl:col-span-3 mb-8">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
+              <h3 className="text-xl font-bold text-[#333333] mb-4 flex items-center space-x-2">
+                <div className="w-1 h-6 bg-gradient-to-b from-[#000080] to-[#8B0000] rounded-full"></div>
+                <span>Especificações Técnicas</span>
+              </h3>
+              <div 
+                className="text-gray-700 leading-relaxed text-base prose prose-gray max-w-none"
+                dangerouslySetInnerHTML={{ __html: product.specifications }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Stats Section */}
         <section className="py-12 bg-white border-t">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -500,13 +525,13 @@ const ProductDetail: React.FC = () => {
           </div>
         </section>
 
-        {/* Similar Products Section */}
+        {/* Similar Products Section - Before Footer */}
         {similarProducts && similarProducts.length > 0 && (
           <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100 border-t">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold text-[#333333] mb-4">
-                  Produtos Similares
+                  Produtos Relacionados
                 </h2>
                 <p className="text-gray-600 text-lg max-w-2xl mx-auto">
                   Confira outros produtos da mesma categoria que podem te interessar

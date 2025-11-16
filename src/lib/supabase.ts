@@ -286,6 +286,7 @@ export interface Product {
   subcategory?: Category;
   images?: ProductImage[];
   product_images?: ProductImage[];
+  tags?: string[];
   // Additional properties for admin
   meta_title?: string;
   meta_description?: string;
