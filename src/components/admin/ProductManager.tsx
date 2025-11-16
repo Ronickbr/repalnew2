@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { uploadProductMainImage, uploadProductAdditionalImage } from '../../services/productImageUpload';
 import { Product, Category, Brand } from '../../types';
 import { 
   Plus, 
@@ -17,9 +16,7 @@ import {
   Package,
   BarChart3,
   Sparkles,
-  Anchor,
-  Link,
-  GripVertical
+  Anchor
 } from 'lucide-react';
 import { LoadingSpinner, LoadingOverlay } from './LoadingSpinner';
 import NotificationContainer from './Notification';
@@ -27,6 +24,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAccessibility } from '../../hooks/useAccessibility';
 import { useLoadingState } from '../../hooks/useLoadingState';
+import UnifiedImageUpload, { ImageItem } from '../UnifiedImageUpload';
 
 interface ProductFormData {
   name: string;
@@ -91,6 +89,9 @@ const ProductManager: React.FC = () => {
     seo_description: undefined,
     seo_keywords: undefined,
   });
+
+  // Unified image upload state
+  const [unifiedImages, setUnifiedImages] = useState<ImageItem[]>([]);
   
   const [, setFormErrors] = useState<ProductFormErrors>({}); // formErrors não é usado diretamente no JSX
   
@@ -107,10 +108,7 @@ const ProductManager: React.FC = () => {
   
   // Form sections state
   
-  // Image upload states
-  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
-  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // Image upload states (unified via UnifiedImageUpload)
   
   // Loading state for modal operations
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -289,6 +287,27 @@ const ProductManager: React.FC = () => {
   };
 
   // Handle form submission
+
+  // Sync unified images to form data
+  const syncUnifiedImagesToFormData = (images: ImageItem[]) => {
+    if (images.length > 0) {
+      const mainImage = images[0]; // Primeira imagem é a principal
+      const additionalImages = images.slice(1).map(img => img.url);
+      
+      setFormData(prev => ({
+        ...prev,
+        image: mainImage.url,
+        additional_images: additionalImages
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        image: undefined,
+        additional_images: []
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -564,6 +583,19 @@ const ProductManager: React.FC = () => {
       seo_description: product.seo_description,
       seo_keywords: product.seo_keywords,
     });
+    
+    // Sync images to unified format
+    const unifiedImages: ImageItem[] = [];
+    if (product.image) {
+      unifiedImages.push({ id: 'main', url: product.image, type: 'url' });
+    }
+    if (product.additional_images) {
+      product.additional_images.forEach((url, index) => {
+        unifiedImages.push({ id: `additional-${index}`, url, type: 'url' });
+      });
+    }
+    setUnifiedImages(unifiedImages);
+    
     setFormErrors({});
     setShowForm(true);
     announceToScreenReader(`Editando produto ${product.name}`, 'polite');
@@ -589,6 +621,7 @@ const ProductManager: React.FC = () => {
       seo_description: undefined,
       seo_keywords: undefined,
     });
+    setUnifiedImages([]); // Clear unified images
     setFormErrors({});
     setSubcategories([]); // Limpa subcategorias ao fechar formulário
   };
@@ -763,127 +796,14 @@ PALAVRAS-CHAVE:
     }
   };
 
-  // Image upload functions
-  const handleFileUpload = async (index: number, file: File) => {
-    const result = await uploadProductAdditionalImage(file, index);
-    
-    if (result.success && result.url) {
-      const newImages = [...(formData.additional_images || [])];
-      newImages[index] = result.url;
-      setFormData(prev => ({ ...prev, additional_images: newImages.filter(img => img.trim() !== '') }));
-      addNotification('success', 'Imagem enviada com sucesso!');
-      
-      // Mostrar avisos se houver
-      if (result.details?.validation?.warnings.length) {
-        result.details.validation.warnings.forEach(warning => {
-          addNotification('warning', warning);
-        });
-      }
-    } else {
-      console.error('Erro ao fazer upload da imagem:', result.error);
-      addNotification('error', result.error || 'Erro ao fazer upload da imagem');
-      
-      // Mostrar detalhes do erro para debug
-      if (result.details?.validation?.errors.length) {
-        console.error('Erros de validação:', result.details.validation.errors);
-      }
-    }
-  };
+  
 
-  const handleImageFileChange = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleFileUpload(index, file);
-    }
-  };
 
   // Drag and Drop functions for image reordering
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedImageIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedImageIndex !== null && draggedImageIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
 
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    if (draggedImageIndex !== null && draggedImageIndex !== dropIndex) {
-      const images = [...(formData.additional_images || [])];
-      const draggedImage = images[draggedImageIndex];
-      
-      // Remove a imagem da posição original
-      images.splice(draggedImageIndex, 1);
-      
-      // Insere na nova posição
-      images.splice(dropIndex, 0, draggedImage);
-      
-      setFormData(prev => ({ ...prev, additional_images: images }));
-      addNotification('success', 'Imagem movida com sucesso!');
-    }
-    
-    setDraggedImageIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedImageIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleImageUrlChange = (index: number, url: string) => {
-    const newImages = [...(formData.additional_images || [])];
-    newImages[index] = url;
-    setFormData(prev => ({ ...prev, additional_images: newImages.filter(img => img.trim() !== '') }));
-  };
-
-  const handleMainImageUpload = async (file: File) => {
-    startLoading('Validando e enviando imagem principal...');
-
-    try {
-      const result = await uploadProductMainImage(file);
-      
-      if (result.success && result.url) {
-        setFormData(prev => ({ ...prev, image: result.url }));
-        addNotification('success', 'Imagem principal enviada com sucesso!');
-        
-        // Mostrar avisos se houver
-        if (result.details?.validation?.warnings.length) {
-          result.details.validation.warnings.forEach(warning => {
-            addNotification('warning', warning);
-          });
-        }
-      } else {
-        console.error('Erro ao fazer upload da imagem principal:', result.error);
-        addNotification('error', result.error || 'Erro ao fazer upload da imagem principal');
-        
-        // Mostrar detalhes do erro para debug
-        if (result.details?.validation?.errors.length) {
-          console.error('Erros de validação:', result.details.validation.errors);
-        }
-      }
-    } catch (error) {
-      console.error('Erro crítico ao fazer upload da imagem principal:', error);
-      addNotification('error', 'Erro crítico ao fazer upload da imagem principal');
-    } finally {
-      stopLoading();
-    }
-  };
-
-  const handleMainImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      handleMainImageUpload(file);
-    }
-  };
+  
 
   // Handle select all products
   const handleSelectAll = () => {
@@ -1746,256 +1666,16 @@ PALAVRAS-CHAVE:
               <div id="media-info" className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Mídia</h3>
                 
-                {/* Compact Upload Controls */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setUploadMode('url')}
-                      className={`flex items-center px-3 py-1.5 rounded text-sm font-medium ${
-                        uploadMode === 'url'
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-                      }`}
-                    >
-                      <Link className="h-3 w-3 mr-1.5" />
-                      URL
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUploadMode('file')}
-                      className={`flex items-center px-3 py-1.5 rounded text-sm font-medium ${
-                        uploadMode === 'file'
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
-                      }`}
-                    >
-                      <Upload className="h-3 w-3 mr-1.5" />
-                      Arquivo
-                    </button>
-                    <span className="text-xs text-gray-500 ml-auto">Máx. 6 imagens</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Main Image - Compact */}
-                  <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium text-gray-700 w-20 flex-shrink-0">Principal:</label>
-                    <div 
-                      className="flex-1 flex items-center gap-2"
-                      onDragOver={(e) => {
-                        if (uploadMode === 'file') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }
-                      }}
-                      onDrop={(e) => {
-                        if (uploadMode === 'file') {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const files = Array.from(e.dataTransfer.files);
-                          const validFiles = files.filter(file => {
-                            const validImageTypes = [
-                              'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
-                              'image/svg+xml', 'image/bmp', 'image/tiff', 'image/tif', 'image/ico',
-                              'image/heic', 'image/heif'
-                            ];
-                            return validImageTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
-                          });
-                          
-                          if (validFiles.length > 0) {
-                            handleMainImageUpload(validFiles[0]);
-                          }
-                        }
-                      }}
-                    >
-                      {uploadMode === 'url' ? (
-                        <input
-                          type="url"
-                          value={formData.image || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value || undefined }))}
-                          placeholder="URL"
-                          className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      ) : (
-                        <>
-                          <input
-                            type="file"
-                            onChange={handleMainImageFileChange}
-                            className="hidden"
-                            id="main-image-upload"
-                          />
-                          <label
-                            htmlFor="main-image-upload"
-                            className="cursor-pointer inline-flex items-center px-2 py-1.5 text-sm border border-gray-300 rounded shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            title="Clique para selecionar ou arraste uma imagem aqui"
-                          >
-                            <Upload className="h-3 w-3 mr-1" />
-                            Escolher
-                          </label>
-                        </>
-                      )}
-                      {formData.image && (
-                        <div className="flex items-center gap-1">
-                          <img src={formData.image} alt="Principal" className="h-8 w-8 object-cover rounded border" />
-                          <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, image: undefined }))}
-                            className="text-red-600 hover:text-red-800 p-0.5"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Additional Images - Dynamic with Add Button */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-gray-700">Imagens Adicionais:</label>
-                      {uploadMode === 'url' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newImages = [...(formData.additional_images || [])];
-                            newImages.push('');
-                            setFormData(prev => ({ ...prev, additional_images: newImages }));
-                          }}
-                          className="flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Adicionar
-                        </button>
-                      )}
-                    </div>
-                    
-                    {uploadMode === 'url' ? (
-                      <div className="space-y-2">
-                        {(formData.additional_images || []).map((url, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <input
-                              type="url"
-                              value={url}
-                              onChange={(e) => handleImageUrlChange(index, e.target.value)}
-                              placeholder="URL da imagem"
-                              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newImages = (formData.additional_images || []).filter((_, i) => i !== index);
-                                setFormData(prev => ({ ...prev, additional_images: newImages }));
-                              }}
-                              className="text-red-600 hover:text-red-800 p-1"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {/* Multiple File Upload */}
-                        <div 
-                          className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
-                          }}
-                          onDragLeave={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                          }}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
-                            
-                            const files = Array.from(e.dataTransfer.files);
-                            const validFiles = files.filter(file => {
-                              const validImageTypes = [
-                                'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 
-                                'image/svg+xml', 'image/bmp', 'image/tiff', 'image/tif', 'image/ico',
-                                'image/heic', 'image/heif'
-                              ];
-                              return validImageTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
-                            });
-                            
-                            if (validFiles.length !== files.length) {
-                              addNotification('warning', 'Alguns arquivos foram ignorados (formato inválido ou tamanho excedido)');
-                            }
-                            
-                            validFiles.forEach((file, index) => {
-                              setTimeout(() => handleImageFileChange((formData.additional_images || []).length + index, { target: { files: [file] } } as any), index * 200);
-                            });
-                          }}
-                        >
-                          <input
-                            type="file"
-                            multiple
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              files.forEach((file, index) => {
-                                setTimeout(() => handleImageFileChange((formData.additional_images || []).length + index, { target: { files: [file] } } as any), index * 200);
-                              });
-                            }}
-                            className="hidden"
-                            id="multiple-images-upload"
-                          />
-                          <label
-                            htmlFor="multiple-images-upload"
-                            className="cursor-pointer flex flex-col items-center"
-                          >
-                            <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-600">Clique para upload múltiplo</span>
-                            <span className="text-xs text-gray-500">ou arraste as imagens aqui</span>
-                          </label>
-                        </div>
-                        
-                        {/* Existing Images */}
-                        {(formData.additional_images || []).length > 0 && (
-                          <div className="grid grid-cols-3 gap-2">
-                            {(formData.additional_images || []).map((url, index) => (
-                              <div 
-                                key={index} 
-                                className={`relative group cursor-move transition-all duration-200 ${
-                                  dragOverIndex === index ? 'scale-105 border-2 border-blue-400' : ''
-                                } ${
-                                  draggedImageIndex === index ? 'opacity-50' : ''
-                                }`}
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, index)}
-                                onDragOver={(e) => handleDragOver(e, index)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, index)}
-                                onDragEnd={handleDragEnd}
-                                title="Arraste para reorganizar"
-                              >
-                                <img src={url} alt={`Adicional ${index + 1}`} className="w-full h-20 object-cover rounded border" />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newImages = (formData.additional_images || []).filter((_, i) => i !== index);
-                                    setFormData(prev => ({ ...prev, additional_images: newImages }));
-                                  }}
-                                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-800 bg-white rounded-full p-1 shadow-sm border border-gray-200 transition-opacity z-10"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                                <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 bg-white rounded p-0.5 shadow-sm border border-gray-200 transition-opacity">
-                                  <GripVertical className="h-3 w-3 text-gray-500" />
-                                </div>
-                                <div className="absolute inset-0 bg-blue-500 bg-opacity-0 group-hover:bg-opacity-10 rounded transition-all duration-200 pointer-events-none" />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                <UnifiedImageUpload
+                  images={unifiedImages}
+                  onImagesChange={(newImages) => {
+                    setUnifiedImages(newImages);
+                    syncUnifiedImagesToFormData(newImages);
+                  }}
+                  maxImages={6}
+                  maxSizeInMB={10}
+                />
+              </div>
 
                   {/* Product Status - Inline */}
                   <div className="space-y-2 pt-2 border-t border-gray-100">
@@ -2061,9 +1741,6 @@ PALAVRAS-CHAVE:
                 >
                   {editingProduct ? 'Atualizar' : 'Criar'} Produto
                 </button>
-              </div>
-
-                </div>
               </div>
             </form>
           </div>
