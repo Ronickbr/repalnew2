@@ -42,27 +42,19 @@ export const useProducts = () => {
           .from(table('products'))
           .select(`
             id,
-            name,
+            product_name,
+            slug,
             description,
             benefits,
             category_id,
-            subcategory_id,
             featured,
             featured_in_dropdown,
             is_disabled,
             featured_on_homepage,
             clearance_sale,
-            image,
-            category:categories!fk_products_category(
-              id,
-              name,
-              slug
-            ),
-            subcategory:subcategories!fk_products_subcategory(
-              id,
-              name,
-              slug
-            )
+            image_url,
+            created_at,
+            updated_at
           `)
           .eq('active', true);
         
@@ -70,28 +62,39 @@ export const useProducts = () => {
           throw new Error(`Falha ao carregar produtos: ${productsError.message}`);
         }
         
+        // Buscar categorias separadamente para mapeamento
+        const { data: categoriesData } = await supabase
+          .from('categories')
+          .select('id, name, slug')
+          .eq('active', true);
+
+        // Criar mapa de categorias para lookup rápido
+        const categoryMap = new Map();
+        categoriesData?.forEach((cat: any) => {
+          categoryMap.set(cat.id, cat);
+        });
+
         // Transformar os dados para manter compatibilidade com a interface existente
         const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
           id: product.id,
-          product_name: product.name,
+          product_name: product.product_name,
           description: product.description || undefined,
+          benefits: product.benefits || undefined,
           category_id: product.category_id,
-          subcategory_id: product.subcategory_id,
-          slug: generateSlug(product.name),
+          slug: product.slug || generateSlug(product.product_name),
           featured: product.featured || false,
           featured_in_dropdown: product.featured_in_dropdown || false,
           is_disabled: product.is_disabled || false,
           featured_on_homepage: product.featured_on_homepage || false,
           clearance_sale: product.clearance_sale || false,
           active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          category: Array.isArray(product.category) ? undefined : product.category,
-          subcategory: Array.isArray(product.subcategory) ? undefined : product.subcategory,
-          product_images: product.image ? [{ 
+          created_at: product.created_at || new Date().toISOString(),
+          updated_at: product.updated_at || new Date().toISOString(),
+          category: categoryMap.get(product.category_id),
+          product_images: product.image_url ? [{ 
             id: '1', 
             product_id: product.id, 
-            image_url: product.image, 
+            image_url: product.image_url, 
             sort_order: 1, 
             created_at: new Date().toISOString() 
           }] : []
@@ -262,19 +265,9 @@ export const useProductBySlug = (slug: string) => {
         .from(table('products'))
         .select(`
           *,
-          category:categories!fk_products_category (
-            id,
-            name,
-            slug
-          ),
-          subcategory:subcategories!fk_products_subcategory (
-            id,
-            name,
-            slug
-          ),
           product_images (
             id,
-            image,
+            image_url,
             alt_text,
             sort_order,
             is_primary
@@ -290,19 +283,9 @@ export const useProductBySlug = (slug: string) => {
           .from(table('products'))
           .select(`
             *,
-            category:categories!products_category_id_fkey (
-              id,
-              name,
-              slug
-            ),
-            subcategory:categories!products_subcategory_id_fkey (
-              id,
-              name,
-              slug
-            ),
             product_images (
               id,
-              image,
+              image_url,
               alt_text,
               sort_order,
               is_primary
@@ -314,7 +297,7 @@ export const useProductBySlug = (slug: string) => {
 
         // Encontrar produto cujo nome convertido para slug corresponde ao slug buscado
         const foundProduct = productsByName?.find((p: any) => 
-          generateSlug(p.name || '') === slug
+          generateSlug(p.product_name || '') === slug
         )
 
         if (foundProduct) {
@@ -328,16 +311,35 @@ export const useProductBySlug = (slug: string) => {
       }
 
       if (data) {
+        // Buscar categoria do produto
+        let productCategory = null;
+        if (data.category_id) {
+          const { data: categoryData } = await supabase
+            .from('categories')
+            .select('id, name, slug')
+            .eq('id', data.category_id)
+            .single();
+          productCategory = categoryData;
+        }
+
         // Processar imagens - usar product_images se disponível, senão usar image_url
         const processedProduct: ProductWithCategory = {
           ...data,
+          category: productCategory,
           product_images: data.product_images && data.product_images.length > 0 
-            ? data.product_images 
-            : data.image 
+            ? data.product_images.map((img: any) => ({
+                id: img.id,
+                image_url: img.image_url,
+                alt_text: img.alt_text,
+                sort_order: img.sort_order,
+                is_primary: img.is_primary,
+                created_at: new Date().toISOString()
+              }))
+            : data.image_url 
               ? [{
                   id: '0',
-                  image_url: data.image,
-                  alt_text: data.name || '',
+                  image_url: data.image_url,
+                  alt_text: data.product_name || '',
                   sort_order: 1
                 }]
               : []
@@ -459,28 +461,19 @@ export const useLatestProducts = (limit: number = 6) => {
         .from(table('products'))
         .select(`
           id,
-          name,
+          product_name,
+          slug,
           description,
           benefits,
           category_id,
-          subcategory_id,
           featured,
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
           clearance_sale,
-          image,
+          image_url,
           created_at,
-          category:categories!fk_products_category(
-            id,
-            name,
-            slug
-          ),
-          subcategory:subcategories!fk_products_subcategory(
-            id,
-            name,
-            slug
-          )
+          updated_at
         `)
         .eq('active', true)
         .order('created_at', { ascending: false })
@@ -490,15 +483,25 @@ export const useLatestProducts = (limit: number = 6) => {
         throw new Error(`Falha ao carregar produtos recentes: ${productsError.message}`)
       }
 
+      // Buscar categorias para mapeamento
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .eq('active', true);
+
+      const categoryMap = new Map();
+      categoriesData?.forEach((cat: any) => {
+        categoryMap.set(cat.id, cat);
+      });
+
       // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.name,
+        product_name: product.product_name,
         description: product.description || undefined,
         benefits: product.benefits || undefined,
         category_id: product.category_id,
-        subcategory_id: product.subcategory_id,
-        slug: generateSlug(product.name),
+        slug: product.slug || generateSlug(product.product_name),
         featured: product.featured || false,
         featured_in_dropdown: product.featured_in_dropdown || false,
         is_disabled: product.is_disabled || false,
@@ -506,13 +509,12 @@ export const useLatestProducts = (limit: number = 6) => {
         clearance_sale: product.clearance_sale || false,
         active: true,
         created_at: product.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        category: Array.isArray(product.category) ? undefined : product.category,
-        subcategory: Array.isArray(product.subcategory) ? undefined : product.subcategory,
-        product_images: product.image ? [{ 
+        updated_at: product.updated_at || new Date().toISOString(),
+        category: categoryMap.get(product.category_id),
+        product_images: product.image_url ? [{ 
             id: '1', 
             product_id: product.id, 
-            image_url: product.image, 
+            image_url: product.image_url, 
             sort_order: 1, 
             created_at: new Date().toISOString() 
           }] : []
@@ -539,13 +541,13 @@ export const useLatestProducts = (limit: number = 6) => {
 }
 
 // Hook para buscar produtos similares da mesma subcategoria (excluindo o produto atual)
-export const useSimilarProducts = (currentProductId: string | number, subcategoryId: string | number | null | undefined, limit: number = 4) => {
+export const useSimilarProducts = (currentProductId: string | number, categoryId: string | number | null | undefined, limit: number = 4) => {
   const [products, setProducts] = useState<ProductWithCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const fetchSimilarProducts = useCallback(async () => {
-    if (!subcategoryId) {
+    if (!categoryId) {
       setProducts([])
       setIsLoading(false)
       return
@@ -555,36 +557,27 @@ export const useSimilarProducts = (currentProductId: string | number, subcategor
       setIsLoading(true)
       setError(null)
 
-      // Buscar produtos da mesma subcategoria, excluindo o produto atual
+      // Buscar produtos da mesma categoria, excluindo o produto atual
       const { data: productsData, error: productsError } = await supabase
         .from(table('products'))
         .select(`
           id,
-          name,
+          product_name,
+          slug,
           description,
           benefits,
           category_id,
-          subcategory_id,
           featured,
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
           clearance_sale,
-          image,
+          image_url,
           created_at,
-          category:categories!products_category_id_fkey(
-            id,
-            name,
-            slug
-          ),
-          subcategory:categories!products_subcategory_id_fkey(
-            id,
-            name,
-            slug
-          )
+          updated_at
         `)
         .eq('active', true)
-        .eq('subcategory_id', subcategoryId)
+        .eq('category_id', categoryId)
         .neq('id', currentProductId)
         .order('created_at', { ascending: false })
         .limit(limit)
@@ -593,15 +586,25 @@ export const useSimilarProducts = (currentProductId: string | number, subcategor
         throw new Error(`Falha ao carregar produtos similares: ${productsError.message}`)
       }
 
+      // Buscar categorias para mapeamento
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('id, name, slug')
+        .eq('active', true);
+
+      const categoryMap = new Map();
+      categoriesData?.forEach((cat: any) => {
+        categoryMap.set(cat.id, cat);
+      });
+
       // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.name,
+        product_name: product.product_name,
         description: product.description || undefined,
         benefits: product.benefits || undefined,
         category_id: product.category_id,
-        subcategory_id: product.subcategory_id,
-        slug: generateSlug(product.name),
+        slug: product.slug || generateSlug(product.product_name),
         featured: product.featured || false,
         featured_in_dropdown: product.featured_in_dropdown || false,
         is_disabled: product.is_disabled || false,
@@ -609,13 +612,12 @@ export const useSimilarProducts = (currentProductId: string | number, subcategor
         clearance_sale: product.clearance_sale || false,
         active: true,
         created_at: product.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        category: Array.isArray(product.category) ? undefined : product.category,
-        subcategory: Array.isArray(product.subcategory) ? undefined : product.subcategory,
-        product_images: product.image ? [{ 
+        updated_at: product.updated_at || new Date().toISOString(),
+        category: categoryMap.get(product.category_id),
+        product_images: product.image_url ? [{ 
             id: '1', 
             product_id: product.id, 
-            image_url: product.image, 
+            image_url: product.image_url, 
             sort_order: 1, 
             created_at: new Date().toISOString() 
           }] : []
@@ -627,7 +629,7 @@ export const useSimilarProducts = (currentProductId: string | number, subcategor
     } finally {
       setIsLoading(false)
     }
-  }, [currentProductId, subcategoryId, limit])
+  }, [currentProductId, categoryId, limit])
 
   useEffect(() => {
     fetchSimilarProducts()

@@ -20,6 +20,8 @@ import { WhatsAppProvider } from './contexts/WhatsAppContext';
 import { BudgetProvider } from './contexts/BudgetContext';
 import { queryClient } from './lib/react-query';
 
+
+
 // Lazy load admin pages
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 const ProductsPage = lazy(() => import('./pages/admin/ProductsPage'));

@@ -354,24 +354,48 @@ const ProductManager: React.FC = () => {
       let slug = baseSlug;
       let counter = 1;
       
-      while (true) {
-        const { data: existingProduct } = await supabase
-          .from('products')
-          .select('id')
-          .eq('slug', slug)
-          .single();
-        
-        if (!existingProduct) {
-          break; // Slug está disponível
+      console.log('Verificando unicidade do slug:', baseSlug);
+      
+      try {
+        while (true) {
+          const { data: existingProduct, error: slugCheckError } = await supabase
+            .from('products')
+            .select('id')
+            .eq('slug', slug)
+            .maybeSingle(); // Use maybeSingle() em vez de single() para evitar erro quando não encontra
+          
+          console.log('Resultado da verificação:', { existingProduct, slugCheckError });
+          
+          if (slugCheckError) {
+            console.warn('Erro ao verificar slug:', slugCheckError);
+            // Se houver erro na verificação, usar timestamp para garantir unicidade
+            slug = `${baseSlug}-${Date.now()}`;
+            break;
+          }
+          
+          if (!existingProduct) {
+            console.log('Slug disponível:', slug);
+            break; // Slug está disponível
+          }
+          
+          console.log('Slug já existe, tentando alternativa:', slug);
+          slug = `${baseSlug}-${counter}`;
+          counter++;
+          
+          if (counter > 100) {
+            // Usar timestamp como fallback para garantir unicidade
+            slug = `${baseSlug}-${Date.now()}`;
+            console.log('Limite de tentativas atingido, usando timestamp:', slug);
+            break;
+          }
         }
-        
-        slug = `${baseSlug}-${counter}`;
-        counter++;
-        
-        if (counter > 100) {
-          throw new Error('Não foi possível gerar um slug único. Por favor, altere o nome do produto.');
-        }
+      } catch (error) {
+        console.warn('Exceção ao verificar slug:', error);
+        // Em caso de erro, usar timestamp para garantir unicidade
+        slug = `${baseSlug}-${Date.now()}`;
       }
+      
+      console.log('Slug final:', slug);
 
       const productData = {
         ...productDataWithoutImages,

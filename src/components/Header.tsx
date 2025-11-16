@@ -2,22 +2,14 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Phone, 
-  Mail, 
-  Snowflake,
-  Hamburger,
-  ChefHat,
-  Beef,
-  UtensilsCrossed,
-  Container,
-  Wrench,
-  Utensils,
+  Mail,
   User,
   List
 } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useAuth } from '../hooks/useAuth';
 import SearchBar from './SearchBar';
-import { useCategories } from '../hooks/useCategories';
+import { useSubcategories } from '../hooks/useSubcategories';
 import CategoryNav from './CategoryNav';
 import { useBudget } from '../contexts/BudgetContext';
 import SideQuoteList from './SideQuoteList';
@@ -31,103 +23,116 @@ const Header: React.FC = () => {
   const [showSideQuoteList, setShowSideQuoteList] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Carregar categorias do banco de dados
-  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useCategories();
+  // Agora usando useSubcategories diretamente para pegar todas as subcategorias reais
 
-  // Função para mapear ícones baseado no slug da categoria
-  const getCategoryIcon = (slug: string) => {
-    const iconMap: { [key: string]: any } = {
-      'refrigeracao-comercial': Snowflake,
-      'equipamentos-bares-restaurantes': Hamburger,
-      'padaria-confeitaria': ChefHat,
-      'acougue': Beef,
-      'utensilios-utilidades': UtensilsCrossed,
-      'mobiliario-inox': Container,
-      'pecas-refrigeracao': Wrench
-    };
-    return iconMap[slug] || Utensils;
-  };
-
-  // Dados de fallback para quando há erro de conexão
+  // Dados de fallback para quando há erro de conexão - usando strings para ícones
   const fallbackCategories = [
-    {
-      id: 'acougue',
-      name: 'Açougue',
-      icon: Beef,
-      subcategories: [
-        { id: 'amaciadores-de-carne', name: 'Amaciadores de Carne' },
-        { id: 'balancas-para-acougue', name: 'Balanças para Açougue' },
-        { id: 'facas-e-utensílios', name: 'Facas e Utensílios' },
-        { id: 'moedores-de-carne', name: 'Moedores de Carne' },
-        { id: 'serra-fita', name: 'Serra Fita' }
-      ]
-    },
     {
       id: 'refrigeracao-comercial',
       name: 'Refrigeração Comercial',
-      icon: Snowflake,
+      icon: 'Snowflake',
       subcategories: [
-        { id: 'balcoes-refrigerados', name: 'Balcões Refrigerados' },
-        { id: 'camaras-frias', name: 'Câmaras Frias' },
-        { id: 'freezers-horizontais', name: 'Freezers Horizontais' },
-        { id: 'geladeiras-comerciais', name: 'Geladeiras Comerciais' },
-        { id: 'vitrines-refrigeradas', name: 'Vitrines Refrigeradas' }
+        { id: 'freezers', name: 'Freezers' },
+        { id: 'geladeiras', name: 'Geladeiras' },
+        { id: 'expositores-frios', name: 'Expositores' }
       ]
     },
     {
-      id: 'cozinha-industrial',
-      name: 'Cozinha Industrial',
-      icon: ChefHat,
+      id: 'bar-e-restaurante',
+      name: 'Bar e Restaurante',
+      icon: 'Utensils',
       subcategories: [
-        { id: 'fogoes-industriais', name: 'Fogões Industriais' },
-        { id: 'fornos-combinados', name: 'Fornos Combinados' },
-        { id: 'fritadeiras', name: 'Fritadeiras' },
-        { id: 'grills-e-chapas', name: 'Grills e Chapas' },
-        { id: 'panelas-de-pressao', name: 'Panelas de Pressão' }
+        { id: 'utensilios', name: 'Utensílios' },
+        { id: 'equipamentos', name: 'Equipamentos' },
+        { id: 'mobiliario', name: 'Mobiliário' }
       ]
     },
     {
-      id: 'equipamentos-para-restaurante',
-      name: 'Equipamentos para Restaurante',
-      icon: Utensils,
+      id: 'padaria-e-confeitaria',
+      name: 'Padaria e Confeitaria',
+      icon: 'ChefHat',
       subcategories: [
-        { id: 'equipamentos-de-buffet', name: 'Equipamentos de Buffet' },
-        { id: 'lava-loucas', name: 'Lava-louças' },
-        { id: 'mesas-e-bancadas', name: 'Mesas e Bancadas' },
-        { id: 'processadores-de-alimentos', name: 'Processadores de Alimentos' }
+        { id: 'fornos', name: 'Fornos' },
+        { id: 'utensilios-padaria', name: 'Utensílios' },
+        { id: 'expositores', name: 'Expositores' }
+      ]
+    },
+    {
+      id: 'acougue',
+      name: 'Açougue',
+      icon: 'Beef',
+      subcategories: [
+        { id: 'carnes-bovinas', name: 'Carnes Bovinas' },
+        { id: 'carnes-suinas', name: 'Carnes Suínas' },
+        { id: 'aves', name: 'Aves' }
+      ]
+    },
+    {
+      id: 'utilidades-domesticas',
+      name: 'Utilidades Domésticas',
+      icon: 'UtensilsCrossed',
+      subcategories: [
+        { id: 'panelas', name: 'Panelas' },
+        { id: 'talheres', name: 'Talheres' },
+        { id: 'acessorios', name: 'Acessórios' }
+      ]
+    },
+    {
+      id: 'mobiliario-em-inox',
+      name: 'Mobiliário em Inox',
+      icon: 'Package',
+      subcategories: [
+        { id: 'bancadas', name: 'Bancadas' },
+        { id: 'armarios', name: 'Armários' },
+        { id: 'prateleiras', name: 'Prateleiras' }
       ]
     }
   ];
 
+  // Buscar subcategorias do banco de dados diretamente
+  const { data: categoriesWithSubcategoriesFromDB, isLoading: subcategoriesLoading, error: subcategoriesError } = useSubcategories()
+  
   // Transformar dados do banco em estrutura hierárquica
-  useMemo(() => {
-    // Se há erro de conexão, usar dados de fallback
-    if (categoriesError || (!categoriesData && !categoriesLoading)) {
+  const categoriesWithSubcategories = useMemo(() => {
+    // Se está carregando, usar fallback
+    if (subcategoriesLoading) {
+      return fallbackCategories;
+    }
+    
+    // Se há erro, usar fallback
+    if (subcategoriesError) {
+      return fallbackCategories;
+    }
+    
+    // Se não há dados do banco, usar fallback
+    if (!categoriesWithSubcategoriesFromDB || categoriesWithSubcategoriesFromDB.length === 0) {
       return fallbackCategories;
     }
 
-    if (!categoriesData || categoriesData.length === 0) {
-      return [];
-    }
-
-    // Separar categorias principais e subcategorias
-    const parentCategories = categoriesData.filter(cat => cat.parent_id === null);
-    const subcategories = categoriesData.filter(cat => cat.parent_id !== null);
-
-    // Construir estrutura hierárquica
-    return parentCategories.map(parentCat => ({
-      id: parentCat.slug,
-      name: parentCat.name,
-      icon: getCategoryIcon(parentCat.slug),
-      subcategories: subcategories
-        .filter(subCat => subCat.parent_id === parentCat.id)
-        .map(subCat => ({
-          id: subCat.slug,
-          name: subCat.name
+    // Converter para o formato esperado pelo CategoryNav
+    const result = categoriesWithSubcategoriesFromDB.map((cat: any) => {
+      // Mapear ícone baseado no slug (usar string, não componente)
+      let iconName = 'Package';
+      if (cat.slug === 'refrigeracao-comercial') iconName = 'Snowflake';
+      else if (cat.slug === 'bar-e-restaurante') iconName = 'Utensils';
+      else if (cat.slug === 'padaria-e-confeitaria') iconName = 'ChefHat';
+      else if (cat.slug === 'acougue') iconName = 'Beef';
+      else if (cat.slug === 'utilidades-domesticas') iconName = 'UtensilsCrossed';
+      else if (cat.slug === 'mobiliario-em-inox') iconName = 'Package';
+      
+      return {
+        id: cat.slug,
+        name: cat.name,
+        icon: iconName,
+        subcategories: cat.subcategories.map((sub: any) => ({
+          id: sub.slug,
+          name: sub.name
         }))
-        .sort((a, b) => a.name.localeCompare(b.name))
-    })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [categoriesData, categoriesError, categoriesLoading]);
+      };
+    });
+
+    return result;
+  }, [categoriesWithSubcategoriesFromDB, subcategoriesLoading, subcategoriesError]);
 
   const customStyles = `
     @media (max-width: 767px) {
@@ -144,6 +149,58 @@ const Header: React.FC = () => {
       .text-responsive {
         font-size: 16px;
       }
+    }
+    
+    /* Garantir que o dropdown fique contido nos limites do site */
+    .category-nav-container {
+      position: relative;
+      overflow: visible;
+    }
+    
+    .category-dropdown-wrapper {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: flex-start; /* Alinhar à esquerda por padrão */
+      pointer-events: none;
+      /* Limites visuais para debug */
+      /* border: 2px dashed red; */
+      /* background: rgba(255,0,0,0.1); */
+    }
+    
+    .category-dropdown-wrapper > * {
+      pointer-events: auto;
+      /* Limites visuais do dropdown */
+      /* border: 2px solid blue; */
+    }
+    
+    @media (max-width: 767px) {
+      .category-dropdown-wrapper {
+        left: 0.5rem;
+        right: 0.5rem;
+        justify-content: center; /* Centralizar em telas pequenas */
+      }
+    }
+    
+    @media (max-width: 390px) {
+      .category-dropdown-wrapper {
+        left: 0.25rem;
+        right: 0.25rem;
+      }
+    }
+    
+    /* Prevenir scroll horizontal no body quando dropdown está aberto */
+    body:has(.category-dropdown-wrapper > *) {
+      overflow-x: hidden;
+    }
+    
+    /* Container principal com limites claros */
+    .main-container {
+      /* Limites visuais para debug - descomente para ver */
+      /* box-shadow: inset 0 0 0 2px #00ff00; */
+      /* background: rgba(0,255,0,0.05); */
     }
   `;
 
@@ -196,7 +253,17 @@ const Header: React.FC = () => {
   return (
     <>
     <style>{customStyles}</style>
-    <header className="shadow-lg sticky top-0 z-50" style={{backgroundColor: '#8B0000'}}>
+    <style dangerouslySetInnerHTML={{
+      __html: `
+        .header-dropdown-container {
+          overflow: visible !important;
+        }
+        .header-dropdown-container * {
+          overflow: visible !important;
+        }
+      `
+    }} />
+    <header className="shadow-lg sticky top-0 z-[1000] header-dropdown-container" style={{backgroundColor: '#8B0000'}}>
       {/* Top Bar - Hidden on mobile */}
       <div className="hidden md:block bg-white text-red-900 py-1 sm:py-2">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
@@ -224,7 +291,7 @@ const Header: React.FC = () => {
       </div>
 
       {/* Main Header */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 main-container">
         <div className="flex justify-between items-center py-2 sm:py-3 lg:py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
@@ -315,11 +382,11 @@ const Header: React.FC = () => {
       </div>
 
       {/* Categories Section - Positioned above visual effects */}
-      <div className="bg-gray-50 border-b border-gray-200">
+      <div className="bg-gray-50 border-b border-gray-200 relative z-50 overflow-visible category-nav-container">
         <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4 xl:px-8">
-          <div className="py-1 sm:py-1 lg:py-2">
+          <div className="py-1 sm:py-1 lg:py-2 min-h-[60px] relative">
             {/* Novo CategoryNav Component */}
-            <CategoryNav className="flex-1" />
+            <CategoryNav className="flex-1" categories={categoriesWithSubcategories} />
           </div>
         </div>
       </div>

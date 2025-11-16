@@ -9,52 +9,9 @@ interface FeaturedProductDisplayProps {
 }
 
 const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categoryId, isOpen }) => {
-  const { data: featuredProduct, isLoading: isLoadingFeatured, error: featuredError } = useFeaturedProductByCategory(categoryId);
-  const { data: allProducts, isLoading: isLoadingAll, error: allProductsError } = useProductsByCategory(categoryId);
+  const { data: featuredProduct, isLoading: isLoadingFeatured } = useFeaturedProductByCategory(categoryId);
+  const { data: allProducts, isLoading: isLoadingAll } = useProductsByCategory(categoryId);
 
-  // Mostrar apenas produtos featured - não usar fallback para produtos normais
-  const displayProduct = featuredProduct;
-
-  console.log('🎯 FeaturedProductDisplay: Supabase configurado?', Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
-  console.log('🎯 FeaturedProductDisplay: Produto selecionado:', displayProduct?.product_name, 'Categoria:', categoryId);
-  console.log('🎯 FeaturedProductDisplay: Produto featured encontrado:', featuredProduct?.product_name);
-  console.log('🎯 FeaturedProductDisplay: Fallback ativado?', !featuredProduct && allProducts && allProducts.length > 0);
-
-  console.log('🎯 FeaturedProductDisplay: Componente montado!');
-  console.log('🎯 FeaturedProductDisplay: categoryId recebido:', categoryId, 'isOpen:', isOpen);
-  console.log('🎯 FeaturedProductDisplay: featuredProduct:', featuredProduct);
-  console.log('🎯 FeaturedProductDisplay: featuredError:', featuredError);
-  console.log('🎯 FeaturedProductDisplay: allProducts na categoria:', allProducts?.length);
-  console.log('🎯 FeaturedProductDisplay: allProductsError:', allProductsError);
-  console.log('🎯 FeaturedProductDisplay: isLoadingFeatured:', isLoadingFeatured);
-  console.log('🎯 FeaturedProductDisplay: isLoadingAll:', isLoadingAll);
-   
-  // Verificar se o Supabase está configurado
-  const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
-  console.log('🔗 Supabase configurado:', isSupabaseConfigured);
-  if (!isSupabaseConfigured) {
-    console.log('⚠️ Supabase não está configurado! Usando dados de demonstração.');
-  }
-  
-  // Verificar se há erro de API (key inválida ou domínio não resolvido)
-  const hasApiError = featuredProduct === undefined && allProducts === undefined && !isLoadingFeatured && !isLoadingAll;
-  if (hasApiError) {
-    console.log('🔴 Erro de API detectado - projeto Supabase pode estar deletado ou desativado');
-    console.log('🔴 Domínio não resolvido: rmowtftvjodmpdmkzypb.supabase.co');
-    console.log('ℹ️  Sistema operando em modo de demonstração com produto exemplo');
-    console.log('💡 Para restaurar o banco de dados: crie um novo projeto em https://supabase.com');
-  }
-   
-  const isLoading = isLoadingFeatured || isLoadingAll;
-  const hasFeaturedProduct = !!featuredProduct;
-  
-  console.log('🎯 FeaturedProductDisplay: hasFeaturedProduct:', hasFeaturedProduct);
-   
-  // Forçar modo de demonstração apenas quando não há Supabase configurado ou erro de API
-  // TEMPORÁRIO: Desativar modo demo forçado para testar produtos do banco
-  const shouldUseDemo = false; // !isSupabaseConfigured || hasApiError;
-  console.log('🎭 Usar modo demonstração:', shouldUseDemo);
-  
   // Produtos de exemplo para debug quando não há produtos ou Supabase não configurado
   const mockProductsByCategory = {
     '1': { // Eletroportáteis
@@ -78,7 +35,35 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
   };
 
   // Selecionar produto de exemplo baseado na categoria
-  const mockProduct = mockProductsByCategory[categoryId as keyof typeof mockProductsByCategory] || mockProductsByCategory['1'];
+  const mockProduct = mockProductsByCategory[categoryId as keyof typeof mockProductsByCategory] || mockProductsByCategory['1'] || mockProductsByCategory[1];
+
+  // Verificar se o Supabase está configurado
+  const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+  // Verificar se há erro de API (key inválida ou domínio não resolvido)
+  const hasApiError = featuredProduct === undefined && allProducts === undefined && !isLoadingFeatured && !isLoadingAll;
+  
+  const isLoading = isLoadingFeatured || isLoadingAll;
+  const hasFeaturedProduct = !!featuredProduct;
+  
+  console.log('🎯 FeaturedProductDisplay: hasFeaturedProduct:', hasFeaturedProduct);
+    
+  // Forçar modo de demonstração apenas quando não há Supabase configurado ou erro de API
+  const shouldUseDemo = !isSupabaseConfigured || hasApiError;
+
+  // Mostrar apenas produtos featured - não usar fallback para produtos normais
+  let displayProduct = featuredProduct;
+  if (!displayProduct && shouldUseDemo) {
+    displayProduct = mockProduct as any;
+  }
+  if (!displayProduct && allProducts?.[0]) {
+    displayProduct = allProducts[0];
+  }
+
+  console.log('🎯 FeaturedProductDisplay: Supabase configurado?', Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
+  console.log('🎯 FeaturedProductDisplay: Produto selecionado:', displayProduct?.product_name, 'Categoria:', categoryId);
+  console.log('🎯 FeaturedProductDisplay: Produto featured encontrado:', featuredProduct?.product_name);
+  console.log('🎯 FeaturedProductDisplay: Fallback ativado?', !featuredProduct && allProducts && allProducts.length > 0);
 
   // Teste: verificar se categoryId é válido
   if (!categoryId) {
@@ -89,11 +74,13 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
   if (!isOpen) return null;
 
   if (isLoading) {
+    // Retorno para estado de Loading
     return (
       <div className="animate-pulse p-4">
         <div className="bg-gray-200 rounded-lg h-48 mb-4"></div>
         <div className="h-5 bg-gray-200 rounded w-3/4 mb-3"></div>
-        <div className="h-10 bg-gray-200 rounded"></div>
+        <div className="h-10 bg-gray-200 rounded mb-2"></div> {/* Placeholder para o primeiro botão */}
+        <div className="h-10 bg-gray-200 rounded"></div> {/* Placeholder para o segundo botão */}
       </div>
     );
   }
@@ -117,11 +104,11 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
       <div className="p-4">
         <div className="text-center">
           {/* Imagem do produto em alta resolução */}
-          <div className="relative overflow-hidden rounded-lg mb-4 group">
+          <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
             <img
               src={displayProduct.image_url || '/placeholder-product.png'}
               alt={displayProduct.product_name}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = '/placeholder-product.png';
@@ -134,24 +121,35 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           </div>
           
           {/* Nome/título do item em destaque */}
-          <div className="mb-4">
+          <div className="mb-6">
             <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
               {displayProduct.product_name}
             </h4>
           </div>
           
-          {/* Botão Ver Detalhes */}
-          <button
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#2E86AB] text-white font-medium rounded-lg hover:bg-[#267399] active:bg-[#1f5e7f] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2E86AB] focus:ring-opacity-50"
-            onClick={() => {
-              // Navegar para página de detalhes do produto
-              window.location.href = `/produto/${displayProduct.id}`;
-            }}
-            aria-label={`Ver detalhes de ${displayProduct.product_name}`}
-          >
-            <Search className="w-4 h-4" />
-            <span>Ver Detalhes</span>
-          </button>
+          {/* Botão 1: Ver Mais (Vermelho/Laranja) */}
+        <button
+          className="w-full py-3 bg-gradient-to-r from-[#E75A1F] to-[#F06422] text-white font-semibold rounded-lg hover:from-[#d0501c] hover:to-[#e05a1f] active:from-[#b84618] active:to-[#c8501c] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-md hover:shadow-lg mb-2"
+          onClick={() => {
+            // Navegar para página de detalhes do produto
+            window.location.href = `/produto/${displayProduct.id}`;
+          }}
+          aria-label={`Ver detalhes de ${displayProduct.product_name}`}
+        >
+          Ver Mais
+        </button>
+
+          {/* Botão 2: Add a Lista (Abaixo) */}
+        <button
+          className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
+          onClick={() => {
+            // Ação para adicionar o produto à lista
+            console.log('Adicionar à Lista:', displayProduct.product_name);
+          }}
+          aria-label={`Adicionar ${displayProduct.product_name} à lista`}
+        >
+          Add a Lista
+        </button>
         </div>
       </div>
     );
@@ -162,18 +160,18 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
     console.log('🎯 Mostrando produto de exemplo para debug');
     return (
       <div className="text-center p-4">
-        <div className="relative overflow-hidden rounded-lg mb-4 group">
+        <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
           <img
             src={mockProduct.image_url}
             alt={mockProduct.product_name}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
         
-        <div className="mb-4">
+        <div className="mb-6">
           <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
             {mockProduct.product_name}
           </h4>
@@ -182,28 +180,39 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           </p>
         </div>
         
+          {/* Botão 1: Ver Mais (Vermelho/Laranja) */}
         <button
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white font-medium rounded-lg hover:bg-orange-600 transition-all duration-200"
+          className="w-full py-3 bg-gradient-to-r from-[#E75A1F] to-[#F06422] text-white font-semibold rounded-lg hover:from-[#d0501c] hover:to-[#e05a1f] active:from-[#b84618] active:to-[#c8501c] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-md hover:shadow-lg mb-2"
           onClick={() => {
             window.location.href = `/produto/${mockProduct.slug}`;
           }}
         >
-          <Search className="w-4 h-4" />
-          <span>Ver Detalhes</span>
+          Ver Mais
+        </button>
+        
+          {/* Botão 2: Add a Lista (Abaixo) */}
+        <button
+          className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
+          onClick={() => {
+            console.log('Adicionar à Lista (Demo):', mockProduct.product_name);
+          }}
+        >
+          Add a Lista
         </button>
       </div>
     );
   }
 
+  // Retorno final (Fallback)
   return (
     <div className="p-4">
       <div className="text-center">
         {/* Imagem do produto em alta resolução */}
-        <div className="relative overflow-hidden rounded-lg mb-4 group">
+        <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
           <img
             src={displayProduct?.image_url || '/placeholder-product.png'}
             alt={displayProduct?.product_name || 'Produto'}
-            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = '/placeholder-product.png';
@@ -216,23 +225,34 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         </div>
         
         {/* Nome/título do item em destaque */}
-        <div className="mb-4">
+        <div className="mb-6">
           <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
             {displayProduct?.product_name || 'Produto'}
           </h4>
         </div>
         
-        {/* Botão Ver Detalhes */}
+        {/* Botão 1: Ver Mais (Vermelho/Laranja) */}
         <button
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-[#2E86AB] text-white font-medium rounded-lg hover:bg-[#267399] active:bg-[#1f5e7f] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2E86AB] focus:ring-opacity-50"
+          className="w-full py-3 bg-gradient-to-r from-[#E75A1F] to-[#F06422] text-white font-semibold rounded-lg hover:from-[#d0501c] hover:to-[#e05a1f] active:from-[#b84618] active:to-[#c8501c] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-md hover:shadow-lg mb-2"
           onClick={() => {
             // Navegar para página de detalhes do produto
             window.location.href = `/produto/${displayProduct?.id}`;
           }}
           aria-label={`Ver detalhes de ${displayProduct?.product_name || 'produto'}`}
         >
-          <Search className="w-4 h-4" />
-          <span>Ver Detalhes</span>
+          Ver Mais
+        </button>
+
+          {/* Botão 2: Add a Lista (Abaixo) */}
+        <button
+          className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
+          onClick={() => {
+            // Ação para adicionar o produto à lista
+            console.log('Adicionar à Lista:', displayProduct?.product_name || 'Produto');
+          }}
+          aria-label={`Adicionar ${displayProduct?.product_name || 'produto'} à lista`}
+        >
+          Add a Lista
         </button>
       </div>
     </div>

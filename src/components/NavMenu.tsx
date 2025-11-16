@@ -314,11 +314,11 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
             onClose={() => setOpenDropdown(null)}
             triggerElement={triggerRefs.current[category.slug]}
             placement="bottom-start"
-            className="w-auto min-w-[400px] max-w-[90vw]"
+            className="w-auto min-w-[400px] max-w-[90vw] w-[400px]"
             maxHeight={400}
             offset={4}
           >
-            <div className="grid grid-cols-[1fr_1fr] py-6 overflow-x-hidden">
+            <div className="grid py-6 overflow-x-hidden" style={{gridTemplateColumns: '225px 175px'}}>
               {/* Coluna 1: Subcategorias */}
               <div className="px-4">
                 <h3 className="font-semibold text-[#D0021B] mb-4">{category.name}</h3>
