@@ -250,7 +250,7 @@ const ProductManager: React.FC = () => {
       errors.name = 'Nome não pode ter mais de 255 caracteres';
     }
 
-    if (!data.category_id) {
+    if (!data.category_id || data.category_id.trim() === '') {
       errors.category_id = 'Categoria é obrigatória';
     }
 
@@ -340,9 +340,46 @@ const ProductManager: React.FC = () => {
       // Remover additional_images dos dados do produto principal
       const { additional_images, ...productDataWithoutImages } = formData;
       
+      // Gerar slug a partir do nome
+      const baseSlug = formData.name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+        .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+        .replace(/\s+/g, '-') // Substitui espaços por hífens
+        .replace(/-+/g, '-') // Remove hífens duplicados
+        .trim();
+
+      // Verificar se o slug já existe e gerar um único se necessário
+      let slug = baseSlug;
+      let counter = 1;
+      
+      while (true) {
+        const { data: existingProduct } = await supabase
+          .from('products')
+          .select('id')
+          .eq('slug', slug)
+          .single();
+        
+        if (!existingProduct) {
+          break; // Slug está disponível
+        }
+        
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+        
+        if (counter > 100) {
+          throw new Error('Não foi possível gerar um slug único. Por favor, altere o nome do produto.');
+        }
+      }
+
       const productData = {
         ...productDataWithoutImages,
-        subcategory_id: formData.subcategory_id || undefined,
+        category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
+        subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : undefined,
+        brand: formData.brand || undefined,
+        image: formData.image || undefined,
+        slug: slug,
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
         seo_keywords: formData.seo_keywords?.trim() || undefined,
@@ -407,7 +444,10 @@ const ProductManager: React.FC = () => {
       
       const productData = {
         ...productDataWithoutImages,
-        subcategory_id: formData.subcategory_id || undefined,
+        category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
+        subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : undefined,
+        brand: formData.brand || undefined,
+        image: formData.image || undefined,
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
         seo_keywords: formData.seo_keywords?.trim() || undefined,
