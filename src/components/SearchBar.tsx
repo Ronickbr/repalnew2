@@ -61,6 +61,24 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
     setSelectedIndex(-1)
   }, [searchResults])
   
+  // Busca geral quando não há resultados específicos
+  const handleSearch = useCallback(() => {
+    if (query.trim()) {
+      navigate(`/categorias?busca=${encodeURIComponent(query.trim())}`);
+      setIsDropdownOpen(false);
+      setQuery('');
+      inputRef.current?.blur();
+    }
+  }, [query, navigate]);
+  
+  // Clique em resultado específico
+  const handleResultClick = useCallback((result: SearchResult) => {
+    navigate(`/produto/${result.slug || result.id}`);
+    setIsDropdownOpen(false);
+    setQuery('');
+    setSelectedIndex(-1);
+  }, [navigate]);
+  
   // Navegação por teclado
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (!isDropdownOpen || searchResults.length === 0) {
@@ -103,24 +121,6 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
         break;
     }
   }, [isDropdownOpen, searchResults, selectedIndex, query, handleResultClick, handleSearch]);
-  
-  // Busca geral quando não há resultados específicos
-  const handleSearch = useCallback(() => {
-    if (query.trim()) {
-      navigate(`/categorias?busca=${encodeURIComponent(query.trim())}`);
-      setIsDropdownOpen(false);
-      setQuery('');
-      inputRef.current?.blur();
-    }
-  }, [query, navigate]);
-  
-  // Clique em resultado específico
-  const handleResultClick = useCallback((result: SearchResult) => {
-    navigate(`/produto/${result.slug || result.id}`);
-    setIsDropdownOpen(false);
-    setQuery('');
-    setSelectedIndex(-1);
-  }, [navigate]);
   
   // Mudança no input
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
