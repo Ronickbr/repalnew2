@@ -102,7 +102,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
         inputRef.current?.blur();
         break;
     }
-  }, [isDropdownOpen, searchResults, selectedIndex, query]);
+  }, [isDropdownOpen, searchResults, selectedIndex, query, handleResultClick, handleSearch]);
   
   // Busca geral quando não há resultados específicos
   const handleSearch = useCallback(() => {

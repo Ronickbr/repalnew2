@@ -102,7 +102,7 @@ export const downloadFileData = async (
  * Converte dados para formato apropriado para download
  */
 export const prepareData = (
-  data: any,
+  data: unknown,
   format: string
 ): string => {
   switch (format.toLowerCase()) {

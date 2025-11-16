@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Upload, X, AlertCircle } from 'lucide-react';
 
 interface ImageUploadProps {
@@ -19,20 +19,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  const allowedTypes = useMemo(() => ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'], []);
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
 
-  const validateFile = (file: File): string | null => {
-    if (!allowedTypes.includes(file.type)) {
-      return 'Tipo de arquivo não suportado. Use apenas JPG, PNG, GIF ou WebP.';
-    }
-    
-    if (file.size > maxSizeInBytes) {
-      return `Arquivo muito grande. Tamanho máximo: ${maxSizeInMB}MB.`;
-    }
-    
-    return null;
-  };
 
   const convertToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -53,7 +42,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setError(null);
     setIsLoading(true);
 
-    const validationError = validateFile(file);
+    const validationError = !allowedTypes.includes(file.type)
+      ? 'Tipo de arquivo não suportado. Use apenas JPG, PNG, GIF ou WebP.'
+      : file.size > maxSizeInBytes
+        ? `Arquivo muito grande. Tamanho máximo: ${maxSizeInMB}MB.`
+        : null;
     if (validationError) {
       setError(validationError);
       setIsLoading(false);
@@ -68,7 +61,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [onChange, validateFile]);
+  }, [onChange, allowedTypes, maxSizeInBytes, maxSizeInMB]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

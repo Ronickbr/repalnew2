@@ -1,5 +1,6 @@
 import React from 'react';
 import { useFeaturedProductByCategory, useProductsByCategory } from '../hooks/useProducts';
+import type { ProductWithCategory } from '../types/product';
 
 import { Search } from 'lucide-react';
 
@@ -52,9 +53,16 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
   const shouldUseDemo = !isSupabaseConfigured || hasApiError;
 
   // Mostrar apenas produtos featured - não usar fallback para produtos normais
-  let displayProduct = featuredProduct;
+  let displayProduct: ProductWithCategory | undefined = featuredProduct || undefined;
   if (!displayProduct && shouldUseDemo) {
-    displayProduct = mockProduct as any;
+    displayProduct = {
+      id: String(mockProduct.id),
+      name: mockProduct.name,
+      slug: mockProduct.slug,
+      featured: false,
+      image_url: mockProduct.image_url,
+      active: true,
+    } as ProductWithCategory;
   }
   if (!displayProduct && allProducts?.[0]) {
     displayProduct = allProducts[0];

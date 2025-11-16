@@ -129,12 +129,13 @@ export default function BannerCarousel({
 
     animationId = requestAnimationFrame(animate);
 
+    const progressEl = progressRef.current;
     return () => {
       if (animationId) {
         cancelAnimationFrame(animationId);
       }
-      if (progressRef.current) {
-        progressRef.current.style.width = '0%';
+      if (progressEl) {
+        progressEl.style.width = '0%';
       }
     };
   }, [isPlaying, isHovered, nextBanner, autoPlayInterval, banners.length]);

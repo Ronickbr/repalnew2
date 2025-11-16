@@ -37,6 +37,7 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
     maxWidth: 0
   });
   const [isPositioned, setIsPositioned] = useState(false);
+  const [computedMaxHeight, setComputedMaxHeight] = useState(maxHeight);
 
   // Função para calcular posição ideal do dropdown
   const calculatePosition = useCallback(() => {
@@ -56,8 +57,8 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
     // Posição base inicial
     let top = 0;
     let left = 0;
-    let width = 400; // Largura fixa de 400px
-    let maxWidth = maxAvailableWidth;
+    const width = 400; // Largura fixa de 400px
+    const maxWidth = maxAvailableWidth;
 
     // Calcular posição baseada no placement
     switch (placement) {
@@ -91,20 +92,21 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
     const spaceBelow = viewportHeight - triggerRect.bottom;
     const spaceAbove = triggerRect.top;
     
+    let newMaxHeight = maxHeight;
     if (placement.startsWith('bottom') && spaceBelow < 200 && spaceAbove > spaceBelow) {
       // Não cabe embaixo, colocar em cima
       top = triggerRect.top - offset;
       // Recalcular altura máxima
-      maxHeight = Math.min(maxHeight, spaceAbove - offset - 16);
+      newMaxHeight = Math.min(maxHeight, spaceAbove - offset - 16);
     } else if (placement.startsWith('top') && spaceAbove < 200 && spaceBelow > spaceAbove) {
       // Não cabe em cima, colocar embaixo
       top = triggerRect.bottom + offset;
       // Recalcular altura máxima
-      maxHeight = Math.min(maxHeight, spaceBelow - offset - 16);
+      newMaxHeight = Math.min(maxHeight, spaceBelow - offset - 16);
     } else {
       // Ajustar altura máxima baseada no espaço disponível
       const availableSpace = placement.startsWith('bottom') ? spaceBelow : spaceAbove;
-      maxHeight = Math.min(maxHeight, availableSpace - offset - 16);
+      newMaxHeight = Math.min(maxHeight, availableSpace - offset - 16);
     }
 
     // Adicionar scroll offset
@@ -117,6 +119,7 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
       width,
       maxWidth
     });
+    setComputedMaxHeight(newMaxHeight);
     setIsPositioned(true);
   }, [triggerElement, placement, offset, maxHeight]);
 
@@ -195,7 +198,7 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
         left: `${position.left}px`,
         width: `${position.width}px`,
         maxWidth: `${position.maxWidth}px`,
-        maxHeight: `${maxHeight}px`,
+        maxHeight: `${computedMaxHeight}px`,
         overflow: 'hidden',
         opacity: isPositioned ? 1 : 0,
         transform: isPositioned ? 'translateY(0)' : 'translateY(-10px)',
@@ -206,7 +209,7 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
     >
       <div 
         className="w-full h-full overflow-auto"
-        style={{ maxHeight: `${maxHeight}px` }}
+        style={{ maxHeight: `${computedMaxHeight}px` }}
       >
         {children}
       </div>

@@ -113,7 +113,7 @@ export interface ValidationResult {
 
 export interface ExportOptions {
   format: 'csv' | 'json' | 'xlsx';
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   columns?: string[];
   filename?: string;
 }
@@ -190,9 +190,9 @@ export interface SelectOption {
 
 export interface ValidationRule {
   type: 'required' | 'min' | 'max' | 'minLength' | 'maxLength' | 'pattern' | 'email' | 'url' | 'custom';
-  value?: any;
+  value?: unknown;
   message: string;
-  validator?: (value: any) => boolean;
+  validator?: (value: unknown) => boolean;
 }
 
 // Tipos para temas e estilos

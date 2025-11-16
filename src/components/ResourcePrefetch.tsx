@@ -58,12 +58,14 @@ export const ResourcePrefetch: React.FC<ResourcePrefetchProps> = ({
     });
 
     // Cleanup
+    const addedLinks = [...linkRefs.current];
     return () => {
-      linkRefs.current.forEach(link => {
+      addedLinks.forEach(link => {
         if (link.parentNode) {
           link.parentNode.removeChild(link);
         }
       });
+      linkRefs.current = [];
     };
   }, [images, fonts, styles, scripts]);
 

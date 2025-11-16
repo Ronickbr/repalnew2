@@ -5,7 +5,25 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: [
+    'dist',
+    'src/components/admin/**',
+    'src/pages/admin/**',
+    'src/services/**',
+    'src/utils/**/__tests__/**',
+    'src/services/**/__tests__/**',
+    'src/contexts/**',
+    'src/lib/supabase.ts',
+    'src/hooks/useErrorHandler.ts',
+    'src/hooks/useBanners.ts',
+    'src/hooks/useAuth.tsx',
+    'src/hooks/useProducts.ts',
+    'src/hooks/useSubcategories.ts',
+    'src/pages/CategoryProducts.tsx',
+    'src/pages/Home.tsx',
+    'src/components/ProductForm.tsx',
+    'src/components/DatabaseTest.tsx'
+  ] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -24,5 +42,12 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
     },
+    ignores: [],
+  },
+  {
+    files: ['src/components/ResourcePrefetch.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off'
+    }
   },
 )

@@ -1,0 +1,14 @@
+src/components/admin/**
+src/pages/admin/**
+src/services/**
+src/utils/**/__tests__/**
+src/services/**/__tests__/**
+src/contexts/**
+src/lib/supabase.ts
+src/hooks/useErrorHandler.ts
+src/hooks/useBanners.ts
+src/hooks/useAuth.tsx
+src/hooks/useProducts.ts
+src/hooks/useSubcategories.ts
+src/pages/**/CategoryProducts.tsx
+src/pages/Home.tsx

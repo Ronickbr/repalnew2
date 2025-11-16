@@ -193,10 +193,11 @@ export const useIsTouchDevice = () => {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
+    const hasMsPoints = 'msMaxTouchPoints' in navigator && Number((navigator as Navigator & { msMaxTouchPoints?: number }).msMaxTouchPoints) > 0;
     setIsTouchDevice(
       'ontouchstart' in window ||
       navigator.maxTouchPoints > 0 ||
-      (navigator as any).msMaxTouchPoints > 0
+      hasMsPoints
     );
   }, []);
 

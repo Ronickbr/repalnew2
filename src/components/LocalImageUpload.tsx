@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Upload, X, AlertCircle } from 'lucide-react';
 
 interface LocalImageUploadProps {
@@ -19,27 +19,16 @@ const LocalImageUpload: React.FC<LocalImageUploadProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const allowedTypes = [
+  const allowedTypes = useMemo(() => [
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
     'image/svg+xml', 'image/bmp', 'image/tiff', 'image/x-icon',
     'image/vnd.microsoft.icon', 'image/avif', 'image/heic', 'image/heif',
     'image/x-ms-bmp', 'image/x-bmp', 'image/x-bitmap', 'image/pjpeg',
     'image/apng', 'image/x-png', 'image/vnd.adobe.photoshop',
     'image/jxl', 'image/x-canon-cr2', 'image/x-nikon-nef'
-  ];
+  ], []);
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
 
-  const validateFile = (file: File): string | null => {
-    if (!allowedTypes.includes(file.type)) {
-      return 'Tipo de arquivo não suportado. Use formatos de imagem válidos (JPG, PNG, GIF, WebP, SVG, BMP, TIFF, ICO, AVIF, HEIC, etc.).';
-    }
-    
-    if (file.size > maxSizeInBytes) {
-      return `Arquivo muito grande. Tamanho máximo: ${maxSizeInMB}MB.`;
-    }
-    
-    return null;
-  };
 
 
 
@@ -69,7 +58,11 @@ const LocalImageUpload: React.FC<LocalImageUploadProps> = ({
     setError(null);
     setIsLoading(true);
 
-    const validationError = validateFile(file);
+    const validationError = !allowedTypes.includes(file.type)
+      ? 'Tipo de arquivo não suportado. Use formatos de imagem válidos (JPG, PNG, GIF, WebP, SVG, BMP, TIFF, ICO, AVIF, HEIC, etc.).'
+      : file.size > maxSizeInBytes
+        ? `Arquivo muito grande. Tamanho máximo: ${maxSizeInMB}MB.`
+        : null;
     if (validationError) {
       setError(validationError);
       setIsLoading(false);
@@ -84,7 +77,7 @@ const LocalImageUpload: React.FC<LocalImageUploadProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [onChange, validateFile]);
+  }, [onChange, allowedTypes, maxSizeInBytes, maxSizeInMB]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

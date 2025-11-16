@@ -53,7 +53,7 @@ export const useSiteSettings = () => {
       } else if (data) {
         setSettings(data);
       }
-    } catch (err) {
+    } catch {
       // Erro já tratado pelo estado
       setError('Erro ao carregar configurações do site');
       setSettings(defaultSettings);

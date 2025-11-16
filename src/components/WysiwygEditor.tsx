@@ -68,7 +68,7 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
     // Cleanup
     return () => {
       const quill = quillRef.current;
-      const container = containerRef.current;
+      const cleanupContainer = container;
       if (quill) {
         quill.off('text-change');
         // Remover toolbar e conteúdo para evitar duplicação em novos mounts
@@ -78,15 +78,15 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
         }
         quillRef.current = null;
       }
-      if (container) {
-        container.innerHTML = '';
-        const prevSibling = container.previousElementSibling as HTMLElement | null;
+      if (cleanupContainer) {
+        cleanupContainer.innerHTML = '';
+        const prevSibling = cleanupContainer.previousElementSibling as HTMLElement | null;
         if (prevSibling && prevSibling.classList.contains('ql-toolbar')) {
           prevSibling.remove();
         }
       }
     };
-  }, []);
+  }, [onChange, placeholder, value]);
 
   // Sincronizar alterações externas (por exemplo, geração via IA)
   useEffect(() => {

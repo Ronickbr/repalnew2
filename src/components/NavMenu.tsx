@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Menu, X, ChevronDown,
+  Menu, X,
   Beef, Snowflake, ChefHat, Utensils, Package, Wrench, UtensilsCrossed
 } from 'lucide-react';
 import { useSubcategories } from '../hooks/useSubcategories';
+import type { CategoryWithSubcategories, Subcategory } from '../hooks/useSubcategories';
+import type { ProductWithCategory } from '../types/product';
 import { useFeaturedProductsByCategory } from '../hooks/useProducts';
 
 /* ----------  TYPES  ---------- */
@@ -24,7 +26,7 @@ const iconMap: Record<string, React.ElementType> = {
 /* ----------  PRODUTO DESTAQUE (mini componente) ---------- */
 const Featured: React.FC<{ categoryId: string | number }> = ({ categoryId }) => {
   const { data, isLoading } = useFeaturedProductsByCategory(categoryId);
-  const product = data?.[0];
+  const product: ProductWithCategory | undefined = data?.[0];
 
   if (isLoading)
     return (
@@ -36,7 +38,7 @@ const Featured: React.FC<{ categoryId: string | number }> = ({ categoryId }) => 
     );
   if (!product) return null;
 
-  const imgUrl = (product as any)?.product_images?.[0]?.image_url || (product as any)?.image || '';
+  const imgUrl = product?.product_images?.[0]?.image_url || product?.image_url || '';
   return (
     <div className="space-y-3">
       {imgUrl && (
@@ -144,7 +146,7 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
   /* monta árvore pai -> filhos */
   const tree = useMemo<Category[]>(() => {
     if (!categoriesWithSubs) return [];
-    return categoriesWithSubs.map((p) => {
+    return (categoriesWithSubs as CategoryWithSubcategories[]).map((p: CategoryWithSubcategories) => {
       const name = p.name.toLowerCase();
       const icon = name.includes('açougue')
         ? 'Beef'
@@ -166,8 +168,8 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
         slug: p.slug,
         icon,
         children: (p.subcategories || [])
-          .map((k) => ({ id: k.id, name: k.name, slug: k.slug }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((k: Subcategory) => ({ id: k.id, name: k.name, slug: k.slug }))
+          .sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name))
       } as Category;
     });
   }, [categoriesWithSubs]);
