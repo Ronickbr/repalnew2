@@ -114,11 +114,11 @@ const Header: React.FC = () => {
       // Mapear ícone baseado no slug (usar string, não componente)
       let iconName = 'Package';
       if (cat.slug === 'refrigeracao-comercial') iconName = 'Snowflake';
-      else if (cat.slug === 'bar-e-restaurante') iconName = 'Utensils';
-      else if (cat.slug === 'padaria-e-confeitaria') iconName = 'ChefHat';
+      else if (cat.slug === 'bar-restaurante') iconName = 'Utensils';
+      else if (cat.slug === 'padaria-confeitaria') iconName = 'ChefHat';
       else if (cat.slug === 'acougue') iconName = 'Beef';
       else if (cat.slug === 'utilidades-domesticas') iconName = 'UtensilsCrossed';
-      else if (cat.slug === 'mobiliario-em-inox') iconName = 'Package';
+      else if (cat.slug === 'mobiliario-inox') iconName = 'Wrench';
       
       return {
         id: cat.slug,

@@ -4,6 +4,7 @@ import { Menu, X, Beef, Snowflake, ChefHat, Utensils, Package, Wrench, UtensilsC
 import { useCategories } from '../hooks/useCategories';
 import { FeaturedProductDisplay } from './FeaturedProductDisplay';
 import SmartDropdown from './SmartDropdown';
+import { useMobileMenuGestures, useTouchFeedback, useIsTouchDevice } from '../hooks/useTouchGestures';
 
 
 // Fallback categories para garantir funcionamento mesmo sem dados
@@ -122,6 +123,9 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   
   const location = useLocation();
+  const isTouchDevice = useIsTouchDevice();
+  const mobileMenuRef = useMobileMenuGestures(isMobileMenuOpen, () => setIsMobileMenuOpen(false));
+  const { touchProps } = useTouchFeedback();
 
   // Refs
   const navRef = useRef<HTMLElement>(null);
@@ -289,12 +293,12 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
 
   // Menu Desktop com layout vertical (ícone acima do texto) e dropdown inteligente
   const renderDesktopMenu = () => (
-    <nav ref={navRef} className="hidden md:flex items-center space-x-4">
+    <nav ref={navRef} className="hidden lg:flex items-center space-x-2 xl:space-x-4">
       {categories.map((category) => (
         <div key={category.id} className="relative">
           <button
             ref={(el) => triggerRefs.current[category.slug] = el}
-            className={`group flex flex-col items-center space-y-1 px-4 py-3 text-sm font-medium rounded-md transition-all duration-200 ${
+            className={`group flex flex-col items-center space-y-1 px-2 xl:px-4 py-2 xl:py-3 text-xs xl:text-sm font-medium rounded-md transition-all duration-200 ${
               openDropdown === category.slug
                 ? 'text-[#D0021B] bg-red-50'
                 : 'text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50'
@@ -306,7 +310,8 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
             aria-label={`Menu ${category.name}`}
           >
             {renderIcon(category.icon || '')}
-            <span className="text-center whitespace-nowrap">{category.name}</span>
+            <span className="text-center whitespace-nowrap hidden xl:inline">{category.name}</span>
+            <span className="text-center whitespace-nowrap xl:hidden text-[10px]">{category.name}</span>
           </button>
           
           <SmartDropdown
@@ -314,16 +319,16 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
             onClose={() => setOpenDropdown(null)}
             triggerElement={triggerRefs.current[category.slug]}
             placement="bottom-start"
-            className="w-auto min-w-[400px] max-w-[90vw] w-[400px]"
+            className="w-auto min-w-[320px] xl:min-w-[400px] max-w-[90vw]"
             maxHeight={400}
             offset={4}
           >
-            <div className="grid py-6 overflow-x-hidden" style={{gridTemplateColumns: '225px 175px'}}>
+            <div className="grid py-4 xl:py-6 overflow-x-hidden" style={{gridTemplateColumns: '1fr auto'}}>
               {/* Coluna 1: Subcategorias */}
-              <div className="px-4">
-                <h3 className="font-semibold text-[#D0021B] mb-4">{category.name}</h3>
+              <div className="px-3 xl:px-4">
+                <h3 className="font-semibold text-[#D0021B] mb-3 xl:mb-4 text-sm xl:text-base">{category.name}</h3>
                 <nav 
-                  className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-red-300 scrollbar-track-red-50" 
+                  className="space-y-1 xl:space-y-2 max-h-[280px] xl:max-h-[300px] overflow-y-auto" 
                   role="menu" 
                   aria-label={`Subcategorias de ${category.name}`}
                 >
@@ -331,7 +336,7 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
                     <Link
                       key={subcategory.id}
                       to={`/categorias/${category.slug}/${subcategory.slug}`}
-                      className="block px-3 py-2 text-sm text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 rounded-md transition-colors duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-opacity-50"
+                      className="block px-2 xl:px-3 py-1 xl:py-2 text-xs xl:text-sm text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 rounded-md transition-colors duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-opacity-50"
                       onClick={() => {
                         setOpenDropdown(null);
                         setIsMobileMenuOpen(false);
@@ -349,8 +354,8 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
               </div>
               
               {/* Coluna 2: Produtos em Destaque */}
-              <div className="px-4">
-                <h4 className="font-semibold text-[#D0021B] mb-4">Produto em Destaque</h4>
+              <div className="px-3 xl:px-4 border-l border-gray-100 min-w-[160px] xl:min-w-[175px]">
+                <h4 className="font-semibold text-[#D0021B] mb-3 xl:mb-4 text-sm xl:text-base">Produto em Destaque</h4>
                 <FeaturedProductDisplay categoryId={category.id} isOpen={true} />
               </div>
             </div>
@@ -362,9 +367,10 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
 
   // Menu Mobile com tema vermelho consistente
   const renderMobileMenu = () => (
-    <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+    <div className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
       <div
         id="mobile-menu"
+        ref={mobileMenuRef}
         className={`fixed inset-0 z-50 bg-black bg-opacity-50 transition-opacity duration-300 ${
           isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
@@ -373,14 +379,14 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
         aria-label="Menu mobile"
       >
         <div
-          className={`absolute right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+          className={`absolute right-0 top-0 h-full w-full max-w-xs sm:max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
             isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-4 border-b border-red-200 bg-red-50">
+          <div className="p-3 sm:p-4 border-b border-red-200 bg-red-50 sticky top-0 z-10">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#D0021B]">Menu</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-[#D0021B]">Menu</h2>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-2 rounded-md text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-100 transition-colors duration-200"
@@ -391,17 +397,17 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto">
-            <nav className="p-4 space-y-1">
+          <div className="flex-1 overflow-y-auto pb-16">
+            <nav className="p-3 sm:p-4 space-y-1">
               {categories.map((category) => (
                 <Link
                   key={category.id}
                   to={`/categorias/${category.slug}`}
-                  className="flex items-center space-x-3 p-3 text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 rounded-md transition-colors duration-200"
+                  className="flex items-center space-x-3 p-2 sm:p-3 text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 rounded-md transition-colors duration-200"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {renderIcon(category.icon || '')}
-                  <span className="font-medium">{category.name}</span>
+                  <span className="font-medium text-sm sm:text-base">{category.name}</span>
                 </Link>
               ))}
             </nav>
@@ -415,12 +421,15 @@ const NavMenu: React.FC<NavMenuProps> = ({ className = '' }) => {
     <div className={`${className} relative`}>
       {/* Botão Hamburguer */}
       <button
-        className="md:hidden p-2 rounded-md text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 transition-all duration-200"
+        className={`lg:hidden p-2 rounded-md text-[#D0021B] hover:text-[#FF4D4D] hover:bg-red-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-opacity-50 ${
+          isTouchDevice ? 'touch-manipulation select-none' : ''
+        }`}
         onClick={handleHamburgerClick}
         onKeyDown={(e) => handleKeyDown(e, handleHamburgerClick)}
         aria-expanded={isMobileMenuOpen}
         aria-label="Abrir menu de navegação"
         aria-controls="mobile-menu"
+        {...touchProps}
       >
         <div className="relative w-6 h-6">
           <Menu className={`absolute inset-0 transition-all duration-300 ${

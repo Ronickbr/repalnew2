@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useFeaturedProductsByCategory } from '../hooks/useProducts'
-import { ChevronDown, Package, Utensils, Snowflake, ChefHat, Beef, UtensilsCrossed } from 'lucide-react'
+import { ChevronDown, Package, Utensils, Snowflake, ChefHat, Beef, UtensilsCrossed, Wrench } from 'lucide-react'
 
 // Hook simples e eficaz para scroll isolado
 const useIsolatedScroll = (ref: React.RefObject<HTMLElement>, isEnabled: boolean) => {
@@ -143,6 +143,7 @@ const iconMap = {
   'Beef': Beef,
   'UtensilsCrossed': UtensilsCrossed,
   'Package': Package,
+  'Wrench': Wrench,
 }
 
 // Componente do Produto em Destaque
@@ -168,7 +169,7 @@ const FeaturedProduct: React.FC<{ categoryId: string | number; onClose: () => vo
   }
 
   return (
-    <div className="product-card bg-white rounded-lg p-4 shadow-sm border">
+    <div className="product-card bg-white rounded-lg p-3 shadow-sm border">
       <img
         src={product.image_url}
         alt="Produto"
@@ -218,7 +219,7 @@ const CategoryDropdown: React.FC<{
     <div 
       className={`nav-dropdown absolute top-full mt-1 z-50 w-screen max-w-lg ${getPositionClasses()}`} 
       ref={dropdownRef}
-      style={{ maxWidth: 'min(calc(100vw - 2rem), 800px)' }}
+      style={{ maxWidth: 'min(calc(100vw - 2rem), 500px)' }}
     >
       <div className="bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
         <style>{styles}</style>
@@ -236,8 +237,8 @@ const CategoryDropdown: React.FC<{
         </div>
 
         <div className="flex flex-col lg:flex-row">
-          {/* Subcategorias - Aumentada em 80px */}
-          <div className="flex-1 lg:flex-none lg:w-80 p-4 border-b lg:border-b-0 lg:border-r">
+          {/* Subcategorias - Largura ajustada para 270px */}
+          <div className="flex-1 lg:flex-none lg:w-[270px] p-4 border-b lg:border-b-0 lg:border-r">
             <h4 className="text-sm font-semibold text-gray-700 mb-3">Subcategorias</h4>
             
             <div 
@@ -249,7 +250,7 @@ const CategoryDropdown: React.FC<{
                   {category.subcategories.map((subcategory, index) => (
                     <Link
                       key={subcategory.id}
-                      to={`/categorias/${subcategory.id}`}
+                      to={`/categorias/${category.id}/${subcategory.id}`}
                       className="subcategory-link block px-3 py-2 text-gray-700 hover:text-orange-600 rounded text-sm transition-all duration-150"
                       onClick={onClose}
                       style={{ animationDelay: `${index * 30}ms` }}
@@ -269,8 +270,8 @@ const CategoryDropdown: React.FC<{
             </div>
           </div>
 
-          {/* Produto em Destaque */}
-          <div className="lg:w-64 p-4 bg-gray-50">
+          {/* Produto em Destaque - Largura ajustada para 220px */}
+          <div className="lg:w-[220px] p-4 bg-gray-50">
             <FeaturedProduct categoryId={category.id} onClose={onClose} />
           </div>
         </div>

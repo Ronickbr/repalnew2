@@ -24,6 +24,7 @@ export interface Product {
   featured_on_homepage?: boolean;
   clearance_sale?: boolean;
   specifications?: string;
+  specifications_html?: string;
   tags?: string[];
 }
 
@@ -39,6 +40,7 @@ export interface ProductWithCategory {
   images?: ProductImage[];
   benefits?: string;
   category_id?: string;
+  subcategory_id?: string;
   created_at?: string;
   updated_at?: string;
   active: boolean;

@@ -25,19 +25,15 @@ export const useSubcategories = () => {
     queryKey: ['subcategories'],
     queryFn: async () => {
       console.log('=== DEBUG useSubcategories ===')
-      console.log('Buscando subcategorias do banco de dados...')
+      console.log('Buscando categorias e subcategorias do banco de dados...')
       
-      // Buscar todas as categorias ativas (não há subcategorias na estrutura atual)
+      // Buscar todas as categorias ativas
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select(`
           id,
           name,
-          slug,
-          featured,
-          active,
-          created_at,
-          updated_at
+          slug
         `)
         .eq('active', true)
         .order('name', { ascending: true })
@@ -47,15 +43,41 @@ export const useSubcategories = () => {
         throw categoriesError
       }
 
-      // Como não há subcategorias, retornar categorias como "categorias com subcategorias vazias"
-      const result = categoriesData?.map((category: any) => ({
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        subcategories: [] // Sem subcategorias por enquanto
-      })) || []
+      // Buscar todas as subcategorias ativas
+      const { data: subcategoriesData, error: subcategoriesError } = await supabase
+        .from('subcategories')
+        .select(`
+          id,
+          name,
+          slug,
+          category_id,
+          is_active
+        `)
+        .eq('is_active', true)
+        .order('name', { ascending: true })
 
-      console.log('Categorias encontradas:', result.length)
+      if (subcategoriesError) {
+        console.error('Erro ao buscar subcategorias:', subcategoriesError)
+        throw subcategoriesError
+      }
+
+      // Combinar categorias com suas subcategorias
+      const result = categoriesData?.map((category: any) => {
+        const categorySubcategories = subcategoriesData?.filter(
+          (sub: any) => sub.category_id === category.id
+        ) || []
+
+        return {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          subcategories: categorySubcategories.map((sub: any) => ({
+            id: sub.id,
+            name: sub.name,
+            slug: sub.slug
+          }))
+        }
+      }) || []
 
       return result
     },

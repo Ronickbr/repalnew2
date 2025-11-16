@@ -283,7 +283,7 @@ const ProductDetail: React.FC = () => {
                   </span>
                 )}
               </div>
-              <h1 className="text-xl font-bold text-[#333333] mb-3 leading-tight">
+              <h1 className="text-3xl font-bold text-[#333333] mb-4 leading-tight">
                 {product.product_name}
               </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
@@ -297,29 +297,6 @@ const ProductDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-
-
-
-            {/* Benefits */}
-            {product.benefits && product.benefits.length > 0 && (
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-                <h3 className="text-xl font-bold text-[#333333] mb-4 flex items-center space-x-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-[#8B0000] to-[#000080] rounded-full"></div>
-                  <span>Principais Benefícios</span>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(Array.isArray(product.benefits) ? product.benefits : []).map((benefit: {title: string, description: string}, index: number) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-[#8B0000] rounded-full mt-2 flex-shrink-0"></div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-1">{benefit.title}</h4>
-                        <p className="text-gray-600 text-sm">{benefit.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Features */}
             <div className="hidden relative bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-xl border border-white/40 hover:shadow-2xl transition-all duration-300 hover:scale-[1.01] overflow-hidden">

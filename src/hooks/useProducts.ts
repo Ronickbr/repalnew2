@@ -3,6 +3,14 @@ import { supabase } from '../lib/supabase'
 import { table } from '../lib/schema'
 import type { ProductWithCategory } from '../types/product'
 
+// Interface para subcategoria com ID numérico
+export interface SubcategoryWithId {
+  id: number;
+  name: string;
+  slug: string;
+  category_id: number;
+}
+
 // Cache global para evitar múltiplas requisições
 let productsCache: ProductWithCategory[] | null = null
 let cacheTimestamp: number = 0
@@ -42,17 +50,16 @@ export const useProducts = () => {
           .from(table('products'))
           .select(`
             id,
-            product_name,
+            name,
             slug,
             description,
-            benefits,
             category_id,
+            subcategory_id,
             featured,
             featured_in_dropdown,
             is_disabled,
             featured_on_homepage,
-            clearance_sale,
-            image_url,
+            image,
             created_at,
             updated_at
           `)
@@ -66,7 +73,7 @@ export const useProducts = () => {
         const { data: categoriesData } = await supabase
           .from('categories')
           .select('id, name, slug')
-          .eq('is_disabled', false);
+          .eq('active', true);
 
         // Criar mapa de categorias para lookup rápido
         const categoryMap = new Map();
@@ -75,26 +82,27 @@ export const useProducts = () => {
         });
 
         // Transformar os dados para manter compatibilidade com a interface existente
-        const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
-          id: product.id,
-          product_name: product.product_name,
-          description: product.description || undefined,
-          benefits: product.benefits || undefined,
-          category_id: product.category_id,
-          slug: product.slug || generateSlug(product.product_name),
-          featured: product.featured || false,
-          featured_in_dropdown: product.featured_in_dropdown || false,
-          is_disabled: product.is_disabled || false,
-          featured_on_homepage: product.featured_on_homepage || false,
-          clearance_sale: product.clearance_sale || false,
-          active: true,
-          created_at: product.created_at || new Date().toISOString(),
-          updated_at: product.updated_at || new Date().toISOString(),
-          category: categoryMap.get(product.category_id),
-          product_images: product.image_url ? [{ 
+      const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
+        id: product.id,
+        product_name: product.name,
+        description: product.description || undefined,
+        category_id: product.category_id,
+        subcategory_id: product.subcategory_id,
+        slug: product.slug || generateSlug(product.name),
+        featured: product.featured || false,
+        featured_in_dropdown: product.featured_in_dropdown || false,
+        is_disabled: product.is_disabled || false,
+        featured_on_homepage: product.featured_on_homepage || false,
+        active: product.active !== undefined ? product.active : true,
+        created_at: product.created_at || new Date().toISOString(),
+        updated_at: product.updated_at || new Date().toISOString(),
+        category: categoryMap.get(product.category_id),
+        debug_category_id: product.category_id,
+        debug_category_found: !!categoryMap.get(product.category_id),
+        product_images: product.image ? [{ 
             id: '1', 
             product_id: product.id, 
-            image_url: product.image_url, 
+            image_url: product.image, 
             sort_order: 1, 
             created_at: new Date().toISOString() 
           }] : []
@@ -104,7 +112,8 @@ export const useProducts = () => {
         productsCache = transformedProducts
         cacheTimestamp = now
         
-        setProducts(transformedProducts);
+        setProducts(transformedProducts)
+      console.log('✅ useLatestProducts: Produtos transformados:', transformedProducts.length);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro desconhecido');
       } finally {
@@ -133,6 +142,85 @@ export const useProducts = () => {
   }), [memoizedProducts, isLoading, error, fetchProducts]);
 };
 
+// Hook para buscar produtos por subcategoria com fallback para categoria principal
+export const useProductsBySubcategory = (subcategoryId: string | number, categoryId?: string | number) => {
+  const { data: allProducts, isLoading, error } = useProducts()
+  
+  const filteredProducts = useMemo(() => {
+    if (!allProducts || !subcategoryId) return []
+    
+    console.log('🔍 useProductsBySubcategory: Filtrando produtos para subcategoria:', subcategoryId)
+    console.log('📦 useProductsBySubcategory: Total de produtos disponíveis:', allProducts.length)
+    
+    // Se subcategoryId for string (slug), filtrar por subcategory_id com lookup na tabela subcategories
+    if (typeof subcategoryId === 'string') {
+      console.log('🔍 DEBUG: Todos os produtos com subcategory_id:')
+      allProducts.forEach(product => {
+        console.log(`  - ${product.product_name}: subcategory_id = ${product.subcategory_id}`)
+      })
+      
+      const filtered = allProducts.filter(product => {
+        const productSubcategoryId = product.subcategory_id
+        console.log('🏷️ Produto:', product.product_name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
+        return String(productSubcategoryId) === subcategoryId
+      })
+      
+      console.log('✅ useProductsBySubcategory: Produtos filtrados por subcategoria:', filtered.length)
+      
+      // Se não encontrou produtos na subcategoria e temos categoryId, mostrar produtos da categoria principal
+      if (filtered.length === 0 && categoryId) {
+        console.log('⚠️ Nenhum produto encontrado na subcategoria. Buscando produtos da categoria principal:', categoryId)
+        
+        const fallbackProducts = allProducts.filter(product => {
+          if (typeof categoryId === 'string') {
+            return product.category?.slug === categoryId
+          } else {
+            return String(product.category?.id) === String(categoryId)
+          }
+        })
+        
+        console.log('✅ Fallback: Produtos da categoria principal encontrados:', fallbackProducts.length)
+        return fallbackProducts
+      }
+      
+      return filtered
+    }
+    
+    // Se subcategoryId for number (id), filtrar por subcategory_id
+    const filtered = allProducts.filter(product => {
+      const productSubcategoryId = product.subcategory_id
+      console.log('🏷️ Produto:', product.product_name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
+      return String(productSubcategoryId) === String(subcategoryId)
+    })
+    
+    console.log('✅ useProductsBySubcategory: Produtos filtrados por ID de subcategoria:', filtered.length)
+    
+    // Se não encontrou produtos na subcategoria e temos categoryId, mostrar produtos da categoria principal
+    if (filtered.length === 0 && categoryId) {
+      console.log('⚠️ Nenhum produto encontrado na subcategoria. Buscando produtos da categoria principal:', categoryId)
+      
+      const fallbackProducts = allProducts.filter(product => {
+        if (typeof categoryId === 'string') {
+          return product.category?.slug === categoryId
+        } else {
+          return String(product.category?.id) === String(categoryId)
+        }
+      })
+      
+      console.log('✅ Fallback: Produtos da categoria principal encontrados:', fallbackProducts.length)
+      return fallbackProducts
+    }
+    
+    return filtered
+  }, [allProducts, subcategoryId, categoryId])
+  
+  return useMemo(() => ({
+    data: filteredProducts,
+    isLoading,
+    error
+  }), [filteredProducts, isLoading, error])
+}
+
 export const useProductsByCategory = (categoryId: string | number) => {
   const { data: allProducts, isLoading, error } = useProducts()
   
@@ -144,6 +232,11 @@ export const useProductsByCategory = (categoryId: string | number) => {
     
     // Se categoryId for string (slug), filtrar por category.slug
     if (typeof categoryId === 'string') {
+      console.log('🔍 DEBUG: Todos os produtos disponíveis:')
+      allProducts.forEach(product => {
+        console.log(`  - ${product.product_name}: category.slug = ${product.category?.slug}`)
+      })
+      
       const filtered = allProducts.filter(product => {
         const productCategorySlug = product.category?.slug
         console.log('🏷️ Produto:', product.product_name, 'Category Slug:', productCategorySlug, 'Buscando:', categoryId)
@@ -267,14 +360,12 @@ export const useProductBySlug = (slug: string) => {
           *,
           product_images (
             id,
-            image,
-            alt_text,
-            sort_order,
-            is_primary
+            url,
+            sort_order
           )
         `)
         .eq('slug', slug)
-        .eq('is_disabled', false)
+        .eq('active', true)
         .single()
 
       // Se não encontrou por slug, tentar buscar por nome convertido para slug
@@ -291,13 +382,13 @@ export const useProductBySlug = (slug: string) => {
               is_primary
             )
           `)
-          .eq('is_disabled', false)
+          .eq('active', true)
 
         if (nameError) throw nameError
 
         // Encontrar produto cujo nome convertido para slug corresponde ao slug buscado
         const foundProduct = productsByName?.find((p: any) => 
-          generateSlug(p.product_name || '') === slug
+          generateSlug(p.name || '') === slug
         )
 
         if (foundProduct) {
@@ -325,21 +416,20 @@ export const useProductBySlug = (slug: string) => {
         // Processar imagens - usar product_images se disponível, senão usar image_url
         const processedProduct: ProductWithCategory = {
           ...data,
+          product_name: data.name || data.product_name || 'Produto',
           category: productCategory,
+          specifications: data.specifications || undefined,
           product_images: data.product_images && data.product_images.length > 0 
             ? data.product_images.map((img: any) => ({
                 id: img.id,
-                image_url: img.image,
-                alt_text: img.alt_text,
+                image_url: img.url,
                 sort_order: img.sort_order,
-                is_primary: img.is_primary,
                 created_at: new Date().toISOString()
               }))
-            : data.image_url 
+            : data.image 
               ? [{
                   id: '0',
-                  image_url: data.image_url,
-                  alt_text: data.product_name || '',
+                  image_url: data.image,
                   sort_order: 1
                 }]
               : []
@@ -449,6 +539,7 @@ export const useLatestProducts = (limit: number = 6) => {
 
   const fetchLatestProducts = useCallback(async () => {
     try {
+      console.log('🔄 useLatestProducts: Iniciando busca de produtos recentes...')
       setIsLoading(true)
       setError(null)
 
@@ -457,33 +548,52 @@ export const useLatestProducts = (limit: number = 6) => {
         .from(table('products'))
         .select(`
           id,
-          product_name,
+          name,
           slug,
           description,
-          benefits,
+          image,
           category_id,
           featured,
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
-          clearance_sale,
-          image_url,
           created_at,
           updated_at
         `)
-        .eq('is_disabled', false)
+        .eq('active', true)
         .order('created_at', { ascending: false })
         .limit(limit)
 
       if (productsError) {
+        console.log('❌ useLatestProducts: Erro ao buscar produtos:', productsError.message)
         throw new Error(`Falha ao carregar produtos recentes: ${productsError.message}`)
       }
 
+      console.log('✅ useLatestProducts: Produtos brutos encontrados:', productsData?.length || 0)
+      
+      // Debug dos dados brutos do primeiro produto
+      if (productsData && productsData.length > 0) {
+        console.log('📋 DADOS BRUTOS DO PRIMEIRO PRODUTO:', {
+          id: productsData[0].id,
+          name: productsData[0].name,
+          category_id: productsData[0].category_id,
+          active: productsData[0].active,
+          is_disabled: productsData[0].is_disabled,
+          slug: productsData[0].slug
+        });
+      }
+
       // Buscar categorias para mapeamento
-      const { data: categoriesData } = await supabase
+      const { data: categoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select('id, name, slug')
-        .eq('is_disabled', false);
+        .eq('active', true);
+
+      if (categoriesError) {
+        console.log('❌ useLatestProducts: Erro ao buscar categorias:', categoriesError.message);
+      } else {
+        console.log('✅ useLatestProducts: Categorias encontradas:', categoriesData?.length || 0);
+      }
 
       const categoryMap = new Map();
       categoriesData?.forEach((cat: any) => {
@@ -493,24 +603,24 @@ export const useLatestProducts = (limit: number = 6) => {
       // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.product_name,
+        product_name: product.name,
         description: product.description || undefined,
-        benefits: product.benefits || undefined,
+        benefits: undefined,
         category_id: product.category_id,
-        slug: product.slug || generateSlug(product.product_name),
+        slug: product.slug || generateSlug(product.name),
         featured: product.featured || false,
         featured_in_dropdown: product.featured_in_dropdown || false,
         is_disabled: product.is_disabled || false,
         featured_on_homepage: product.featured_on_homepage || false,
         clearance_sale: product.clearance_sale || false,
-        active: true,
+        active: product.active !== undefined ? product.active : true,
         created_at: product.created_at || new Date().toISOString(),
         updated_at: product.updated_at || new Date().toISOString(),
         category: categoryMap.get(product.category_id),
-        product_images: product.image_url ? [{ 
+        product_images: product.image ? [{ 
             id: '1', 
             product_id: product.id, 
-            image_url: product.image_url, 
+            image_url: product.image, 
             sort_order: 1, 
             created_at: new Date().toISOString() 
           }] : []
@@ -558,17 +668,17 @@ export const useSimilarProducts = (currentProductId: string | number, categoryId
         .from(table('products'))
         .select(`
           id,
-          product_name,
+          name,
           slug,
           description,
-          benefits,
+          description,
           category_id,
           featured,
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
           clearance_sale,
-          image_url,
+          image,
           created_at,
           updated_at
         `)
@@ -596,24 +706,24 @@ export const useSimilarProducts = (currentProductId: string | number, categoryId
       // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.product_name,
+        product_name: product.name,
         description: product.description || undefined,
-        benefits: product.benefits || undefined,
+        benefits: undefined,
         category_id: product.category_id,
-        slug: product.slug || generateSlug(product.product_name),
+        slug: product.slug || generateSlug(product.name),
         featured: product.featured || false,
         featured_in_dropdown: product.featured_in_dropdown || false,
         is_disabled: product.is_disabled || false,
         featured_on_homepage: product.featured_on_homepage || false,
         clearance_sale: product.clearance_sale || false,
-        active: true,
+        active: product.active !== undefined ? product.active : true,
         created_at: product.created_at || new Date().toISOString(),
         updated_at: product.updated_at || new Date().toISOString(),
         category: categoryMap.get(product.category_id),
-        product_images: product.image_url ? [{ 
+        product_images: product.image ? [{ 
             id: '1', 
             product_id: product.id, 
-            image_url: product.image_url, 
+            image_url: product.image, 
             sort_order: 1, 
             created_at: new Date().toISOString() 
           }] : []
@@ -637,6 +747,53 @@ export const useSimilarProducts = (currentProductId: string | number, categoryId
     error,
     refetch: fetchSimilarProducts
   }), [products, isLoading, error, fetchSimilarProducts])
+}
+
+// Hook para buscar subcategorias com IDs numéricos do banco de dados
+export const useSubcategories = (categoryId?: string | number) => {
+  const [subcategories, setSubcategories] = useState<SubcategoryWithId[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchSubcategories = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      let query = supabase
+        .from('subcategories')
+        .select('id, name, slug, category_id')
+        .eq('is_active', true)
+
+      if (categoryId) {
+        query = query.eq('category_id', categoryId)
+      }
+
+      const { data, error: subError } = await query.order('name')
+
+      if (subError) {
+        throw new Error(`Falha ao carregar subcategorias: ${subError.message}`)
+      }
+
+      setSubcategories(data || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido')
+      setSubcategories([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [categoryId])
+
+  useEffect(() => {
+    fetchSubcategories()
+  }, [fetchSubcategories])
+
+  return useMemo(() => ({
+    data: subcategories,
+    isLoading,
+    error,
+    refetch: fetchSubcategories
+  }), [subcategories, isLoading, error, fetchSubcategories])
 }
 
 export default useProducts;

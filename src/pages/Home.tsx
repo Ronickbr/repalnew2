@@ -31,7 +31,8 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: productsData, error: productsError } = await supabase
+        // Primeiro tenta buscar produtos em destaque na homepage
+        let { data: productsData, error: productsError } = await supabase
           .from(table('products'))
           .select(`
             id,
@@ -41,10 +42,61 @@ const Home: React.FC = () => {
             slug,
             featured,
             category_id,
-            category:categories!fk_products_category(name)
+            featured_on_homepage,
+            created_at
           `)
           .eq('featured', true)
+          .eq('active', true)
           .limit(8);
+
+        // Se não houver produtos em destaque na homepage, tenta apenas featured
+        if (!productsData || productsData.length === 0) {
+          console.log('🔄 Nenhum produto com featured=true, tentando apenas featured_on_homepage=true');
+          const { data: featuredData, error: featuredError } = await supabase
+            .from(table('products'))
+            .select(`
+              id,
+              name,
+              description,
+              image,
+              slug,
+              featured,
+              category_id,
+              featured_on_homepage,
+              created_at
+            `)
+            .eq('featured', false)
+            .eq('featured_on_homepage', true)
+            .eq('active', true)
+            .limit(8);
+          
+          productsData = featuredData;
+          productsError = featuredError;
+        }
+
+        // Se ainda não houver produtos, busca os mais recentes ativos
+        if (!productsData || productsData.length === 0) {
+          console.log('🔄 Nenhum produto com featured=true, buscando produtos ativos recentes');
+          const { data: recentData, error: recentError } = await supabase
+            .from(table('products'))
+            .select(`
+              id,
+              name,
+              description,
+              image,
+              slug,
+              featured,
+              category_id,
+              featured_on_homepage,
+              created_at
+            `)
+            .eq('active', true)
+            .order('created_at', { ascending: false })
+            .limit(8);
+          
+          productsData = recentData;
+          productsError = recentError;
+        }
 
         if (productsError) {
           console.error('Erro ao buscar produtos em destaque:', productsError);
@@ -52,13 +104,19 @@ const Home: React.FC = () => {
         }
 
         if (productsData) {
+          console.log('📦 Produtos em destaque carregados:', productsData.length, 'produtos');
           const transformedProducts = productsData.map((product: any) => ({
-            ...product,
-            image_url: product.image, // Mapear image para image_url
+            id: product.id,
+            product_name: product.name,
+            image_url: product.image,
+            slug: product.slug,
+            category_id: product.category_id,
+            featured_on_homepage: product.featured_on_homepage,
             active: true,
-            created_at: new Date().toISOString(),
+            created_at: product.created_at || new Date().toISOString(),
             updated_at: new Date().toISOString()
           }));
+          console.log('🔄 Produtos transformados:', transformedProducts.length, 'produtos');
           setFeaturedProducts(transformedProducts);
         }
       } catch (error) {
@@ -96,44 +154,72 @@ const Home: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
-              >
-                <div className="aspect-square overflow-hidden">
-                  <img
-                    src={product.image_url || 'https://via.placeholder.com/400x400?text=Produto'}
-                    alt={product.product_name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {product.product_name}
-                  </h3>
-                  <p className="text-gray-600 mb-4">Equipamento profissional para seu negócio.</p>
-                  <div className="space-y-3">
-                    <Link
-                      to={`/produto/${product.slug}`}
-                      className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
-                    >
-                      Ver Detalhes
-                    </Link>
-                    <button 
-                      onClick={() => addItem({
-                        id: product.id.toString(),
-                        name: product.product_name,
-                        image: product.image_url || undefined
-                      })}
-                      className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
-                    >
-                      Incluir na Lista
-                    </button>
+            {featuredProducts.length > 0 ? (
+              featuredProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
+                >
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={product.image_url || 'https://via.placeholder.com/400x400?text=Produto'}
+                      alt={product.product_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {product.product_name}
+                    </h3>
+                    <p className="text-gray-600 mb-4">Equipamento profissional para seu negócio.</p>
+                    <div className="space-y-3">
+                      <Link
+                        to={product.slug ? `/produto/${product.slug}` : '#'}
+                        onClick={(e) => {
+                          console.log('🎯 Link clicado - Product slug:', product.slug, 'Product name:', product.product_name);
+                          console.log('🎯 URL completa:', product.slug ? `/produto/${product.slug}` : 'SEM SLUG');
+                          if (!product.slug) {
+                            console.error('❌ Produto sem slug!');
+                            e.preventDefault();
+                          }
+                        }}
+                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
+                      >
+                        Ver Detalhes
+                      </Link>
+                      <button 
+                        onClick={() => addItem({
+                          id: product.id.toString(),
+                          name: product.product_name,
+                          image: product.image_url || undefined
+                        })}
+                        className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                      >
+                        Incluir na Lista
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8L9 7l-2 2 2 2 2 2 2-2 2-2 2 2 2 2-2 2-2 2" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum produto disponível</h3>
+                  <p className="text-gray-600 mb-4">Em breve teremos produtos incríveis para você!</p>
+                  <Link
+                    to="/contato"
+                    className="inline-block bg-red-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Entre em contato
+                  </Link>
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -278,7 +364,15 @@ const Home: React.FC = () => {
                     <h3 className="text-xl font-bold text-gray-900 mb-4">{product.product_name}</h3>
                     <div className="space-y-3">
                       <Link
-                        to={`/produto/${product.slug}`}
+                        to={product.slug ? `/produto/${product.slug}` : '#'}
+                        onClick={(e) => {
+                          console.log('🎯 Novidades - Link clicado - Product slug:', product.slug, 'Product name:', product.product_name);
+                          console.log('🎯 Novidades - URL completa:', product.slug ? `/produto/${product.slug}` : 'SEM SLUG');
+                          if (!product.slug) {
+                            console.error('❌ Novidades - Produto sem slug!');
+                            e.preventDefault();
+                          }
+                        }}
                         className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
                       >
                         Ver Detalhes

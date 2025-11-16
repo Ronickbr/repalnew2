@@ -53,7 +53,7 @@ const DashboardPage: React.FC = () => {
         bannersData
       ] = await Promise.all([
         supabase.from(table('products')).select('*', { count: 'exact', head: true }),
-        supabase.from(table('categories')).select('*', { count: 'exact', head: true }),
+        supabase.from(table('categories')).select('id', { count: 'exact', head: true }),
         supabase.from(table('brands')).select('*', { count: 'exact', head: true }),
         supabase.from(table('admin_users')).select('*', { count: 'exact', head: true }),
         supabase.from(table('banners')).select('*', { count: 'exact', head: true })
