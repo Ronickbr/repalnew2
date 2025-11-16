@@ -146,10 +146,14 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
       if (result) {
         const allCategories = (result as any).data || [];
+        console.log('Todas as categorias carregadas:', allCategories.length);
         setCategories(allCategories);
         
         // Filtrar apenas as categorias principais (sem parent_id) para contagem
         const parentCategories = allCategories.filter((cat: Category) => !cat.parent_id);
+        console.log('Categorias principais:', parentCategories.length);
+        const subcategories = allCategories.filter((cat: Category) => cat.parent_id);
+        console.log('Subcategorias encontradas:', subcategories.length);
         announceToScreenReader(`${parentCategories.length} categorias carregadas com sucesso`);
       }
     } catch (error) {
@@ -162,6 +166,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   useEffect(() => {
+    console.log('CategoryManager iniciado - carregando categorias...');
     fetchCategories();
     fetchAllSubcategories();
   }, []);
@@ -175,16 +180,22 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   // Fetch all subcategories
   const fetchAllSubcategories = async () => {
     try {
+      console.log('Buscando subcategorias...');
       const result = await handleAsync(
         supabase
-          .from(table('subcategories'))
+          .from(table('categories'))
           .select('*')
+          .not('parent_id', 'is', null)
           .order('name', { ascending: true }),
         'buscar todas as subcategorias'
       );
 
       if (result) {
-        setSubcategories((result as any).data || []);
+        const subcategoriesData = (result as any).data || [];
+        console.log('Subcategorias carregadas:', subcategoriesData.length);
+        console.log('Exemplos de subcategorias:', subcategoriesData.slice(0, 3));
+        console.log('Primeira subcategoria exemplo:', subcategoriesData[0]);
+        setSubcategories(subcategoriesData);
       }
     } catch (error) {
       handleError(error, 'Erro ao carregar subcategorias');
@@ -401,8 +412,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   // Delete category with confirmation
   const handleDelete = async (categoryId: string | number) => {
-    // Check if category has subcategories usando category_id da tabela subcategories
-    const hasSubcategories = subcategories.some(sub => sub.category_id === categoryId);
+    // Check if category has subcategories usando parent_id da tabela categories
+    const hasSubcategories = subcategories.some(sub => sub.parent_id === categoryId);
     
     if (hasSubcategories) {
       showNotification('Esta categoria tem subcategorias. Exclua-as primeiro.', 'error');
@@ -489,6 +500,19 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     setExpandedCategories(newExpanded);
   };
 
+  // Toggle all categories expansion
+  const toggleAllExpansion = () => {
+    const parentCategories = processedCategories.filter(cat => cat.children && cat.children.length > 0);
+    if (expandedCategories.size === parentCategories.length) {
+      // Todas estão expandidas, recolher todas
+      setExpandedCategories(new Set());
+    } else {
+      // Expandir todas que têm subcategorias
+      const allWithChildren = new Set(parentCategories.map(cat => cat.id.toString()));
+      setExpandedCategories(allWithChildren);
+    }
+  };
+
   // Toggle category selection for bulk operations
   const toggleCategorySelection = (categoryId: string | number) => {
     const newSelected = new Set(selectedCategories);
@@ -506,7 +530,8 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
   // Filter, sort and group categories
   const processCategories = (categories: Category[]) => {
-    let filtered = categories;
+    // Filtrar apenas categorias principais (sem parent_id)
+    let filtered = categories.filter(cat => !cat.parent_id);
     
     // Apply status filter
     if (filterStatus !== 'all') {
@@ -553,11 +578,16 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       }
     });
     
-    // Group by subcategories from subcategories table usando category_id
-    return filtered.map(parent => ({
-      ...parent,
-      children: subcategories.filter(sub => sub.category_id === parent.id)
-    }));
+    // Group by subcategories from categories table usando parent_id
+    const processed = filtered.map(parent => {
+      const children = subcategories.filter(sub => sub.parent_id === parent.id);
+      console.log(`Categoria ${parent.name} (${parent.id}) tem ${children.length} subcategorias`);
+      return {
+        ...parent,
+        children: children
+      };
+    });
+    return processed;
   };
 
   // Export data
@@ -641,10 +671,20 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestão de Categorias</h1>
-          <p className="text-gray-600">Organize suas categorias e subcategorias de produtos</p>
-        </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Gestão de Categorias</h1>
+            <p className="text-gray-600">Organize suas categorias e subcategorias de produtos</p>
+            <button 
+              onClick={() => {
+                console.log('Categorias atuais:', categories);
+                console.log('Subcategorias atuais:', subcategories);
+                console.log('Categorias processadas:', processedCategories);
+              }}
+              className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded hover:bg-blue-200"
+            >
+              Debug: Ver Dados
+            </button>
+          </div>
         
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
           <button
@@ -788,11 +828,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
         {/* Results count */}
         <div className="mt-4 flex items-center justify-between text-sm text-gray-600" role="status" aria-live="polite">
           <span>
-            {processedCategories.length} categoria(s) encontrada(s)
+            {processedCategories.length} categoria(s) principal(is) encontrada(s)
             {searchTerm && ` para "${searchTerm}"`}
           </span>
           <span>
-            {categories.length} total
+            {processedCategories.reduce((total, cat) => total + (cat.children?.length || 0), 0)} subcategorias
           </span>
         </div>
       </div>
@@ -804,13 +844,20 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             <h2 className="text-lg font-semibold text-gray-900">Estrutura de Categorias</h2>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
               <button 
-                className="p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                aria-label="Visualizar categorias"
+                onClick={toggleAllExpansion}
+                className="p-1 hover:bg-gray-100 rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                aria-label={expandedCategories.size === processedCategories.filter(cat => cat.children && cat.children.length > 0).length ? 'Recolher todas as categorias' : 'Expandir todas as categorias'}
               >
                 <Eye className="w-4 h-4" aria-hidden="true" />
               </button>
               <span aria-hidden="true">•</span>
-              <span>Expandir tudo</span>
+              <button 
+                onClick={toggleAllExpansion}
+                className="hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded px-1 transition-colors"
+                aria-label={expandedCategories.size === processedCategories.filter(cat => cat.children && cat.children.length > 0).length ? 'Recolher todas as categorias' : 'Expandir todas as categorias'}
+              >
+                {expandedCategories.size === processedCategories.filter(cat => cat.children && cat.children.length > 0).length ? 'Recolher tudo' : 'Expandir tudo'}
+              </button>
             </div>
           </div>
         </div>
@@ -850,9 +897,15 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                     
                     <button
                       onClick={() => toggleExpansion(category.id)}
-                      className="text-gray-500 hover:text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      aria-label={expandedCategories.has(category.id.toString()) ? 'Recolher categoria' : 'Expandir categoria'}
+                      className={`transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                        category.children?.length > 0 
+                          ? 'text-gray-500 hover:text-gray-700' 
+                          : 'text-gray-300 cursor-not-allowed'
+                      }`}
+                      aria-label={expandedCategories.has(category.id.toString()) ? 'Recolher categoria' : category.children?.length > 0 ? 'Expandir categoria' : 'Sem subcategorias'}
                       aria-expanded={expandedCategories.has(category.id.toString())}
+                      disabled={!category.children?.length}
+                      style={{display: 'block'}}
                     >
                       {expandedCategories.has(category.id.toString()) ? (
                         <ChevronDown className="w-5 h-5" />
@@ -889,7 +942,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                               <span aria-hidden="true">•</span>
                               <span>Ordem: {category.sort_order || 1}</span>
                               <span aria-hidden="true">•</span>
-                              <span>{category.children?.length || 0} subcategorias</span>
+                              <span className={`${category.children?.length > 0 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                                {category.children?.length || 0} {category.children?.length === 1 ? 'subcategoria' : 'subcategorias'}
+                              </span>
                             </div>
                           </div>
                         </button>
@@ -934,8 +989,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
                 {/* Child Categories */}
                 {expandedCategories.has(category.id.toString()) && category.children && category.children.length > 0 && (
                   <div className="ml-12 mt-4 space-y-3">
+                    <div className="mb-2 text-sm text-gray-500 font-medium">
+                      {category.children.length} {category.children.length === 1 ? 'subcategoria' : 'subcategorias'}
+                    </div>
                     {category.children.map((child) => (
-                      <div key={child.id} className={`flex items-center justify-between p-3 bg-white border rounded-lg ${selectedCategory?.id === child.id ? 'ring-2 ring-blue-500' : ''}`}>
+                      <div key={child.id} className={`flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg ${selectedCategory?.id === child.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}>
                         <div className="flex items-center space-x-3 flex-1">
                           <input
                             type="checkbox"

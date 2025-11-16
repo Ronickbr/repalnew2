@@ -25,17 +25,19 @@ export const useSubcategories = () => {
     queryKey: ['subcategories'],
     queryFn: async () => {
       console.log('=== DEBUG useSubcategories ===')
-      console.log('Buscando categorias e subcategorias do banco de dados...')
+      console.log('Buscando categorias hierárquicas do banco de dados...')
       
-      // Buscar todas as categorias ativas
-      const { data: categoriesData, error: categoriesError } = await supabase
+      // Buscar todas as categorias (principais e subcategorias) ativas
+      const { data: allCategoriesData, error: categoriesError } = await supabase
         .from('categories')
         .select(`
           id,
           name,
-          slug
+          slug,
+          parent_id,
+          is_active
         `)
-        .eq('active', true)
+        .eq('is_active', true)
         .order('name', { ascending: true })
 
       if (categoriesError) {
@@ -43,28 +45,24 @@ export const useSubcategories = () => {
         throw categoriesError
       }
 
-      // Buscar todas as subcategorias ativas
-      const { data: subcategoriesData, error: subcategoriesError } = await supabase
-        .from('subcategories')
-        .select(`
-          id,
-          name,
-          slug,
-          category_id,
-          is_active
-        `)
-        .eq('is_active', true)
-        .order('name', { ascending: true })
+      console.log('=== DEBUG useSubcategories ===')
+      console.log('Total de categorias retornadas:', allCategoriesData?.length || 0)
+      
+      // Separar categorias principais (parent_id = NULL) de subcategorias
+      const mainCategories = allCategoriesData?.filter((cat: any) => cat.parent_id === null) || []
+      const subcategories = allCategoriesData?.filter((cat: any) => cat.parent_id !== null) || []
+      
+      console.log('Categorias principais:', mainCategories.length)
+      console.log('Subcategorias:', subcategories.length)
+      console.log('Subcategorias por categoria:')
+      subcategories.forEach((sub: any) => {
+        console.log(`- ${sub.name} (parent_id: ${sub.parent_id})`)
+      })
 
-      if (subcategoriesError) {
-        console.error('Erro ao buscar subcategorias:', subcategoriesError)
-        throw subcategoriesError
-      }
-
-      // Combinar categorias com suas subcategorias
-      const result = categoriesData?.map((category: any) => {
-        const categorySubcategories = subcategoriesData?.filter(
-          (sub: any) => sub.category_id === category.id
+      // Combinar categorias principais com suas subcategorias
+      const result = mainCategories.map((category: any) => {
+        const categorySubcategories = subcategories.filter(
+          (sub: any) => sub.parent_id === category.id
         ) || []
 
         return {
@@ -79,6 +77,7 @@ export const useSubcategories = () => {
         }
       }) || []
 
+      console.log('Resultado final:', result)
       return result
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
@@ -94,9 +93,9 @@ export const useSubcategoriesByCategory = (categoryId: number) => {
       console.log(`Buscando subcategorias para categoria ${categoryId}...`)
       
       const { data, error } = await supabase
-        .from('subcategories')
+        .from('categories')
         .select('*')
-        .eq('category_id', categoryId)
+        .eq('parent_id', categoryId)
         .eq('is_active', true)
         .order('name', { ascending: true })
 

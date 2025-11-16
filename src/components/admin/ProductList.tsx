@@ -143,11 +143,11 @@ const ProductList: React.FC<ProductListProps> = ({
                     <td className="px-3 py-4 w-2/6 min-w-[250px]">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
-                          <img className="h-10 w-10 rounded-full object-cover" src={product.product_images?.[0]?.image_url || product.image_url || '/placeholder.jpg'} alt={product.product_name} />
+                          <img className="h-10 w-10 rounded-full object-cover" src={product.product_images?.[0]?.image_url || product.image_url || '/placeholder.jpg'} alt={product.name} />
                         </div>
                         <div className="ml-4 min-w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-900 truncate" title={product.product_name}>
-                            {product.product_name}
+                          <div className="text-sm font-medium text-gray-900 truncate" title={product.name}>
+                            {product.name}
                           </div>
                           <div className="text-sm text-gray-500 truncate" title={product.description || 'Sem descrição'}>
                             {product.description ? product.description.substring(0, 50) + '...' : 'Sem descrição'}

@@ -60,7 +60,7 @@ const LeadModal: React.FC<LeadModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Produto de Interesse
                 </label>
-                <p className="text-gray-900">{viewingLead.product_name || '-'}</p>
+                <p className="text-gray-900">{viewingLead.name || '-'}</p>
               </div>
             </div>
 

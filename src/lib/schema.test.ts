@@ -10,7 +10,7 @@ describe('schema table mapping', () => {
 
   it('permite extensão futura sem quebrar chamadas', () => {
     const keys: (keyof typeof TABLES)[] = [
-      'products','categories','subcategories','product_images','leads','brands','banners','profiles','site_settings','admin_users'
+      'products','categories','product_images','leads','brands','banners','profiles','site_settings','admin_users'
     ]
     for (const k of keys) {
       expect(typeof table(k)).toBe('string')

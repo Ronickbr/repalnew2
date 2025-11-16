@@ -11,6 +11,7 @@ import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
 import TestUnifiedUpload from './pages/TestUnifiedUpload';
+import TestPage from './pages/TestPage';
 import AdminLayout from './layouts/AdminLayout';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -46,10 +47,12 @@ function App() {
               <Route index element={<Home />} />
               <Route path="categorias/:categorySlug" element={<CategoryProducts />} />
               <Route path="categorias/:categorySlug/:subcategorySlug" element={<CategoryProducts />} />
+              <Route path="CategoryProducts" element={<CategoryProducts />} />
               <Route path="produto/:slug" element={<ProductDetail />} />
             </Route>
             <Route path="/login" element={<Login />} />
             <Route path="/test-upload" element={<TestUnifiedUpload />} />
+            <Route path="/test-db" element={<TestPage />} />
             <Route 
               path="/perfil" 
               element={

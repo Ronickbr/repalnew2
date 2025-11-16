@@ -75,7 +75,7 @@ const ProductPage: React.FC = () => {
           email: formData.email,
           phone: formData.phone,
           message: formData.message,
-          product_name: product.product_name,
+          name: product.name,
           source: 'product_page'
         });
 
@@ -115,7 +115,7 @@ const ProductPage: React.FC = () => {
     );
   }
 
-  const whatsappMessage = `Olá! Gostaria de saber mais sobre o produto: ${product.product_name} `;
+  const whatsappMessage = `Olá! Gostaria de saber mais sobre o produto: ${product.name} `;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -142,7 +142,7 @@ const ProductPage: React.FC = () => {
               </>
             )}
             <span className="text-gray-400">/</span>
-            <span className="text-gray-900 font-medium">{product.product_name}</span>
+            <span className="text-gray-900 font-medium">{product.name}</span>
           </nav>
         </div>
       </div>
@@ -155,7 +155,7 @@ const ProductPage: React.FC = () => {
             <div className="mb-6">
               <img
                 src={images[selectedImageIndex]?.image_url || 'https://via.placeholder.com/600x600?text=Produto'}
-                alt={images[selectedImageIndex]?.alt_text || product.product_name}
+                alt={images[selectedImageIndex]?.alt_text || product.name}
                 className="w-full h-96 object-cover rounded-lg shadow-lg"
               />
             </div>
@@ -203,7 +203,7 @@ const ProductPage: React.FC = () => {
             )}
 
             <h1 className="text-4xl font-bold text-gray-900 mb-6">
-              {product.product_name}
+              {product.name}
             </h1>
 
             <div className="prose prose-lg text-gray-600 mb-8">
@@ -269,7 +269,7 @@ const ProductPage: React.FC = () => {
         {showContactForm && (
           <div className="mt-16 bg-white rounded-2xl shadow-xl p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-              Solicitar Orçamento - {product.product_name}
+              Solicitar Orçamento - {product.name}
             </h2>
             
             {submitted ? (
@@ -342,7 +342,7 @@ const ProductPage: React.FC = () => {
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder={`Gostaria de receber um orçamento para ${product.product_name}...`}
+                    placeholder={`Gostaria de receber um orçamento para ${product.name}...`}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
                 </div>

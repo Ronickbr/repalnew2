@@ -84,7 +84,7 @@ export const useProducts = () => {
         // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.name,
+        name: product.name,
         description: product.description || undefined,
         category_id: product.category_id,
         subcategory_id: product.subcategory_id,
@@ -156,12 +156,12 @@ export const useProductsBySubcategory = (subcategoryId: string | number, categor
     if (typeof subcategoryId === 'string') {
       console.log('🔍 DEBUG: Todos os produtos com subcategory_id:')
       allProducts.forEach(product => {
-        console.log(`  - ${product.product_name}: subcategory_id = ${product.subcategory_id}`)
+        console.log(`  - ${product.name}: subcategory_id = ${product.subcategory_id}`)
       })
       
       const filtered = allProducts.filter(product => {
         const productSubcategoryId = product.subcategory_id
-        console.log('🏷️ Produto:', product.product_name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
+        console.log('🏷️ Produto:', product.name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
         return String(productSubcategoryId) === subcategoryId
       })
       
@@ -189,7 +189,7 @@ export const useProductsBySubcategory = (subcategoryId: string | number, categor
     // Se subcategoryId for number (id), filtrar por subcategory_id
     const filtered = allProducts.filter(product => {
       const productSubcategoryId = product.subcategory_id
-      console.log('🏷️ Produto:', product.product_name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
+      console.log('🏷️ Produto:', product.name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
       return String(productSubcategoryId) === String(subcategoryId)
     })
     
@@ -234,12 +234,12 @@ export const useProductsByCategory = (categoryId: string | number) => {
     if (typeof categoryId === 'string') {
       console.log('🔍 DEBUG: Todos os produtos disponíveis:')
       allProducts.forEach(product => {
-        console.log(`  - ${product.product_name}: category.slug = ${product.category?.slug}`)
+        console.log(`  - ${product.name}: category.slug = ${product.category?.slug}`)
       })
       
       const filtered = allProducts.filter(product => {
         const productCategorySlug = product.category?.slug
-        console.log('🏷️ Produto:', product.product_name, 'Category Slug:', productCategorySlug, 'Buscando:', categoryId)
+        console.log('🏷️ Produto:', product.name, 'Category Slug:', productCategorySlug, 'Buscando:', categoryId)
         return productCategorySlug === categoryId
       })
       console.log('✅ useProductsByCategory: Produtos filtrados por slug:', filtered.length)
@@ -249,8 +249,8 @@ export const useProductsByCategory = (categoryId: string | number) => {
     // Se categoryId for number (id), filtrar por category.id
     const filtered = allProducts.filter(product => {
       const productCategoryId = product.category?.id
-      console.log('🏷️ Produto:', product.product_name, 'Category ID:', productCategoryId, 'Buscando:', categoryId)
-      return productCategoryId === String(categoryId)
+      console.log('🏷️ Produto:', product.name, 'Category ID:', productCategoryId, 'Buscando:', categoryId)
+      return String(productCategoryId) === String(categoryId)
     })
     console.log('✅ useProductsByCategory: Produtos filtrados por ID:', filtered.length)
     return filtered
@@ -281,12 +281,12 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
     const allFeaturedProducts = allProducts.filter(product => product.featured_in_dropdown === true)
     console.log('🔍 Todos os produtos com featured_in_dropdown=true:', allFeaturedProducts.length)
     allFeaturedProducts.forEach(p => {
-      console.log(`  - ${p.product_name}: categoria=${p.category?.name} (${p.category?.id}), slug=${p.category?.slug}`)
+      console.log(`  - ${p.name}: categoria=${p.category?.name} (${p.category?.id}), slug=${p.category?.slug}`)
     })
     
     // Filtrar produtos que pertencem à categoria E têm featured_in_dropdown=true
     const featuredProducts = allProducts.filter(product => {
-      console.log(`🔍 Processando produto: ${product.product_name}`)
+      console.log(`🔍 Processando produto: ${product.name}`)
       console.log(`   - category.id: ${product.category?.id} (tipo: ${typeof product.category?.id})`)
       console.log(`   - category.slug: ${product.category?.slug}`)
       console.log(`   - featured_in_dropdown: ${product.featured_in_dropdown}`)
@@ -300,14 +300,14 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
       
       // Se categoryId for number (id), filtrar por category.id
       const categoryIdStr = String(categoryId)
-      const match = product.category?.id === categoryIdStr
+      const match = String(product.category?.id) === categoryIdStr
       console.log(`   - Comparação id: ${product.category?.id} === ${categoryIdStr} = ${match}`)
       return match && product.featured_in_dropdown === true
     })
     
     console.log('⭐ useFeaturedProductByCategory: Produtos featured encontrados para categoria', categoryId, ':', featuredProducts.length)
     if (featuredProducts.length > 0) {
-      console.log('✅ Produto em destaque selecionado para categoria', categoryId, ':', featuredProducts[0].product_name)
+      console.log('✅ Produto em destaque selecionado para categoria', categoryId, ':', featuredProducts[0].name)
     } else {
       console.log('⚠️ Nenhum produto featured encontrado para categoria', categoryId)
     }
@@ -376,7 +376,7 @@ export const useProductBySlug = (slug: string) => {
             *,
             product_images (
               id,
-              image,
+              url,
               alt_text,
               sort_order,
               is_primary
@@ -416,7 +416,7 @@ export const useProductBySlug = (slug: string) => {
         // Processar imagens - usar product_images se disponível, senão usar image_url
         const processedProduct: ProductWithCategory = {
           ...data,
-          product_name: data.name || data.product_name || 'Produto',
+          name: data.name || 'Produto',
           category: productCategory,
           specifications: data.specifications || undefined,
           product_images: data.product_images && data.product_images.length > 0 
@@ -472,7 +472,7 @@ export const useFeaturedDropdownProducts = () => {
       const isFeatured = product.featured_in_dropdown === true
       const isActive = !product.is_disabled
       
-      console.log('🏷️ Produto:', product.product_name, {
+      console.log('🏷️ Produto:', product.name, {
         featured_in_dropdown: product.featured_in_dropdown,
         is_disabled: product.is_disabled,
         incluir: isFeatured && isActive
@@ -482,7 +482,7 @@ export const useFeaturedDropdownProducts = () => {
     })
     
     console.log('✅ useFeaturedDropdownProducts: Produtos filtrados:', filtered.length)
-    console.log('📋 useFeaturedDropdownProducts: Produtos encontrados:', filtered.map(p => p.product_name))
+    console.log('📋 useFeaturedDropdownProducts: Produtos encontrados:', filtered.map(p => p.name))
     
     return filtered
   }, [allProducts])
@@ -509,7 +509,7 @@ export const useFeaturedProductsByCategory = (categoryId: string | number) => {
       const isFeatured = product.featured_in_dropdown === true
       const isActive = !product.is_disabled
       
-      console.log('🏷️ Produto:', product.product_name, {
+      console.log('🏷️ Produto:', product.name, {
         featured_in_dropdown: product.featured_in_dropdown,
         is_disabled: product.is_disabled,
         incluir: isFeatured && isActive
@@ -519,7 +519,7 @@ export const useFeaturedProductsByCategory = (categoryId: string | number) => {
     })
     
     console.log('✅ Produtos featured encontrados:', filtered.length)
-    console.log('📋 Produtos:', filtered.map(p => p.product_name))
+    console.log('📋 Produtos:', filtered.map(p => p.name))
     
     return filtered
   }, [allProducts, categoryId])
@@ -603,7 +603,7 @@ export const useLatestProducts = (limit: number = 6) => {
       // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.name,
+        name: product.name,
         description: product.description || undefined,
         benefits: undefined,
         category_id: product.category_id,
@@ -706,7 +706,7 @@ export const useSimilarProducts = (currentProductId: string | number, categoryId
       // Transformar os dados para manter compatibilidade com a interface existente
       const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
         id: product.id,
-        product_name: product.name,
+        name: product.name,
         description: product.description || undefined,
         benefits: undefined,
         category_id: product.category_id,
@@ -749,7 +749,7 @@ export const useSimilarProducts = (currentProductId: string | number, categoryId
   }), [products, isLoading, error, fetchSimilarProducts])
 }
 
-// Hook para buscar subcategorias com IDs numéricos do banco de dados
+// Hook para buscar subcategorias usando a nova estrutura com parent_id
 export const useSubcategories = (categoryId?: string | number) => {
   const [subcategories, setSubcategories] = useState<SubcategoryWithId[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -761,12 +761,13 @@ export const useSubcategories = (categoryId?: string | number) => {
       setError(null)
 
       let query = supabase
-        .from('subcategories')
-        .select('id, name, slug, category_id')
-        .eq('is_active', true)
+        .from('categories')
+        .select('id, name, slug, parent_id')
+        .not('parent_id', 'is', null)
+        .eq('active', true)
 
       if (categoryId) {
-        query = query.eq('category_id', categoryId)
+        query = query.eq('parent_id', categoryId)
       }
 
       const { data, error: subError } = await query.order('name')
@@ -775,7 +776,15 @@ export const useSubcategories = (categoryId?: string | number) => {
         throw new Error(`Falha ao carregar subcategorias: ${subError.message}`)
       }
 
-      setSubcategories(data || [])
+      // Transformar dados para manter compatibilidade com interface antiga
+      const transformedSubcategories = (data || []).map((subcat: any) => ({
+        id: subcat.id,
+        name: subcat.name,
+        slug: subcat.slug,
+        category_id: subcat.parent_id
+      }))
+
+      setSubcategories(transformedSubcategories)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido')
       setSubcategories([])

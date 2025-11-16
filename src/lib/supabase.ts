@@ -96,6 +96,10 @@ export interface Database {
           display_order: number
           created_at: string
           updated_at: string
+          parent_id: number | null
+          active: boolean
+          featured_product_id: number | null
+          sort_order: number
         }
         Insert: {
           id?: number
@@ -106,6 +110,10 @@ export interface Database {
           display_order?: number
           created_at?: string
           updated_at?: string
+          parent_id?: number | null
+          active?: boolean
+          featured_product_id?: number | null
+          sort_order?: number
         }
         Update: {
           id?: number
@@ -116,54 +124,73 @@ export interface Database {
           display_order?: number
           created_at?: string
           updated_at?: string
+          parent_id?: number | null
+          active?: boolean
+          featured_product_id?: number | null
+          sort_order?: number
         }
       }
       products: {
         Row: {
           id: number
-          product_name: string
+          name: string
           slug: string
           description: string | null
-          benefits: string | null
           category_id: number
+          subcategory_id: number | null
+          brand: string | null
+          image: string | null
+          specifications: string | null
+          seo_title: string | null
+          seo_description: string | null
+          seo_keywords: string | null
           featured: boolean
-          display_order: number
+          active: boolean
+          featured_on_homepage: boolean
           featured_in_dropdown: boolean
           is_disabled: boolean
-          featured_on_homepage: boolean
-          clearance_sale: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: number
-          product_name: string
+          name: string
           slug: string
           description?: string | null
-          benefits?: string | null
           category_id: number
+          subcategory_id?: number | null
+          brand?: string | null
+          image?: string | null
+          specifications?: string | null
+          seo_title?: string | null
+          seo_description?: string | null
+          seo_keywords?: string | null
           featured?: boolean
-          display_order?: number
+          active?: boolean
+          featured_on_homepage?: boolean
           featured_in_dropdown?: boolean
           is_disabled?: boolean
-          featured_on_homepage?: boolean
-          clearance_sale?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: number
-          product_name?: string
+          name?: string
           slug?: string
           description?: string | null
-          benefits?: string | null
           category_id?: number
+          subcategory_id?: number | null
+          brand?: string | null
+          image?: string | null
+          specifications?: string | null
+          seo_title?: string | null
+          seo_description?: string | null
+          seo_keywords?: string | null
           featured?: boolean
-          display_order?: number
+          active?: boolean
+          featured_on_homepage?: boolean
           featured_in_dropdown?: boolean
           is_disabled?: boolean
-          featured_on_homepage?: boolean
-          clearance_sale?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -266,7 +293,7 @@ export interface Category {
 
 export interface Product {
   id: string;
-  product_name: string;
+  name: string;
   slug: string;
   description?: string;
   specifications?: string;
@@ -315,7 +342,7 @@ export interface Lead {
   phone: string;
   email?: string;
   message?: string;
-  product_name?: string;
+  name?: string;
   source?: string;
   status: 'novo' | 'contato' | 'orcado' | 'fechado' | 'perdido';
   created_at: string;

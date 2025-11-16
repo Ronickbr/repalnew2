@@ -154,7 +154,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
   };
   
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className="relative w-full z-[1001]">
         <input
           ref={inputRef}
           type="text"
@@ -171,7 +171,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
         />
         <button 
           onClick={handleSearchClick}
-          className={buttonClassName || `absolute right-2 lg:right-3 top-1/2 transform -translate-y-1/2 text-red-600 hover:text-red-700 transition-colors duration-200 ${
+          className={buttonClassName || `absolute right-2 lg:right-3 top-1/2 transform -translate-y-1/2 text-red-600 hover:text-red-700 transition-colors duration-200 active:text-red-800 ${
             isMobile ? 'min-h-[44px] min-w-[44px]' : ''
           }`}
           style={buttonStyle}

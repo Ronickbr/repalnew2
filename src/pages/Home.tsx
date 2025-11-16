@@ -11,7 +11,7 @@ import WhatsAppButton from '../components/WhatsAppButton';
 
 interface FeaturedProduct {
   id: number;
-  product_name: string;
+  name: string;
   image_url: string | null;
   slug: string;
   category_id?: number;
@@ -107,7 +107,7 @@ const Home: React.FC = () => {
           console.log('📦 Produtos em destaque carregados:', productsData.length, 'produtos');
           const transformedProducts = productsData.map((product: any) => ({
             id: product.id,
-            product_name: product.name,
+            name: product.name,
             image_url: product.image,
             slug: product.slug,
             category_id: product.category_id,
@@ -163,20 +163,20 @@ const Home: React.FC = () => {
                   <div className="aspect-square overflow-hidden">
                     <img
                       src={product.image_url || 'https://via.placeholder.com/400x400?text=Produto'}
-                      alt={product.product_name}
+                      alt={product.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="p-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      {product.product_name}
+                      {product.name}
                     </h3>
                     <p className="text-gray-600 mb-4">Equipamento profissional para seu negócio.</p>
                     <div className="space-y-3">
                       <Link
                         to={product.slug ? `/produto/${product.slug}` : '#'}
                         onClick={(e) => {
-                          console.log('🎯 Link clicado - Product slug:', product.slug, 'Product name:', product.product_name);
+                          console.log('🎯 Link clicado - Product slug:', product.slug, 'Product name:', product.name);
                           console.log('🎯 URL completa:', product.slug ? `/produto/${product.slug}` : 'SEM SLUG');
                           if (!product.slug) {
                             console.error('❌ Produto sem slug!');
@@ -190,7 +190,7 @@ const Home: React.FC = () => {
                       <button 
                         onClick={() => addItem({
                           id: product.id.toString(),
-                          name: product.product_name,
+                          name: product.name,
                           image: product.image_url || undefined
                         })}
                         className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
@@ -351,7 +351,7 @@ const Home: React.FC = () => {
                   <div className="relative">
                     <img
                       src={product.product_images?.[0]?.image_url || product.image_url || 'https://via.placeholder.com/400x300?text=Produto'}
-                      alt={product.product_name}
+                      alt={product.name}
                       className="w-full h-48 object-contain bg-gray-50"
                     />
                     <div className="absolute top-4 left-4">
@@ -361,12 +361,12 @@ const Home: React.FC = () => {
                     </div>
                   </div>
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{product.product_name}</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">{product.name}</h3>
                     <div className="space-y-3">
                       <Link
                         to={product.slug ? `/produto/${product.slug}` : '#'}
                         onClick={(e) => {
-                          console.log('🎯 Novidades - Link clicado - Product slug:', product.slug, 'Product name:', product.product_name);
+                          console.log('🎯 Novidades - Link clicado - Product slug:', product.slug, 'Product name:', product.name);
                           console.log('🎯 Novidades - URL completa:', product.slug ? `/produto/${product.slug}` : 'SEM SLUG');
                           if (!product.slug) {
                             console.error('❌ Novidades - Produto sem slug!');
@@ -380,7 +380,7 @@ const Home: React.FC = () => {
                       <button 
                         onClick={() => addItem({
                           id: product.id.toString(),
-                          name: product.product_name,
+                          name: product.name,
                           image: product.product_images?.[0]?.image_url || product.image_url || undefined
                         })}
                         className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"

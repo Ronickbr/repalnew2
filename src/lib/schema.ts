@@ -4,11 +4,10 @@ export const TABLES = {
   // Tabela de banners
   banners: 'banners',
   
-  // Tabela de categorias (sem parent_id - apenas categorias principais)
+  // Tabela de categorias (categorias principais e subcategorias)
+  // Categorias principais: parent_id = NULL
+  // Subcategorias: parent_id = ID da categoria pai
   categories: 'categories',
-  
-  // Tabela de subcategorias (relacionamento com categories)
-  subcategories: 'subcategories',
   
   // Tabela de produtos
   products: 'products',

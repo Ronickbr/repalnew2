@@ -83,7 +83,7 @@ const LeadManager: React.FC<LeadManagerProps> = ({
                   <div className="text-sm text-gray-500">{lead.phone}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {lead.product_name || 'Não especificado'}
+                  {lead.name || 'Não especificado'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(lead.created_at).toLocaleDateString('pt-BR')}

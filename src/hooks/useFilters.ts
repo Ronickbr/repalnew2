@@ -96,7 +96,7 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
     if (debouncedSearchTerm) {
       const searchLower = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(product => 
-        product.product_name?.toLowerCase().includes(searchLower) ||
+        product.name?.toLowerCase().includes(searchLower) ||
         product.description?.toLowerCase().includes(searchLower)
       );
     }
@@ -136,7 +136,7 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
         case 'name':
-          return (a.product_name || '').localeCompare(b.product_name || '');
+          return (a.name || '').localeCompare(b.name || '');
 
         default:
           return 0;

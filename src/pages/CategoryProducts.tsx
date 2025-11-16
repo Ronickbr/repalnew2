@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Search, Filter, X, Grid, List } from 'lucide-react';
 import { useProductsByCategory, useProductsBySubcategory, useSubcategories } from '../hooks/useProducts';
+import { DatabaseTest } from '../components/DatabaseTest';
 import { useCategories } from '../hooks/useCategories';
 import ProductCard from '../components/ProductCard';
 import { OptimizedLoading, ProductCardSkeleton } from '../components/OptimizedLoading';
@@ -13,11 +14,12 @@ interface CategoryWithSubcategories {
   id: string;
   name: string;
   slug: string;
-  subcategories: { id: string; name: string; slug: string; }[];
+  subcategories: { id: string; name: string; slug: string; numericId?: number; }[];
 }
 
 const CategoryProducts: React.FC = () => {
   const { categorySlug, subcategorySlug } = useParams<{ categorySlug: string; subcategorySlug?: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,10 @@ const CategoryProducts: React.FC = () => {
   const [sortBy, setSortBy] = useState<'name' | 'price-asc' | 'price-desc'>('name');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Obter parâmetros da query string (prioridade sobre route params)
+  const categoriaId = searchParams.get('categoriaId') || categorySlug;
+  const subcategoriaId = searchParams.get('subcategoriaId') || subcategorySlug;
 
   // Debug params
   const [debugMode, setDebugMode] = useState<boolean>(false);
@@ -55,7 +61,8 @@ const CategoryProducts: React.FC = () => {
         .map(subcat => ({
           id: subcat.slug,
           name: subcat.name,
-          slug: subcat.slug
+          slug: subcat.slug,
+          numericId: subcat.id // Guardar o ID numérico para referência
         }))
         .sort((a, b) => a.name.localeCompare(b.name))
     })).sort((a, b) => a.name.localeCompare(b.name));
@@ -99,13 +106,13 @@ const CategoryProducts: React.FC = () => {
   const finalCategories = categoriesError || categories.length === 0 ? fallbackCategories : categories;
 
   // Encontrar categoria atual - primeiro verificar se é uma categoria principal
-  let currentCategory = finalCategories.find(cat => cat.id === categorySlug);
+  let currentCategory = finalCategories.find(cat => cat.id === categoriaId);
   
   // Se não encontrou como categoria principal, pode ser uma subcategoria
   if (!currentCategory) {
     // Procurar a subcategoria em todas as categorias
     for (const category of finalCategories) {
-      const subcategory = category.subcategories.find(sub => sub.id === categorySlug);
+      const subcategory = category.subcategories.find(sub => sub.id === categoriaId);
       if (subcategory) {
         currentCategory = category;
         break;
@@ -118,62 +125,86 @@ const CategoryProducts: React.FC = () => {
     currentCategory = finalCategories[0];
   }
   
-  // Buscar subcategorias reais do banco de dados (com IDs numéricos)
-  const currentCategoryId = currentCategory?.id ? parseInt(currentCategory.id) : undefined;
-  const { data: dbSubcategories } = useSubcategories(currentCategoryId);
+  // Buscar subcategorias reais do banco de dados
+  // Como currentCategory.id é um slug, precisamos encontrar o ID numérico correspondente
+  const currentCategoryNumericId = useMemo(() => {
+    if (!categoriesData || !currentCategory) return undefined;
+    
+    // Encontrar a categoria no banco de dados pelo slug
+    const categoryInDb = categoriesData.find(cat => cat.slug === currentCategory.id);
+    return categoryInDb?.id;
+  }, [categoriesData, currentCategory]);
   
-  // Buscar produtos - se estivermos em uma subcategoria, buscar diretamente pela subcategoria
-  const targetCategorySlug = subcategorySlug || currentCategory?.slug || '';
-  
-  // Chamar ambos os hooks e escolher resultados conforme contexto para respeitar regras dos hooks
-  const subRes = useProductsBySubcategory(subcategorySlug || '', currentCategory?.slug);
-  const catRes = useProductsByCategory(targetCategorySlug);
-  const allProducts = subcategorySlug ? subRes.data : catRes.data;
-  const isLoading = subcategorySlug ? subRes.isLoading : catRes.isLoading;
-  const error = subcategorySlug ? subRes.error : catRes.error;
-  
-  // Verificar se estamos usando fallback (mostrando produtos da categoria principal)
-  const isUsingFallback = subcategorySlug && allProducts && allProducts.length > 0 && 
-    allProducts.some(product => product.category?.slug === currentCategory?.slug);
-  
-  // Subcategorias disponíveis para a categoria atual
-  const availableSubcategories = useMemo(() => {
-    return currentCategory?.subcategories || [];
-  }, [currentCategory]);
+  const { data: dbSubcategories } = useSubcategories(currentCategoryNumericId);
   
   // Mapeamento de slugs para IDs numéricos das subcategorias
   const subcategorySlugToIdMap = useMemo(() => {
     const map = new Map<string, number>();
+    
+    // Primeiro, mapear as subcategorias que já temos (do processamento inicial)
+    if (currentCategory?.subcategories) {
+      currentCategory.subcategories.forEach(sub => {
+        if (sub.numericId) {
+          map.set(sub.id, sub.numericId); // sub.id é o slug, sub.numericId é o ID numérico
+        }
+      });
+    }
+    
+    // Depois, adicionar/confirmar com as subcategorias do banco
     if (dbSubcategories) {
       dbSubcategories.forEach(sub => {
         map.set(sub.slug, sub.id);
       });
     }
+    
     return map;
-  }, [dbSubcategories]);
+  }, [dbSubcategories, currentCategory]);
+  
+  // Buscar produtos - se estivermos em uma subcategoria, buscar diretamente pela subcategoria
+  const targetCategorySlug = subcategoriaId || currentCategory?.slug || '';
+  
+  // Chamar ambos os hooks e escolher resultados conforme contexto para respeitar regras dos hooks
+  const subRes = useProductsBySubcategory(subcategoriaId || '', currentCategory?.slug);
+  const catRes = useProductsByCategory(targetCategorySlug);
+  const allProducts = subcategoriaId ? subRes.data : catRes.data;
+  const isLoading = subcategoriaId ? subRes.isLoading : catRes.isLoading;
+  const error = subcategoriaId ? subRes.error : catRes.error;
+  
+  // Verificar se estamos usando fallback (mostrando produtos da categoria principal)
+  const isUsingFallback = subcategoriaId && allProducts && allProducts.length > 0 && 
+    allProducts.some(product => product.category?.slug === currentCategory?.slug);
+  
+  // Subcategorias disponíveis para a categoria atual
+  const availableSubcategories = useMemo(() => {
+    console.log('Debug - currentCategory:', currentCategory);
+    console.log('Debug - currentCategory?.subcategories:', currentCategory?.subcategories);
+    console.log('Debug - dbSubcategories:', dbSubcategories);
+    console.log('Debug - subcategorySlugToIdMap:', Array.from(subcategorySlugToIdMap.entries()));
+    return currentCategory?.subcategories || [];
+  }, [currentCategory, dbSubcategories, subcategorySlugToIdMap]);
   
   // Resetar subcategorias selecionadas quando mudar de categoria
   useEffect(() => {
-    if (!subcategorySlug) {
+    if (!subcategoriaId) {
       setSelectedSubcategories([]);
     } else {
       // Converter slug para ID numérico se possível
-      const numericId = subcategorySlugToIdMap.get(subcategorySlug);
+      const numericId = subcategorySlugToIdMap.get(subcategoriaId);
       if (numericId) {
         setSelectedSubcategories([numericId]);
       } else {
         setSelectedSubcategories([]);
       }
     }
-  }, [categorySlug, subcategorySlug, subcategorySlugToIdMap]);
+  }, [categoriaId, subcategoriaId, subcategorySlugToIdMap]);
 
-  const currentSubcategory = currentCategory?.subcategories.find(sub => sub.id === subcategorySlug);
+  const currentSubcategory = currentCategory?.subcategories.find(sub => sub.id === subcategoriaId);
 
   // Atualizar subcategorias selecionadas quando a URL mudar
   useEffect(() => {
-    if (subcategorySlug) {
+    if (subcategoriaId) {
       // Converter slug para ID numérico se possível
-      const numericId = subcategorySlugToIdMap.get(subcategorySlug);
+      const numericId = subcategorySlugToIdMap.get(subcategoriaId);
       if (numericId) {
         setSelectedSubcategories([numericId]);
       } else {
@@ -182,13 +213,29 @@ const CategoryProducts: React.FC = () => {
     } else {
       setSelectedSubcategories([]);
     }
-  }, [subcategorySlug, subcategorySlugToIdMap]);
+  }, [subcategoriaId, subcategorySlugToIdMap]);
 
   // Detectar modo debug via query string (?debug=1)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     setDebugMode(params.get('debug') === '1');
   }, [location.search]);
+
+  // Aplicar filtros automáticos baseados nos parâmetros da URL
+  useEffect(() => {
+    // Se houver subcategoria na URL, aplicar o filtro automaticamente
+    if (subcategoriaId && currentCategory) {
+      // Encontrar a subcategoria correspondente
+      const targetSubcategory = currentCategory.subcategories.find(sub => sub.id === subcategoriaId);
+      if (targetSubcategory) {
+        // Converter slug para ID numérico se possível
+        const numericId = subcategorySlugToIdMap.get(subcategoriaId);
+        if (numericId) {
+          setSelectedSubcategories([numericId]);
+        }
+      }
+    }
+  }, [subcategoriaId, currentCategory, subcategorySlugToIdMap]);
 
   // Executar consultas de debug quando o modo estiver ativo
   useEffect(() => {
@@ -242,6 +289,17 @@ const CategoryProducts: React.FC = () => {
           subcategory_name: subMap.get(e.subcategory_id || 0)?.name,
         }));
         setExampleProducts(enriched);
+        
+        // 4) Verificar subcategorias da categoria atual
+        if (currentCategoryNumericId) {
+          const currentSubcatsResp = await supabase
+            .from('subcategories')
+            .select('id, name, slug')
+            .eq('parent_id', currentCategoryNumericId);
+          
+          console.log('Debug - Subcategorias da categoria atual:', currentSubcatsResp.data);
+        }
+        
       } catch (err: any) {
         setDebugError(err?.message || 'Erro ao executar consultas de debug');
       } finally {
@@ -250,7 +308,80 @@ const CategoryProducts: React.FC = () => {
     };
 
     runDebugQueries();
-  }, [debugMode]);
+  }, [debugMode, currentCategoryNumericId]);
+  
+  // Executar consultas de debug quando o modo estiver ativo
+  useEffect(() => {
+    const runDebugQueries = async () => {
+      if (!debugMode) return;
+      try {
+        setDebugLoading(true);
+        setDebugError(null);
+
+        // 1) Contar subcategorias
+        const subcatResp = await supabase
+          .from('subcategories')
+          .select('*', { count: 'exact', head: true });
+        setSubcatCount(subcatResp.count ?? 0);
+
+        // 2) Contar produtos com subcategory_id preenchido
+        const prodCountResp = await supabase
+          .from(table('products'))
+          .select('id', { count: 'exact', head: true })
+          .not('subcategory_id', 'is', null);
+        setProductsWithSubcatCount(prodCountResp.count ?? 0);
+
+        // 3) Buscar exemplos de produtos com subcategory_id
+        const prodExamplesResp = await supabase
+          .from(table('products'))
+          .select('id, name, slug, subcategory_id')
+          .not('subcategory_id', 'is', null)
+          .limit(5);
+
+        const examples = (prodExamplesResp.data || []) as Array<{ id: number; name: string; slug: string; subcategory_id: number }>; 
+
+        // Buscar slugs das subcategorias correspondentes
+        const subIds = Array.from(new Set(examples.map(e => e.subcategory_id).filter(Boolean)));
+        let subMap = new Map<number, { slug: string; name: string }>();
+        if (subIds.length > 0) {
+          const subsResp = await supabase
+            .from('subcategories')
+            .select('id, slug, name')
+            .in('id', subIds);
+          (subsResp.data || []).forEach((s: any) => {
+            subMap.set(s.id, { slug: s.slug, name: s.name });
+          });
+        }
+
+        const enriched = examples.map(e => ({
+          id: e.id,
+          name: e.name,
+          slug: e.slug,
+          subcategory_id: e.subcategory_id,
+          subcategory_slug: subMap.get(e.subcategory_id || 0)?.slug,
+          subcategory_name: subMap.get(e.subcategory_id || 0)?.name,
+        }));
+        setExampleProducts(enriched);
+        
+        // 4) Verificar subcategorias da categoria atual
+        if (currentCategoryNumericId) {
+          const currentSubcatsResp = await supabase
+            .from('subcategories')
+            .select('id, name, slug')
+            .eq('parent_id', currentCategoryNumericId);
+          
+          console.log('Debug - Subcategorias da categoria atual:', currentSubcatsResp.data);
+        }
+        
+      } catch (err: any) {
+        setDebugError(err?.message || 'Erro ao executar consultas de debug');
+      } finally {
+        setDebugLoading(false);
+      }
+    };
+
+    runDebugQueries();
+  }, [debugMode, currentCategoryNumericId]);
 
   // Função para navegar para a página de detalhes do produto
   const handleViewDetails = (product: ProductWithCategory) => {
@@ -262,17 +393,27 @@ const CategoryProducts: React.FC = () => {
     if (!allProducts) return [];
 
     let filtered = allProducts.filter(product => {
-      const matchesSearch = product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            product.description?.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Se estivermos em uma categoria principal (não subcategoria) e houver subcategorias selecionadas
       // filtrar por subcategorias usando os IDs numéricos corretos
       let matchesSubcategory = true;
       
-      if (!subcategorySlug && selectedSubcategories.length > 0) {
+      if (!subcategoriaId && selectedSubcategories.length > 0) {
         // Converter o subcategory_id do produto (string) para número e comparar com os IDs selecionados
         const productSubcategoryId = product.subcategory_id ? parseInt(product.subcategory_id) : null;
         matchesSubcategory = productSubcategoryId !== null && selectedSubcategories.includes(productSubcategoryId);
+        
+        // Debug do filtro
+        if (productSubcategoryId && selectedSubcategories.length > 0) {
+          console.log('Debug - Filtro de subcategoria:', {
+            productName: product.name,
+            productSubcategoryId,
+            selectedSubcategories,
+            matchesSubcategory
+          });
+        }
       }
       
       return matchesSearch && matchesSubcategory;
@@ -282,7 +423,7 @@ const CategoryProducts: React.FC = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'name':
-          return a.product_name.localeCompare(b.product_name);
+          return a.name.localeCompare(b.name);
         case 'price-asc':
           return (a.price || 0) - (b.price || 0);
         case 'price-desc':
@@ -293,7 +434,7 @@ const CategoryProducts: React.FC = () => {
     });
 
     return filtered;
-  }, [allProducts, searchTerm, selectedSubcategories, sortBy, subcategorySlug]);
+  }, [allProducts, searchTerm, selectedSubcategories, sortBy, subcategoriaId]);
 
   // Função para limpar filtros
   const clearFilters = () => {
@@ -301,8 +442,8 @@ const CategoryProducts: React.FC = () => {
     setSelectedSubcategories([]);
     setSortBy('name');
     // Se estivermos em uma subcategoria, voltar para a categoria principal
-    if (subcategorySlug) {
-      navigate(`/categorias/${currentCategory?.slug || categorySlug}`);
+    if (subcategoriaId) {
+      navigate(`/categorias/${currentCategory?.slug || categoriaId}`);
     }
   };
 
@@ -366,7 +507,7 @@ const CategoryProducts: React.FC = () => {
               <li className="text-gray-400">/</li>
               <li>
                 <button
-                  onClick={() => navigate(`/categorias/${categorySlug}`)}
+                  onClick={() => navigate(`/categorias/${categoriaId}`)}
                   className="text-gray-500 hover:text-gray-700 transition-colors truncate max-w-[120px] sm:max-w-none"
                 >
                   {currentCategory.name}
@@ -407,6 +548,7 @@ const CategoryProducts: React.FC = () => {
           {/* Painel de Debug */}
           {debugMode && (
             <div className="w-full">
+              <DatabaseTest />
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
                 <h3 className="text-base sm:text-lg font-semibold text-yellow-900">Debug do Banco (Supabase)</h3>
                 {debugLoading && (
@@ -451,7 +593,7 @@ const CategoryProducts: React.FC = () => {
                     Categoria
                   </label>
                   <select
-                    value={currentCategory?.slug || ''}
+                    value={currentCategory?.slug || categoriaId || ''}
                     onChange={(e) => {
                       const selectedCategory = finalCategories.find(cat => cat.slug === e.target.value);
                       if (selectedCategory) {
@@ -467,6 +609,13 @@ const CategoryProducts: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                  
+                  {/* Debug: Mostrar info da categoria atual */}
+                  {currentCategory && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Categoria: {currentCategory.name} | Subcategorias: {availableSubcategories.length}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Busca */}
@@ -490,7 +639,7 @@ const CategoryProducts: React.FC = () => {
                 {availableSubcategories.length > 0 && (
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Filtrar por Subcategoria
+                      Filtrar por Subcategoria ({availableSubcategories.length} disponíveis)
                     </label>
                     <div className="space-y-2">
                       <button
@@ -539,6 +688,15 @@ const CategoryProducts: React.FC = () => {
                         })}
                       </div>
                     </div>
+                  </div>
+                )}
+                
+                {/* Debug: Mostrar quando não há subcategorias */}
+                {availableSubcategories.length === 0 && currentCategory && (
+                  <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      Nenhuma subcategoria disponível para {currentCategory.name}
+                    </p>
                   </div>
                 )}
 
@@ -763,7 +921,7 @@ const CategoryProducts: React.FC = () => {
                   Categoria
                 </label>
                 <select
-                  value={currentCategory?.slug || ''}
+                  value={currentCategory?.slug || categoriaId || ''}
                   onChange={(e) => {
                     const selectedCategory = finalCategories.find(cat => cat.slug === e.target.value);
                     if (selectedCategory) {

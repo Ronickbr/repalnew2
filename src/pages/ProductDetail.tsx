@@ -77,7 +77,7 @@ const ProductDetail: React.FC = () => {
   const images = product.product_images?.sort((a, b) => a.sort_order - b.sort_order) || []
   const currentImage = images[currentImageIndex]
 
-  const whatsappMessage = `Olá! Tenho interesse no produto: ${product.product_name}. Gostaria de mais informações sobre especificações, preço e disponibilidade.`
+  const whatsappMessage = `Olá! Tenho interesse no produto: ${product.name}. Gostaria de mais informações sobre especificações, preço e disponibilidade.`
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length)
@@ -110,7 +110,7 @@ const ProductDetail: React.FC = () => {
     if (product) {
       addItem({
         id: product.id,
-        name: product.product_name,
+        name: product.name,
         image: product.product_images?.[0]?.image_url || product.image_url
       })
       setIsAddedToBudget(true)
@@ -145,7 +145,7 @@ const ProductDetail: React.FC = () => {
             </>
           )}
           <span className="text-gray-400">/</span>
-          <span className="text-[#333333] font-semibold truncate max-w-xs">{product.product_name}</span>
+          <span className="text-[#333333] font-semibold truncate max-w-xs">{product.name}</span>
         </nav>
 
         {/* Back Button */}
@@ -169,7 +169,7 @@ const ProductDetail: React.FC = () => {
                   <div className="relative cursor-pointer aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2]" onClick={() => openModal(currentImageIndex)}>
                     <img
                       src={currentImage.image_url}
-                      alt={('alt_text' in currentImage ? currentImage.alt_text?.toString() : '') || product.product_name}
+                      alt={('alt_text' in currentImage ? currentImage.alt_text?.toString() : '') || product.name}
                       className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
@@ -248,7 +248,7 @@ const ProductDetail: React.FC = () => {
                     >
                       <img
                         src={image.image_url}
-                        alt={image.alt_text || `${product.product_name} - Imagem ${index + 1}`}
+                        alt={image.alt_text || `${product.name} - Imagem ${index + 1}`}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                       {index === currentImageIndex && (
@@ -284,7 +284,7 @@ const ProductDetail: React.FC = () => {
                 )}
               </div>
               <h1 className="text-3xl font-bold text-[#333333] mb-4 leading-tight">
-                {product.product_name}
+                {product.name}
               </h1>
               <div className="flex items-center space-x-4 text-sm text-gray-600">
                 <div className="flex items-center space-x-1">
@@ -566,7 +566,7 @@ const ProductDetail: React.FC = () => {
               <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src={images[modalImageIndex]?.image_url}
-                  alt={(images[modalImageIndex] as { alt_text?: string })?.alt_text || product.product_name}
+                  alt={(images[modalImageIndex] as { alt_text?: string })?.alt_text || product.name}
                   className="w-full max-h-[80vh] object-contain"
                 />
                 
@@ -611,7 +611,7 @@ const ProductDetail: React.FC = () => {
                     >
                       <img
                         src={image.image_url}
-                        alt={image.alt_text || `${product.product_name} - Imagem ${index + 1}`}
+                        alt={image.alt_text || `${product.name} - Imagem ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>

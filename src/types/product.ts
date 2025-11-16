@@ -7,7 +7,7 @@ export interface ProductImage {
 
 export interface Product {
   id: string;
-  product_name: string;
+  name: string;
   slug: string;
   description?: string;
   price?: number;
@@ -24,13 +24,12 @@ export interface Product {
   featured_on_homepage?: boolean;
   clearance_sale?: boolean;
   specifications?: string;
-  specifications_html?: string;
   tags?: string[];
 }
 
 export interface ProductWithCategory {
   id: string;
-  product_name: string;
+  name: string;
   slug: string;
   description?: string;
   price?: number;
@@ -49,6 +48,11 @@ export interface ProductWithCategory {
   featured_on_homepage?: boolean;
   clearance_sale?: boolean;
   specifications?: string;
+  additional_images?: string[];
+  brand?: string;
+  seo_title?: string;
+  seo_description?: string;
+  seo_keywords?: string;
   tags?: string[];
   category?: {
     id: string;
@@ -69,7 +73,7 @@ export interface ProductWithCategory {
 
 export interface SearchResult {
   id: string;
-  product_name: string;
+  name: string;
   category?: string;
   image_url?: string;
   product_images?: ProductImage[];

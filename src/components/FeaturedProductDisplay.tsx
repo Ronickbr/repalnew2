@@ -16,19 +16,19 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
   const mockProductsByCategory = {
     '1': { // Eletroportáteis
       id: 1,
-      product_name: 'Liquidificador Maxi Blender 2.0L',
+      name: 'Liquidificador Maxi Blender 2.0L',
       image_url: '/images/bm2-liquidificador-maxi-blender-copo-tritan-alta-rotacao-com-variador-de-velocidade-2-0-litros-2-238-w-220-240-v_4549.jpg',
       slug: 'liquidificador-maxi-blender-2l'
     },
     '2': { // Panelas
       id: 2,
-      product_name: 'Panela de Pressão Elétrica 6L',
+      name: 'Panela de Pressão Elétrica 6L',
       image_url: '/images/panela-pressao-eletrica-6l.jpg',
       slug: 'panela-pressao-eletrica-6l'
     },
     '3': { // Utensílios
       id: 3,
-      product_name: 'Conjunto de Facas Profissionais 5 peças',
+      name: 'Conjunto de Facas Profissionais 5 peças',
       image_url: '/images/conjunto-facas-profissionais.jpg',
       slug: 'conjunto-facas-profissionais'
     }
@@ -61,8 +61,8 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
   }
 
   console.log('🎯 FeaturedProductDisplay: Supabase configurado?', Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
-  console.log('🎯 FeaturedProductDisplay: Produto selecionado:', displayProduct?.product_name, 'Categoria:', categoryId);
-  console.log('🎯 FeaturedProductDisplay: Produto featured encontrado:', featuredProduct?.product_name);
+  console.log('🎯 FeaturedProductDisplay: Produto selecionado:', displayProduct?.name, 'Categoria:', categoryId);
+  console.log('🎯 FeaturedProductDisplay: Produto featured encontrado:', featuredProduct?.name);
   console.log('🎯 FeaturedProductDisplay: Fallback ativado?', !featuredProduct && allProducts && allProducts.length > 0);
 
   // Teste: verificar se categoryId é válido
@@ -107,7 +107,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
             <img
               src={displayProduct.image_url || '/placeholder-product.png'}
-              alt={displayProduct.product_name}
+              alt={displayProduct.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -123,7 +123,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           {/* Nome/título do item em destaque */}
           <div className="mb-6">
             <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
-              {displayProduct.product_name}
+              {displayProduct.name}
             </h4>
           </div>
           
@@ -134,7 +134,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
             // Navegar para página de detalhes do produto
             window.location.href = `/produto/${displayProduct.id}`;
           }}
-          aria-label={`Ver detalhes de ${displayProduct.product_name}`}
+          aria-label={`Ver detalhes de ${displayProduct.name}`}
         >
           Ver Mais
         </button>
@@ -144,9 +144,9 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
           onClick={() => {
             // Ação para adicionar o produto à lista
-            console.log('Adicionar à Lista:', displayProduct.product_name);
+            console.log('Adicionar à Lista:', displayProduct.name);
           }}
-          aria-label={`Adicionar ${displayProduct.product_name} à lista`}
+          aria-label={`Adicionar ${displayProduct.name} à lista`}
         >
           Add a Lista
         </button>
@@ -163,7 +163,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
           <img
             src={mockProduct.image_url}
-            alt={mockProduct.product_name}
+            alt={mockProduct.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             decoding="async"
@@ -173,7 +173,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         
         <div className="mb-6">
           <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
-            {mockProduct.product_name}
+            {mockProduct.name}
           </h4>
           <p className="text-xs text-orange-500 mt-1">
             {!isSupabaseConfigured ? 'Supabase não configurado' : 'Modo de demonstração - Marque um produto como "Destaque no Menu Dropdown"'}
@@ -194,7 +194,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <button
           className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
           onClick={() => {
-            console.log('Adicionar à Lista (Demo):', mockProduct.product_name);
+            console.log('Adicionar à Lista (Demo):', mockProduct.name);
           }}
         >
           Add a Lista
@@ -211,7 +211,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
           <img
             src={displayProduct?.image_url || '/placeholder-product.png'}
-            alt={displayProduct?.product_name || 'Produto'}
+            alt={displayProduct?.name || 'Produto'}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -227,7 +227,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         {/* Nome/título do item em destaque */}
         <div className="mb-6">
           <h4 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2" style={{ fontSize: '18px' }}>
-            {displayProduct?.product_name || 'Produto'}
+            {displayProduct?.name || 'Produto'}
           </h4>
         </div>
         
@@ -238,7 +238,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
             // Navegar para página de detalhes do produto
             window.location.href = `/produto/${displayProduct?.id}`;
           }}
-          aria-label={`Ver detalhes de ${displayProduct?.product_name || 'produto'}`}
+          aria-label={`Ver detalhes de ${displayProduct?.name || 'produto'}`}
         >
           Ver Mais
         </button>
@@ -248,9 +248,9 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
           onClick={() => {
             // Ação para adicionar o produto à lista
-            console.log('Adicionar à Lista:', displayProduct?.product_name || 'Produto');
+            console.log('Adicionar à Lista:', displayProduct?.name || 'Produto');
           }}
-          aria-label={`Adicionar ${displayProduct?.product_name || 'produto'} à lista`}
+          aria-label={`Adicionar ${displayProduct?.name || 'produto'} à lista`}
         >
           Add a Lista
         </button>

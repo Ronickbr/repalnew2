@@ -116,10 +116,10 @@ const SubcategoryForm: React.FC<SubcategoryFormProps> = ({
       
       // Check if slug already exists in the same parent category
       const { data: existingSubcategory } = await supabase
-        .from(table('subcategories'))
+        .from(table('categories'))
         .select('id')
         .eq('slug', formData.slug)
-        .eq('category_id', parentCategory.id)
+        .eq('parent_id', parentCategory.id)
         .maybeSingle();
       
       if (existingSubcategory) {
@@ -131,13 +131,14 @@ const SubcategoryForm: React.FC<SubcategoryFormProps> = ({
       const payload = {
         name: formData.name,
         slug: formData.slug,
-        category_id: parentCategory.id,
-        is_active: formData.is_active
+        parent_id: parentCategory.id,
+        active: formData.is_active,
+        sort_order: 1
       };
       
       const result = await handleAsync(
         supabase
-          .from(table('subcategories'))
+          .from(table('categories'))
           .insert(payload),
         'criar subcategoria'
       );

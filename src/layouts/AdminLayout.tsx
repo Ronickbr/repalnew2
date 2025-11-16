@@ -214,6 +214,15 @@ const AdminLayout: React.FC = () => {
             </div>
           </div>
           
+          {/* Link para voltar ao site */}
+          <Link
+            to="/"
+            className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 hover:text-green-700 transition-all duration-200 group mb-3"
+          >
+            <Home className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" />
+            Voltar ao Site
+          </Link>
+          
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 hover:text-red-700 transition-all duration-200 group"

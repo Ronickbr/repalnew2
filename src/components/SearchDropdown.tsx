@@ -50,7 +50,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
   return (
     <div 
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto"
+      className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[1002] max-h-96 overflow-y-auto"
       style={{ minWidth: '300px' }}
     >
       {isSearching ? (
@@ -100,7 +100,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                         result.image_url || 
                         '/placeholder-product.jpg'
                       }
-                      alt={result.product_name}
+                      alt={result.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -119,7 +119,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                   <p className={`text-sm font-medium truncate ${
                     isSelected ? 'text-red-700' : 'text-gray-900'
                   }`}>
-                    {result.product_name}
+                    {result.name}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Ver detalhes

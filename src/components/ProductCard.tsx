@@ -33,16 +33,16 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
     e.stopPropagation();
     
     // Log 1: Iniciando processo de adicionar à lista
-    console.log(`[ProductCard] Adicionando produto à lista: ${product.product_name} (ID: ${product.id})`);
+    console.log(`[ProductCard] Adicionando produto à lista: ${product.name} (ID: ${product.id})`);
     
     addItem({
       id: product.id.toString(),
-      name: product.product_name,
+      name: product.name,
       image: product.product_images?.[0]?.image_url || product.image_url || '/placeholder-product.png'
     });
     
     // Log 2: Produto adicionado com sucesso
-    console.log(`[ProductCard] Produto adicionado com sucesso: ${product.product_name}`);
+    console.log(`[ProductCard] Produto adicionado com sucesso: ${product.name}`);
     
     setIsAddedToBudget(true);
   };
@@ -61,7 +61,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   };
 
   const getProductInitial = () => {
-    return (product.product_name || 'P').charAt(0).toUpperCase();
+    return (product.name || 'P').charAt(0).toUpperCase();
   };
 
   if (viewMode === 'list') {
@@ -73,7 +73,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
             {getProductImage() ? (
               <OptimizedImage
                 src={getProductImage()!}
-                alt={product.product_name}
+                alt={product.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
                 width={144}
@@ -97,7 +97,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
           <div className="flex-1 min-w-0 p-2 sm:p-3 md:p-5">
             {/* Nome/título em destaque com tamanho responsivo */}
             <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 leading-tight text-base sm:text-lg md:text-xl">
-              {product.product_name}
+              {product.name}
             </h3>
 
             {/* Container dos botões com espaçamento responsivo */}
@@ -109,7 +109,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                   handleViewDetails();
                 }}
                 className="flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-[#D0021B] text-white font-medium rounded-lg hover:bg-[#b80218] active:bg-[#9e0215] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#D0021B] focus:ring-opacity-50 text-sm sm:text-base"
-                aria-label={`Ver detalhes de ${product.product_name}`}
+                aria-label={`Ver detalhes de ${product.name}`}
               >
                 <Search className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span>Ver Detalhes</span>
@@ -124,7 +124,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                     ? 'bg-green-600 text-white cursor-not-allowed focus:ring-green-600'
                     : 'bg-[#25D366] text-white hover:bg-[#20b85a] active:bg-[#1ba04e] focus:ring-[#25D366]'
                 }`}
-                aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.product_name}`}
+                aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.name}`}
               >
                 {isAddedToBudget ? (
                   <>
@@ -152,7 +152,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
         {getProductImage() ? (
           <OptimizedImage
             src={getProductImage()!}
-            alt={product.product_name}
+            alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             width={300}
@@ -188,7 +188,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
       <div className="p-3 sm:p-4">
         {/* Nome/título em destaque com tamanho responsivo */}
         <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 leading-tight text-sm sm:text-base md:text-lg">
-          {product.product_name}
+          {product.name}
         </h3>
 
         {/* Container dos botões com espaçamento responsivo */}
@@ -200,7 +200,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               handleViewDetails();
             }}
             className="flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-[#D0021B] text-white font-medium rounded-lg hover:bg-[#b80218] active:bg-[#9e0215] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#D0021B] focus:ring-opacity-50 text-sm sm:text-base"
-            aria-label={`Ver detalhes de ${product.product_name}`}
+            aria-label={`Ver detalhes de ${product.name}`}
           >
             <Search className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>Ver Detalhes</span>
@@ -215,7 +215,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                 ? 'bg-green-600 text-white cursor-not-allowed focus:ring-green-600'
                 : 'bg-[#25D366] text-white hover:bg-[#20b85a] active:bg-[#1ba04e] focus:ring-[#25D366]'
             }`}
-            aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.product_name}`}
+            aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.name}`}
           >
             {isAddedToBudget ? (
               <>

@@ -10,7 +10,7 @@ interface CreateLeadData {
   phone: string
   email?: string
   message?: string
-  product_name?: string
+  name?: string
 }
 
 export function useCreateLead() {

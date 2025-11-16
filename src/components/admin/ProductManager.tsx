@@ -34,7 +34,7 @@ interface ProductFormData {
   brand?: string;
   image?: string;
   additional_images?: string[];
-  specifications_html?: string;
+  specifications?: string;
   featured: boolean;
   featured_in_dropdown: boolean;
   featured_on_homepage: boolean;
@@ -80,7 +80,7 @@ const ProductManager: React.FC = () => {
     brand: undefined,
     image: undefined,
     additional_images: [],
-    specifications_html: undefined,
+    specifications: undefined,
     featured: false,
     featured_in_dropdown: false,
     featured_on_homepage: false,
@@ -221,6 +221,10 @@ const ProductManager: React.FC = () => {
     }
   };
 
+  const getMainCategories = () => {
+    return categories.filter(category => category.parent_id === null);
+  };
+
   const fetchBrands = async () => {
     try {
       clearError(); // Limpa erro geral
@@ -250,7 +254,7 @@ const ProductManager: React.FC = () => {
       errors.name = 'Nome não pode ter mais de 255 caracteres';
     }
 
-    if (!data.category_id || data.category_id.trim() === '') {
+    if (!data.category_id || String(data.category_id).trim() === '') {
       errors.category_id = 'Categoria é obrigatória';
     }
 
@@ -403,6 +407,7 @@ const ProductManager: React.FC = () => {
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : undefined,
         brand: formData.brand || undefined,
         image: formData.image || undefined,
+        specifications: formData.specifications?.trim() || undefined,
         slug: slug,
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
@@ -435,6 +440,7 @@ const ProductManager: React.FC = () => {
               product_id: data.id,
               url: url,
               sort_order: index
+              // Não incluir o campo 'id' para permitir que o Supabase gere automaticamente
             }));
             
             const { error: imagesError } = await supabase
@@ -472,6 +478,7 @@ const ProductManager: React.FC = () => {
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : undefined,
         brand: formData.brand || undefined,
         image: formData.image || undefined,
+        specifications: formData.specifications?.trim() || undefined,
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
         seo_keywords: formData.seo_keywords?.trim() || undefined,
@@ -515,6 +522,7 @@ const ProductManager: React.FC = () => {
               product_id: editingProduct.id,
               url: url,
               sort_order: index
+              // Não incluir o campo 'id' para permitir que o Supabase gere automaticamente
             }));
             
             const { error: imagesError } = await supabase
@@ -608,9 +616,9 @@ const ProductManager: React.FC = () => {
   const fetchSubcategories = async (categoryId: string) => {
     try {
       const { data, error: supabaseError } = await supabase
-        .from('subcategories')
+        .from('categories')
         .select('*')
-        .eq('category_id', categoryId)
+        .eq('parent_id', categoryId)
         .eq('is_active', true)
         .order('name');
 
@@ -638,7 +646,7 @@ const ProductManager: React.FC = () => {
       brand: product.brand,
       image: product.image,
       additional_images: product.additional_images || [],
-      specifications_html: product.specifications_html,
+      specifications: (product as any).specifications_html || (product as any).specifications,
       featured: product.featured,
       featured_in_dropdown: product.featured_in_dropdown || false,
       featured_on_homepage: product.featured_on_homepage || false,
@@ -676,7 +684,7 @@ const ProductManager: React.FC = () => {
       brand: undefined,
       image: undefined,
       additional_images: [],
-      specifications_html: undefined,
+      specifications: undefined,
       featured: false,
       featured_in_dropdown: false,
       featured_on_homepage: false,
@@ -843,7 +851,7 @@ PALAVRAS-CHAVE:
       setFormData(prev => ({
         ...prev,
         description: generatedDescription || prev.description,
-        specifications_html: generatedSpecifications || prev.specifications_html,
+        specifications: generatedSpecifications || prev.specifications,
         seo_title: generatedSeoTitle || prev.seo_title,
         seo_description: generatedSeoDescription || prev.seo_description,
         seo_keywords: generatedKeywords || prev.seo_keywords
@@ -1115,7 +1123,7 @@ PALAVRAS-CHAVE:
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todas as categorias</option>
-                {categories.map(category => (
+                {getMainCategories().map(category => (
                   <option key={category.id} value={category.id}>{category.name}</option>
                 ))}
               </select>
@@ -1563,7 +1571,7 @@ PALAVRAS-CHAVE:
                         aria-required="true"
                       >
                         <option value="">Selecione uma categoria</option>
-                        {categories.map(category => (
+                        {getMainCategories().map(category => (
                           <option key={category.id} value={category.id}>{category.name}</option>
                         ))}
                       </select>
@@ -1657,13 +1665,13 @@ PALAVRAS-CHAVE:
                   </div>
 
                   <div>
-                    <label htmlFor="specifications_html" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="specifications" className="block text-sm font-medium text-gray-700 mb-1">
                       Especificações Técnicas
                     </label>
                     <textarea
-                      id="specifications_html"
-                      value={formData.specifications_html || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, specifications_html: e.target.value || undefined }))}
+                      id="specifications"
+                      value={formData.specifications || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, specifications: e.target.value || undefined }))}
                       rows={4}
                       placeholder="Digite as especificações técnicas do produto..."
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

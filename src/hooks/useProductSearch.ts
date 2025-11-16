@@ -30,7 +30,7 @@ export const useProductSearch = (query: string) => {
         // Verificar se o produto está ativo e não desabilitado
         if (product.is_disabled) return false;
         
-        const productName = product.product_name?.toLowerCase() || ''
+        const productName = product.name?.toLowerCase() || ''
         const description = product.description?.toLowerCase() || ''
         const benefits = product.benefits?.toLowerCase() || ''
         
