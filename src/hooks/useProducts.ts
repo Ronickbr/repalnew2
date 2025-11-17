@@ -360,8 +360,8 @@ export const useProductBySlug = (slug: string) => {
           *,
           product_images (
             id,
-            url,
-            sort_order
+            image_url,
+            display_order
           )
         `)
         .eq('slug', slug)
@@ -376,10 +376,8 @@ export const useProductBySlug = (slug: string) => {
             *,
             product_images (
               id,
-              url,
-              alt_text,
-              sort_order,
-              is_primary
+              image_url,
+              display_order
             )
           `)
           .eq('active', true)
@@ -422,8 +420,8 @@ export const useProductBySlug = (slug: string) => {
           product_images: data.product_images && data.product_images.length > 0 
             ? data.product_images.map((img: any) => ({
                 id: img.id,
-                image_url: img.url,
-                sort_order: img.sort_order,
+                image_url: img.image_url,
+                sort_order: img.display_order ?? img.sort_order ?? 0,
                 created_at: new Date().toISOString()
               }))
             : data.image 
