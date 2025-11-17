@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import { createClient } from '@supabase/supabase-js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -23,6 +24,43 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rotas da API
+// Endpoint para obter chaves de integrações
+app.get('/api/integrations', async (req, res) => {
+  try {
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Supabase não configurado no servidor',
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('integrations')
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+
+    const integrations = (data && data.integrations) || {};
+
+    const response = {
+      google_analytics_id: integrations.google_analytics_id || '',
+      google_tag_manager_id: integrations.google_tag_manager_id || '',
+      facebook_pixel_id: integrations.facebook_pixel_id || '',
+    };
+
+    return res.json({ success: true, data: response });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
 
 // Configurar multer para armazenamento em memória
 const upload = multer({
