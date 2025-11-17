@@ -13,6 +13,7 @@ interface SiteSettings {
     google_tag_manager_id?: string;
     google_analytics_id?: string;
     facebook_pixel_id?: string;
+    gemini_api_key?: string;
   };
   maintenance?: {
     is_maintenance_mode?: boolean;
@@ -130,6 +131,7 @@ export const useSiteSettings = () => {
     fetchSettings,
     updateSettings,
     gtmId: settings?.integrations?.google_tag_manager_id,
+    geminiApiKey: settings?.integrations?.gemini_api_key,
     // Propriedades para compatibilidade com componentes existentes
     siteName: settings?.site_info?.site_name,
     siteDescription: settings?.site_info?.site_description,

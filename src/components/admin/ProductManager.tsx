@@ -24,6 +24,7 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAccessibility } from '../../hooks/useAccessibility';
 import { useLoadingState } from '../../hooks/useLoadingState';
+import { useSiteSettings } from '../../hooks/useSiteSettings';
 import UnifiedImageUpload, { ImageItem } from '../UnifiedImageUpload';
 
 interface ProductFormData {
@@ -115,6 +116,7 @@ const ProductManager: React.FC = () => {
   const { notifications, addNotification, removeNotification } = useNotifications();
   const { announceToScreenReader } = useAccessibility();
   const { isLoading: isGlobalLoading, startLoading, stopLoading } = useLoadingState();
+  const { geminiApiKey } = useSiteSettings();
 
   // Load initial data
   useEffect(() => {
@@ -704,10 +706,10 @@ const ProductManager: React.FC = () => {
       return;
     }
 
-    // Verificar se a API key está configurada
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    // Verificar se a API key está configurada (usa a do hook ou a do .env como fallback)
+    const apiKey = geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey || apiKey === '') {
-      addNotification('error', 'Chave de API do Gemini não configurada. Verifique o arquivo .env');
+      addNotification('error', 'Chave de API do Gemini não configurada. Vá em Configurações > Integrações e adicione sua Gemini API Key');
       return;
     }
 
@@ -766,7 +768,7 @@ PALAVRAS-CHAVE:
 [palavras-chave separadas por vírgula]`;
 
       // Usar Gemini API com modelo gemini-2.5-pro
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
