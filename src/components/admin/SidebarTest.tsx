@@ -1,29 +1,29 @@
 import React, { useState } from 'react';
-import { BarChart3, Package, Tag, Flag, Image, MessageSquare, Users, Settings, Home, User, LogOut, Shield, ChevronRight } from 'lucide-react';
+import { BarChart3, Package, Tag, Flag, Image, MessageSquare, Users, Settings, User, LogOut, Shield, ChevronRight } from 'lucide-react';
 
 const SidebarTest: React.FC = () => {
   const [itemCount, setItemCount] = useState(8);
   
   const baseItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Visão geral do sistema' },
-    { id: 'products', label: 'Produtos', icon: Package, description: 'Gerenciar produtos' },
-    { id: 'categories', label: 'Categorias', icon: Tag, description: 'Organizar categorias' },
-    { id: 'brands', label: 'Marcas', icon: Flag, description: 'Gerenciar marcas' },
-    { id: 'banners', label: 'Banners', icon: Image, description: 'Controle de banners' },
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, description: 'Visão geral do sistema', badge: null },
+    { id: 'products', label: 'Produtos', icon: Package, description: 'Gerenciar produtos', badge: null },
+    { id: 'categories', label: 'Categorias', icon: Tag, description: 'Organizar categorias', badge: null },
+    { id: 'brands', label: 'Marcas', icon: Flag, description: 'Gerenciar marcas', badge: null },
+    { id: 'banners', label: 'Banners', icon: Image, description: 'Controle de banners', badge: null },
     { id: 'leads', label: 'Leads', icon: MessageSquare, description: 'Gerenciar leads', badge: '3' },
-    { id: 'users', label: 'Usuários', icon: Users, description: 'Controle de acesso' },
-    { id: 'settings', label: 'Configurações', icon: Settings, description: 'Configurações do sistema' },
+    { id: 'users', label: 'Usuários', icon: Users, description: 'Controle de acesso', badge: null },
+    { id: 'settings', label: 'Configurações', icon: Settings, description: 'Configurações do sistema', badge: null },
   ];
 
   const additionalItems = [
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Relatórios detalhados' },
-    { id: 'inventory', label: 'Estoque', icon: Package, description: 'Controle de estoque' },
-    { id: 'orders', label: 'Pedidos', icon: Tag, description: 'Gerenciar pedidos' },
-    { id: 'customers', label: 'Clientes', icon: Users, description: 'Base de clientes' },
-    { id: 'reports', label: 'Relatórios', icon: BarChart3, description: 'Relatórios financeiros' },
-    { id: 'marketing', label: 'Marketing', icon: MessageSquare, description: 'Campanhas de marketing' },
-    { id: 'support', label: 'Suporte', icon: MessageSquare, description: 'Atendimento ao cliente' },
-    { id: 'api', label: 'API', icon: Settings, description: 'Integrações API' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, description: 'Relatórios detalhados', badge: null },
+    { id: 'inventory', label: 'Estoque', icon: Package, description: 'Controle de estoque', badge: null },
+    { id: 'orders', label: 'Pedidos', icon: Tag, description: 'Gerenciar pedidos', badge: null },
+    { id: 'customers', label: 'Clientes', icon: Users, description: 'Base de clientes', badge: null },
+    { id: 'reports', label: 'Relatórios', icon: BarChart3, description: 'Relatórios financeiros', badge: null },
+    { id: 'marketing', label: 'Marketing', icon: MessageSquare, description: 'Campanhas de marketing', badge: null },
+    { id: 'support', label: 'Suporte', icon: MessageSquare, description: 'Atendimento ao cliente', badge: null },
+    { id: 'api', label: 'API', icon: Settings, description: 'Integrações API', badge: null },
   ];
 
   const navigationItems = [...baseItems, ...additionalItems.slice(0, Math.max(0, itemCount - baseItems.length))];
