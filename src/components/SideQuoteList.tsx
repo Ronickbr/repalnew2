@@ -27,10 +27,8 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+  const handleBackdropClick = () => {
+    onClose();
   };
 
   const handleSendToWhatsApp = () => {

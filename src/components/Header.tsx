@@ -199,7 +199,7 @@ const Header: React.FC = () => {
             <button 
               className="p-2 text-white hover:text-gray-200 transition-colors duration-200 relative active:text-gray-300"
               title="Meu Orçamento"
-              onClick={() => setShowSideQuoteList(true)}
+              onClick={() => setShowSideQuoteList(prev => !prev)}
             >
               <List className="h-5 w-5 lg:h-6 lg:w-6" />
               {/* Badge para mostrar quantidade de itens no orçamento */}
