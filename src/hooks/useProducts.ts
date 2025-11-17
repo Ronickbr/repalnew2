@@ -352,49 +352,56 @@ export const useProductBySlug = (slug: string) => {
     try {
       setIsLoading(true)
       setError(null)
-
-      // Primeiro, tentar buscar por slug
-      let { data, error } = await supabase
-        .from(table('products'))
-        .select(`
+      let baseSelect = `
           *,
           product_images (
             id,
-            image_url,
-            display_order
+            url,
+            sort_order
           )
-        `)
-        .eq('slug', slug)
+        `
+
+      let { data, error } = await supabase
+        .from(table('products'))
+        .select(baseSelect)
         .eq('active', true)
+        .eq('slug', slug)
         .single()
 
-      // Se não encontrou por slug, tentar buscar por nome convertido para slug
-      if (error && error.code === 'PGRST116') {
-        const { data: productsByName, error: nameError } = await supabase
+      if (error && (error as any).code === 'PGRST116') {
+        const { data: altBySlug } = await supabase
           .from(table('products'))
-          .select(`
-            *,
-            product_images (
-              id,
-              image_url,
-              display_order
-            )
-          `)
+          .select(baseSelect)
           .eq('active', true)
+          .ilike('slug', slug)
+          .limit(1)
 
-        if (nameError) throw nameError
+        let candidate = altBySlug && altBySlug[0]
 
-        // Encontrar produto cujo nome convertido para slug corresponde ao slug buscado
-        const foundProduct = productsByName?.find((p: any) => 
-          generateSlug(p.name || '') === slug
-        )
-
-        if (foundProduct) {
-          data = foundProduct
-          error = null
-        } else {
-          throw new Error('Produto não encontrado')
+        if (!candidate) {
+          const numId = Number(slug)
+          if (!Number.isNaN(numId)) {
+            const { data: byId } = await supabase
+              .from(table('products'))
+              .select(baseSelect)
+              .eq('active', true)
+              .eq('id', numId)
+              .single()
+            if (byId) candidate = byId
+          }
         }
+
+        if (!candidate) {
+          const { data: allActive } = await supabase
+            .from(table('products'))
+            .select(baseSelect)
+            .eq('active', true)
+
+          candidate = allActive?.find((p: any) => generateSlug(p.name || '') === slug)
+        }
+
+        if (!candidate) throw new Error('Produto não encontrado')
+        data = candidate
       } else if (error) {
         throw error
       }
@@ -420,8 +427,8 @@ export const useProductBySlug = (slug: string) => {
           product_images: data.product_images && data.product_images.length > 0 
             ? data.product_images.map((img: any) => ({
                 id: img.id,
-                image_url: img.image_url,
-                sort_order: img.display_order ?? img.sort_order ?? 0,
+                image_url: img.url,
+                sort_order: img.sort_order ?? 0,
                 created_at: new Date().toISOString()
               }))
             : data.image 
