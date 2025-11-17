@@ -1,37 +1,51 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
 
-export interface SiteSettings {
-  id: number;
-  site_name: string;
-  site_description: string | null;
-  meta_title: string | null;
-  meta_description: string | null;
-  meta_keywords: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  address: string | null;
-  created_at: string;
-  updated_at: string;
+interface SiteSettings {
+  id?: number;
+  site_info?: {
+    site_name?: string;
+    site_description?: string;
+    logo_url?: string;
+    favicon_url?: string;
+  };
+  integrations?: {
+    google_tag_manager_id?: string;
+    google_analytics_id?: string;
+    facebook_pixel_id?: string;
+  };
+  maintenance?: {
+    is_maintenance_mode?: boolean;
+    maintenance_message?: string;
+  };
+  theme?: {
+    primary_color?: string;
+    secondary_color?: string;
+    font_family?: string;
+  };
+  contact?: {
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
+  social_media?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+    youtube?: string;
+  };
+  seo?: {
+    default_title?: string;
+    default_description?: string;
+    default_keywords?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
 }
 
-const defaultSettings: SiteSettings = {
-  id: 1,
-  site_name: 'Repal Representações',
-  site_description: 'Sua empresa de confiança em representações comerciais',
-  meta_title: 'Repal Representações - Soluções Comerciais',
-  meta_description: 'A Repal oferece as melhores soluções em representações comerciais com qualidade e confiança.',
-  meta_keywords: 'representações, comercial, vendas, produtos, qualidade',
-  contact_email: 'contato@repal.com.br',
-  contact_phone: '(11) 99999-9999',
-  address: 'São Paulo, SP - Brasil',
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
-};
-
 export const useSiteSettings = () => {
-  const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
+  const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,110 +53,92 @@ export const useSiteSettings = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const { data, error: fetchError } = await supabase
-        .from(table('site_settings'))
+
+      const { data, error: supabaseError } = await supabase
+        .from('site_settings')
         .select('*')
-        .limit(1)
         .single();
 
-      if (fetchError) {
-        // Erro já tratado pelo estado
-        // Usar configurações padrão em caso de erro
-        setSettings(defaultSettings);
-      } else if (data) {
+      if (supabaseError) {
+        if (supabaseError.code === 'PGRST116') {
+          // Nenhuma configuração encontrada, não é um erro crítico
+          setSettings({});
+        } else {
+          throw supabaseError;
+        }
+      } else {
         setSettings(data);
       }
-    } catch {
-      // Erro já tratado pelo estado
-      setError('Erro ao carregar configurações do site');
-      setSettings(defaultSettings);
+    } catch (err) {
+      console.error('Erro ao buscar configurações do site:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar configurações');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateSettings = async (newSettings: Partial<Omit<SiteSettings, 'id' | 'created_at' | 'updated_at'>>) => {
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const updateSettings = async (newSettings: Partial<SiteSettings>) => {
     try {
+      setLoading(true);
       setError(null);
-      
-      const { data, error: updateError } = await supabase
-        .from(table('site_settings'))
-        .update(newSettings)
-        .eq('id', settings.id)
-        .select()
-        .single();
 
-      if (updateError) {
-        throw updateError;
-      }
+      if (settings?.id) {
+        // Atualizar configurações existentes
+        const { data, error: updateError } = await supabase
+          .from('site_settings')
+          .update(newSettings)
+          .eq('id', settings.id)
+          .select()
+          .single();
 
-      if (data) {
+        if (updateError) throw updateError;
+        setSettings(data);
+      } else {
+        // Criar novas configurações
+        const { data, error: insertError } = await supabase
+          .from('site_settings')
+          .insert([{
+            ...newSettings,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
         setSettings(data);
       }
 
-      return { success: true, data };
-    } catch (err: unknown) {
-      // Erro já tratado pelo estado
-      
-      let errorMessage = 'Erro desconhecido';
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'message' in err) {
-        errorMessage = String((err as { message: unknown }).message);
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      }
-      
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar configurações';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   };
-
-  const refreshSettings = () => {
-    fetchSettings();
-  };
-
-  useEffect(() => {
-    fetchSettings();
-
-    // Configurar listener para mudanças em tempo real
-    const subscription = supabase
-      .channel('site_settings_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: table('site_settings')
-        },
-        () => {
-          // Configurações atualizadas
-          fetchSettings();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   return {
     settings,
     loading,
     error,
+    fetchSettings,
     updateSettings,
-    refreshSettings,
-    // Helpers para acessar configurações específicas
-    siteName: settings.site_name,
-    siteDescription: settings.site_description,
-    metaTitle: settings.meta_title || settings.site_name,
-    metaDescription: settings.meta_description || settings.site_description,
-    metaKeywords: settings.meta_keywords,
-    contactEmail: settings.contact_email,
-    contactPhone: settings.contact_phone,
-    address: settings.address
+    gtmId: settings?.integrations?.google_tag_manager_id,
+    // Propriedades para compatibilidade com componentes existentes
+    siteName: settings?.site_info?.site_name,
+    siteDescription: settings?.site_info?.site_description,
+    metaTitle: settings?.seo?.default_title,
+    metaDescription: settings?.seo?.default_description,
+    metaKeywords: settings?.seo?.default_keywords,
+    contactEmail: settings?.contact?.email,
+    contactPhone: settings?.contact?.phone,
+    address: settings?.contact?.address
   };
 };
 

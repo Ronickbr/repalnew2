@@ -20,6 +20,8 @@ import { AuthProvider } from './hooks/useAuth';
 import { WhatsAppProvider } from './contexts/WhatsAppContext';
 import { BudgetProvider } from './contexts/BudgetContext';
 import { queryClient } from './lib/react-query';
+import TagManager from './components/TagManager';
+import { useSiteSettings } from './hooks/useSiteSettings';
 
 
 
@@ -35,6 +37,13 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 
 function App() {
   console.log('🚀 App: Aplicação iniciada!');
+  return <AppContent />;
+}
+
+function AppContent() {
+  const { gtmId } = useSiteSettings();
+  
+  console.log('🚀 App: Aplicação iniciada!');
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
@@ -42,6 +51,7 @@ function App() {
           <BudgetProvider>
             <WhatsAppProvider>
               <Router>
+          <TagManager gtmId={gtmId} />
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
