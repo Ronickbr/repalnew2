@@ -159,22 +159,22 @@ const ProductDetail: React.FC = () => {
           </span>
         </Link>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 mb-8 sm:mb-12">
           {/* Image Gallery */}
-          <div className="xl:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4">
             {/* Main Image */}
             <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden group">
               {currentImage ? (
                 <>
-                  <div className="relative cursor-pointer aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2]" onClick={() => openModal(currentImageIndex)}>
+                  <div className="relative cursor-pointer aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2] max-h-[400px] sm:max-h-[500px]" onClick={() => openModal(currentImageIndex)}>
                     <img
                       src={currentImage.image_url}
                       alt={('alt_text' in currentImage ? currentImage.alt_text?.toString() : '') || product.name}
-                      className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
+                      className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-105 max-h-[400px] sm:max-h-[500px]"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
-                      <div className="bg-white/90 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
-                        <ZoomIn className="h-6 w-6 text-gray-800" />
+                      <div className="bg-white/90 backdrop-blur-sm p-2 sm:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
+                        <ZoomIn className="h-4 w-4 sm:h-6 sm:w-6 text-gray-800" />
                       </div>
                     </div>
                   </div>
@@ -184,33 +184,33 @@ const ProductDetail: React.FC = () => {
                     <>
                       <button
                         onClick={prevImage}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-gray-800 p-3 rounded-full hover:bg-white hover:scale-110 transition-all duration-200 shadow-lg border border-gray-200/50"
+                        className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-gray-800 p-2 sm:p-3 rounded-full hover:bg-white hover:scale-110 transition-all duration-200 shadow-lg border border-gray-200/50"
                       >
-                        <ChevronLeft className="h-5 w-5" />
+                        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                       <button
                         onClick={nextImage}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-gray-800 p-3 rounded-full hover:bg-white hover:scale-110 transition-all duration-200 shadow-lg border border-gray-200/50"
+                        className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-gray-800 p-2 sm:p-3 rounded-full hover:bg-white hover:scale-110 transition-all duration-200 shadow-lg border border-gray-200/50"
                       >
-                        <ChevronRight className="h-5 w-5" />
+                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
                     </>
                   )}
                   
                   {/* Image Counter */}
                   {images.length > 1 && (
-                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm text-gray-800 px-4 py-2 rounded-full text-sm font-medium shadow-lg border border-gray-200/50">
+                    <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-white/90 backdrop-blur-sm text-gray-800 px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-lg border border-gray-200/50">
                       {currentImageIndex + 1} / {images.length}
                     </div>
                   )}
                 </>
               ) : (
-                <div className="w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Star className="h-8 w-8 text-gray-400" />
+                <div className="w-full aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2] max-h-[400px] sm:max-h-[500px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="text-center px-4">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3">
+                      <Star className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                     </div>
-                    <span className="text-gray-500 font-medium">Sem imagem disponível</span>
+                    <span className="text-gray-500 font-medium text-sm sm:text-base">Sem imagem disponível</span>
                   </div>
                 </div>
               )}
@@ -218,14 +218,14 @@ const ProductDetail: React.FC = () => {
 
             {/* Carousel with Dots and Thumbnails */}
             {images.length > 1 && (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {/* Dots Indicator */}
-                <div className="flex justify-center space-x-2">
+                <div className="flex justify-center space-x-1 sm:space-x-2">
                   {images.map((_, index: number) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                         index === currentImageIndex
                           ? 'bg-[#8B0000] scale-125 shadow-lg'
                           : 'bg-gray-300 hover:bg-gray-400 hover:scale-110'
@@ -235,12 +235,12 @@ const ProductDetail: React.FC = () => {
                 </div>
                 
                 {/* Thumbnail Gallery */}
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
                   {images.map((image, index: number) => (
                     <button
                       key={image.id}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`relative h-20 sm:h-24 rounded-xl overflow-hidden border-2 transition-all duration-300 hover:scale-105 group ${
+                      className={`relative h-16 sm:h-20 lg:h-24 rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-300 hover:scale-105 group flex items-center justify-center ${
                         index === currentImageIndex
                           ? 'border-[#8B0000] ring-2 ring-[#8B0000] ring-opacity-30 shadow-lg'
                           : 'border-gray-200 hover:border-[#8B0000]/50 shadow-sm hover:shadow-md'
@@ -249,7 +249,7 @@ const ProductDetail: React.FC = () => {
                       <img
                         src={image.image_url}
                         alt={image.alt_text || `${product.name} - Imagem ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110 max-h-16 sm:max-h-20 lg:max-h-24"
                       />
                       {index === currentImageIndex && (
                         <div className="absolute inset-0 bg-[#8B0000]/10 flex items-center justify-center">
@@ -257,7 +257,7 @@ const ProductDetail: React.FC = () => {
                         </div>
                       )}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                        <ZoomIn className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                        <ZoomIn className="h-3 w-3 sm:h-4 sm:w-4 text-white opacity-0 group-hover:opacity-100 transition-all duration-300" />
                       </div>
                     </button>
                   ))}
@@ -269,30 +269,30 @@ const ProductDetail: React.FC = () => {
           {/* Product Info */}
           <div className="space-y-8">
             {/* Header */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-              <div className="flex flex-wrap items-center gap-3 mb-4">
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-gray-200/50">
+              <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
                 {product.category && typeof product.category === 'object' && (
-                  <span className="bg-gradient-to-r from-[#000080] to-[#000060] text-white text-sm px-4 py-2 rounded-full font-medium shadow-md">
+                  <span className="bg-gradient-to-r from-[#000080] to-[#000060] text-white text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-2 rounded-full font-medium shadow-md">
                     {product.category.name}
                   </span>
                 )}
                 {product.featured && (
-                  <span className="bg-gradient-to-r from-[#8B0000] to-[#660000] text-white text-sm px-4 py-2 rounded-full flex items-center space-x-2 font-medium shadow-md">
-                    <Star className="h-4 w-4 fill-current" />
+                  <span className="bg-gradient-to-r from-[#8B0000] to-[#660000] text-white text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-2 rounded-full flex items-center space-x-1 sm:space-x-2 font-medium shadow-md">
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                     <span>Produto em Destaque</span>
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl font-bold text-[#333333] mb-4 leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-3 sm:mb-4 leading-tight">
                 {product.name}
               </h1>
-              <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                 <div className="flex items-center space-x-1">
-                  <Award className="h-4 w-4 text-[#8B0000]" />
+                  <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#8B0000]" />
                   <span>Equipamento Profissional</span>
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Shield className="h-4 w-4 text-[#000080]" />
+                  <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-[#000080]" />
                   <span>Garantia Inclusa</span>
                 </div>
               </div>

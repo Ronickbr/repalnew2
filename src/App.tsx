@@ -34,6 +34,7 @@ const BannersPage = lazy(() => import('./pages/admin/BannersPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const LeadsPage = lazy(() => import('./pages/admin/LeadsPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const SidebarTest = lazy(() => import('./components/admin/SidebarTest'));
 
 function App() {
   console.log('🚀 App: Aplicação iniciada!');
@@ -87,6 +88,7 @@ function AppContent() {
               <Route path="leads" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><LeadsPage /></Suspense>} />
               <Route path="users" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><UsersPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><SettingsPage /></Suspense>} />
+              <Route path="sidebar-test" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><SidebarTest /></Suspense>} />
             </Route>
           </Routes>
               </Router>

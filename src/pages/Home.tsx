@@ -153,12 +153,12 @@ const Home: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-900">Produtos Populares</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {featuredProducts.length > 0 ? (
               featuredProducts.map((product) => (
                 <div
                   key={product.id}
-                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden"
+                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden h-full flex flex-col"
                 >
                   <div className="aspect-square overflow-hidden">
                     <img
@@ -167,11 +167,11 @@ const Home: React.FC = () => {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 line-clamp-2">
                       {product.name}
                     </h3>
-                    <p className="text-gray-600 mb-4">Equipamento profissional para seu negócio.</p>
+                    <p className="text-gray-600 mb-4 text-sm sm:text-base">Equipamento profissional para seu negócio.</p>
                     <div className="space-y-3">
                       <Link
                         to={product.slug ? `/produto/${product.slug}` : '#'}
@@ -183,7 +183,7 @@ const Home: React.FC = () => {
                             e.preventDefault();
                           }
                         }}
-                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
+                        className="w-full bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center text-sm sm:text-base"
                       >
                         Ver Detalhes
                       </Link>
@@ -193,7 +193,7 @@ const Home: React.FC = () => {
                           name: product.name,
                           image: product.image_url || undefined
                         })}
-                        className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                        className="w-full bg-gray-100 text-gray-700 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300 text-sm sm:text-base"
                       >
                         Incluir na Lista
                       </button>
@@ -233,11 +233,11 @@ const Home: React.FC = () => {
           </div>
           
           {/* Grid de Categorias */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             {/* Restaurantes */}
             <Link
               to="/categorias/bares-restaurantes"
-              className="group relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
+              className="group relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-48 sm:h-56 lg:h-64"
             >
               <div className="absolute inset-0">
                 <img
@@ -248,7 +248,7 @@ const Home: React.FC = () => {
                 <div className="absolute inset-0 bg-black/40"></div>
               </div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
-                <h3 className="text-white text-xl font-bold mb-2">Restaurantes</h3>
+                <h3 className="text-white text-lg sm:text-xl font-bold mb-2">Restaurantes</h3>
                 <p className="text-gray-200 text-xs sm:text-sm mb-3">Equipamentos que trazem agilidade, eficiência e qualidade para sua cozinha profissional.</p>
                 <span className="text-white text-xs sm:text-sm font-medium flex items-center">
                   Ver Mais <ArrowRight className="h-4 w-4 ml-1" />
@@ -259,7 +259,7 @@ const Home: React.FC = () => {
             {/* Açougues */}
             <Link
               to="/categorias/acougue"
-              className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
+              className="group relative rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-48 sm:h-56 lg:h-64"
               style={{background: 'linear-gradient(to bottom right, #8B0000, #660000)'}}
             >
               <div className="absolute inset-0">
@@ -271,7 +271,7 @@ const Home: React.FC = () => {
                 <div className="absolute inset-0" style={{backgroundColor: '#8B0000', opacity: 0.4}}></div>
               </div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
-                <h3 className="text-white text-xl font-bold mb-2">Açougues</h3>
+                <h3 className="text-white text-lg sm:text-xl font-bold mb-2">Açougues</h3>
                 <p className="text-gray-200 text-xs sm:text-sm mb-3">Máquinas robustas para cortes perfeitos, mais produtividade e higiene no dia a dia.</p>
                 <span className="text-white text-xs sm:text-sm font-medium flex items-center">
                   Ver Mais <ArrowRight className="h-4 w-4 ml-1" />
@@ -282,7 +282,7 @@ const Home: React.FC = () => {
             {/* Padarias */}
             <Link
               to="/categorias/padaria-confeitaria"
-              className="group relative bg-gradient-to-br from-yellow-600 to-orange-600 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
+              className="group relative bg-gradient-to-br from-yellow-600 to-orange-600 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-48 sm:h-56 lg:h-64"
             >
               <div className="absolute inset-0">
                 <img
@@ -293,7 +293,7 @@ const Home: React.FC = () => {
                 <div className="absolute inset-0 bg-yellow-900/40"></div>
               </div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
-                <h3 className="text-white text-xl font-bold mb-2">Padarias</h3>
+                <h3 className="text-white text-lg sm:text-xl font-bold mb-2">Padarias</h3>
                 <p className="text-gray-200 text-xs sm:text-sm mb-3">Forno e masseiras de alto desempenho para produção rápida, padronizada e de qualidade.</p>
                 <span className="text-white text-xs sm:text-sm font-medium flex items-center">
                   Ver Mais <ArrowRight className="h-4 w-4 ml-1" />
@@ -304,7 +304,7 @@ const Home: React.FC = () => {
             {/* Todas as Linhas */}
             <Link
               to="/categorias"
-              className="group relative bg-gradient-to-br from-gray-600 to-gray-700 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-64"
+              className="group relative bg-gradient-to-br from-gray-600 to-gray-700 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-48 sm:h-56 lg:h-64"
             >
               <div className="absolute inset-0">
                 <img
@@ -315,7 +315,7 @@ const Home: React.FC = () => {
                 <div className="absolute inset-0 bg-gray-900/40"></div>
               </div>
               <div className="relative z-10 p-6 h-full flex flex-col justify-end">
-                <h3 className="text-white text-xl font-bold mb-2">Todas as Linhas</h3>
+                <h3 className="text-white text-lg sm:text-xl font-bold mb-2">Todas as Linhas</h3>
                 <p className="text-gray-200 text-xs sm:text-sm mb-3">Variedade completa em equipamentos industriais para todos os tipos de negócio.</p>
                 <span className="text-white text-xs sm:text-sm font-medium flex items-center">
                   Ver Mais <ArrowRight className="h-4 w-4 ml-1" />
@@ -345,23 +345,23 @@ const Home: React.FC = () => {
           
           {/* Grid de Novidades */}
           {!loadingLatest && latestProducts && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {latestProducts.map((product, index) => (
-                <div key={product.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden">
+                <div key={product.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden h-full flex flex-col">
                   <div className="relative">
                     <img
                       src={product.product_images?.[0]?.image_url || product.image_url || 'https://via.placeholder.com/400x300?text=Produto'}
                       alt={product.name}
-                      className="w-full h-48 object-contain bg-gray-50"
+                      className="w-full h-32 sm:h-40 lg:h-48 object-contain bg-gray-50"
                     />
                     <div className="absolute top-4 left-4">
-                      <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      <span className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
                         {index === 0 ? 'NOVO' : index === 1 ? 'LANÇAMENTO' : 'RECENTE'}
                       </span>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{product.name}</h3>
+                  <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-4 line-clamp-2">{product.name}</h3>
                     <div className="space-y-3">
                       <Link
                         to={product.slug ? `/produto/${product.slug}` : '#'}
@@ -373,7 +373,7 @@ const Home: React.FC = () => {
                             e.preventDefault();
                           }
                         }}
-                        className="w-full bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center"
+                        className="w-full bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors block text-center text-sm sm:text-base"
                       >
                         Ver Detalhes
                       </Link>
@@ -383,7 +383,7 @@ const Home: React.FC = () => {
                           name: product.name,
                           image: product.product_images?.[0]?.image_url || product.image_url || undefined
                         })}
-                        className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300"
+                        className="w-full bg-gray-100 text-gray-700 px-3 sm:px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors border border-gray-300 text-sm sm:text-base"
                       >
                         Incluir na Lista
                       </button>
@@ -399,43 +399,43 @@ const Home: React.FC = () => {
       </section>
 
       {/* Seção Final - Potência e Eficiência */}
-      <section className="py-16 bg-gray-800 text-white">
+      <section className="py-12 sm:py-16 bg-gray-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold mb-6">Potência e Eficiência na Sua Cozinha</h2>
-              <p className="text-xl text-gray-300 mb-8">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-6">Potência e Eficiência na Sua Cozinha</h2>
+              <p className="text-lg sm:text-xl text-gray-300 mb-4 sm:mb-8">
                 Equipamentos projetados para atender grandes demandas
               </p>
-              <p className="text-gray-400 mb-8">
+              <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">
                 Nossa linha de equipamentos comerciais oferece a combinação perfeita entre potência, 
                 eficiência energética e durabilidade, garantindo o melhor desempenho para seu negócio.
               </p>
               <Link
                 to="/contato"
-                className="bg-yellow-500 text-black px-8 py-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition-colors inline-block"
+                className="bg-yellow-500 text-black px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg hover:bg-yellow-400 transition-colors inline-block"
               >
                 Solicite Orçamento
               </Link>
             </div>
             
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-gray-700 rounded-xl p-6 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="bg-gray-700 rounded-xl p-4 sm:p-6 text-center">
                 <img
                   src="/images/h-fritadeira.png"
                   alt="Fritadeira"
-                  className="w-full h-32 object-cover rounded-lg mb-4"
+                  className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
                 />
-                <h4 className="font-bold">Fritadeiras</h4>
+                <h4 className="font-bold text-sm sm:text-base">Fritadeiras</h4>
               </div>
               
-              <div className="bg-gray-700 rounded-xl p-6 text-center">
+              <div className="bg-gray-700 rounded-xl p-4 sm:p-6 text-center">
                 <img
                   src="/images/chapa-bifeteira.jpg"
                   alt="Chapas"
-                  className="w-full h-32 object-cover rounded-lg mb-4"
+                  className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
                 />
-                <h4 className="font-bold">Chapas</h4>
+                <h4 className="font-bold text-sm sm:text-base">Chapas</h4>
               </div>
             </div>
           </div>
@@ -443,51 +443,51 @@ const Home: React.FC = () => {
       </section>
 
       {/* Stats Section - Redesigned */}
-      <section className="py-12 bg-white border-t">
+      <section className="py-8 sm:py-12 bg-white border-t">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
-                  <Truck className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
+                  <Truck className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-lg font-bold text-gray-900 leading-tight">Frete Rápido e Seguro</div>
-                <div className="text-sm text-gray-600 font-medium leading-tight">Chega até você sem demora.</div>
+                <div className="text-base sm:text-lg font-bold text-gray-900 leading-tight">Frete Rápido e Seguro</div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium leading-tight">Chega até você sem demora.</div>
               </div>
             </div>
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
-                  <Award className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
+                  <Award className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-lg font-bold text-gray-900 leading-tight">Padrão Profissional</div>
-                <div className="text-sm text-gray-600 font-medium leading-tight">Tecnologia de nível industrial.</div>
+                <div className="text-base sm:text-lg font-bold text-gray-900 leading-tight">Padrão Profissional</div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium leading-tight">Tecnologia de nível industrial.</div>
               </div>
             </div>
-            <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                <div className="flex-shrink-0">
-                 <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
-                   <Shield className="h-6 w-6 text-white" />
+                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
+                   <Shield className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                  </div>
                </div>
                <div className="flex-1 min-w-0">
-                 <div className="text-lg font-bold text-gray-900 leading-tight">Proteção Total</div>
-                 <div className="text-sm text-gray-600 font-medium leading-tight">Embalagens resistentes contra danos.</div>
+                 <div className="text-base sm:text-lg font-bold text-gray-900 leading-tight">Proteção Total</div>
+                 <div className="text-xs sm:text-sm text-gray-600 font-medium leading-tight">Embalagens resistentes contra danos.</div>
                </div>
              </div>
-             <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+             <div className="flex items-center space-x-3 sm:space-x-4 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                <div className="flex-shrink-0">
-                 <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
-                   <MessageCircle className="h-6 w-6 text-white" />
+                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center" style={{backgroundColor: '#8B0000'}}>
+                   <MessageCircle className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                  </div>
                </div>
                <div className="flex-1 min-w-0">
-                 <div className="text-lg font-bold text-gray-900 leading-tight">Atendimento 24/7</div>
-                 <div className="text-sm text-gray-600 font-medium leading-tight">Suporte para qualquer situação.</div>
+                 <div className="text-base sm:text-lg font-bold text-gray-900 leading-tight">Atendimento 24/7</div>
+                 <div className="text-xs sm:text-sm text-gray-600 font-medium leading-tight">Suporte para qualquer situação.</div>
                </div>
              </div>
           </div>
@@ -605,22 +605,22 @@ const Home: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 text-white" style={{backgroundColor: '#8B0000'}}>
+      <section className="py-12 sm:py-20 text-white" style={{backgroundColor: '#8B0000'}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">
             Pronto para revolucionar sua cozinha?
           </h2>
-          <p className="text-xl text-gray-200 mb-8 max-w-3xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-200 mb-6 sm:mb-8 max-w-3xl mx-auto">
             Entre em contato conosco e descubra como nossos equipamentos podem 
             transformar seu negócio gastronômico em um verdadeiro sucesso.
           </p>
           <div className="flex justify-center">
             <WhatsAppButton
-              className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center space-x-2"
+              className="bg-green-500 hover:bg-green-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center space-x-1 sm:space-x-2"
               message="Olá! Gostaria de saber mais sobre os equipamentos da Repal."
             >
               <span>Falar no WhatsApp</span>
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </WhatsAppButton>
           </div>
         </div>

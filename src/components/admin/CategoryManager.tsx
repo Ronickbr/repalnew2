@@ -670,10 +670,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       </a>
 
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestão de Categorias</h1>
-            <p className="text-gray-600">Organize suas categorias e subcategorias de produtos</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gestão de Categorias</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Organize suas categorias e subcategorias de produtos</p>
             <button 
               onClick={() => {
                 console.log('Categorias atuais:', categories);
@@ -686,10 +686,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
             </button>
           </div>
         
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 md:space-x-3">
           <button
             onClick={handleExport}
-            className="flex items-center justify-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            className="flex items-center justify-center px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             aria-label="Exportar categorias para CSV"
             disabled={isGlobalLoading}
           >

@@ -5,7 +5,7 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<NotificationProps[]>([]);
 
   const addNotification = useCallback((type: NotificationProps['type'], message: string, title?: string) => {
-    const id = Date.now().toString();
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const notification: NotificationProps = {
       id,
       type,

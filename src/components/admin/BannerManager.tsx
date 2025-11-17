@@ -36,12 +36,12 @@ const BannerManager: React.FC<BannerManagerProps> = ({
   const paginatedBanners = banners.slice(startIndex, endIndex);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Banners</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Banners</h2>
         <button
           onClick={onNewBanner}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2"
+          className="bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2 text-sm sm:text-base"
         >
           <Plus className="w-4 h-4" />
           Novo Banner
@@ -49,23 +49,24 @@ const BannerManager: React.FC<BannerManagerProps> = ({
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Imagem
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Título
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Link
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ordem
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Imagem
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Título
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Link
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ordem
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ações
@@ -88,18 +89,18 @@ const BannerManager: React.FC<BannerManagerProps> = ({
             ) : (
               paginatedBanners.map((banner) => (
                 <tr key={banner.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <img
                       src={banner.image_url || '/placeholder.jpg'}
                       alt={banner.title}
-                      className="h-12 w-20 object-cover rounded"
+                      className="h-10 w-16 sm:h-12 sm:w-20 object-cover rounded"
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{banner.title}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 truncate max-w-xs" title={banner.link_url}>
+                    <div className="text-sm text-gray-500 truncate max-w-[120px] sm:max-w-xs" title={banner.link_url}>
                       {banner.link_url}
                     </div>
                   </td>
@@ -183,6 +184,7 @@ const BannerManager: React.FC<BannerManagerProps> = ({
         )}
       </div>
     </div>
+  </div>
   );
 };
 

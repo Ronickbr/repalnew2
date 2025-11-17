@@ -4,7 +4,9 @@ import {
   Phone, 
   Mail,
   User,
-  List
+  List,
+  Menu,
+  X
 } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useAuth } from '../hooks/useAuth';
@@ -20,6 +22,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSideQuoteList, setShowSideQuoteList] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
 
@@ -67,6 +70,7 @@ const Header: React.FC = () => {
   // Fechar menu ao mudar de rota
   useEffect(() => {
     setShowUserMenu(false);
+    setShowMobileMenu(false);
   }, [navigate]);
 
   return (
@@ -124,19 +128,19 @@ const Header: React.FC = () => {
       </div>
 
       {/* Main Header */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 main-container header-container">
-        <div className="flex justify-between items-center py-2 sm:py-3 lg:py-4 header-responsive">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 main-container header-container">
+        <div className="flex justify-between items-center py-3 sm:py-3 lg:py-4 header-responsive">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
             <img 
               src="https://i.imgur.com/rVJiu8W.png" 
               alt={siteName} 
-              className="h-10 w-auto sm:h-12 md:h-14 lg:h-16 transition-all duration-300 logo-img logo-responsive"
+              className="h-8 w-auto sm:h-10 md:h-12 lg:h-14 xl:h-16 transition-all duration-300 logo-img logo-responsive"
             />
           </Link>
 
-          {/* Search Bar - Visible on mobile */}
-            <div className="flex-1 max-w-sm lg:max-w-lg mx-2 sm:mx-4 lg:mx-8 search-responsive">
+          {/* Search Bar - Visible on all devices */}
+            <div className="flex-1 max-w-xs sm:max-w-sm lg:max-w-lg mx-2 sm:mx-3 lg:mx-6 xl:mx-8 search-responsive">
               <SearchBar 
                 placeholder="Digite aqui o que você busca"
                 className="w-full px-3 py-2 lg:px-4 lg:py-3 pr-10 lg:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm lg:text-base transition-all duration-300"
@@ -146,7 +150,16 @@ const Header: React.FC = () => {
             </div>
 
           {/* User and Budget Icons */}
-          <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+            {/* Mobile Menu Button */}
+            <button 
+              className="md:hidden p-2 text-white hover:text-gray-200 transition-colors duration-200"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              title="Menu"
+            >
+              {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            
             {/* User Menu with Dropdown */}
             <div className="relative" ref={userMenuRef}>
               <button 
@@ -154,7 +167,7 @@ const Header: React.FC = () => {
                 className="p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
                 title={isAuthenticated ? `Olá, ${user?.name}` : "Minha Conta"}
               >
-                <User className="h-5 w-5 lg:h-6 lg:w-6" />
+                <User className="h-4 w-4 sm:h-5 lg:h-6" />
               </button>
               
               {/* Dropdown Menu */}
@@ -201,10 +214,10 @@ const Header: React.FC = () => {
               title="Meu Orçamento"
               onClick={() => setShowSideQuoteList(prev => !prev)}
             >
-              <List className="h-5 w-5 lg:h-6 lg:w-6" />
+              <List className="h-4 w-4 sm:h-5 lg:h-6" />
               {/* Badge para mostrar quantidade de itens no orçamento */}
               {budgetState.totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full h-3 w-3 sm:h-4 sm:w-4 flex items-center justify-center font-bold">
                   {budgetState.totalItems > 99 ? '99+' : budgetState.totalItems}
                 </span>
               )}
@@ -222,6 +235,62 @@ const Header: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div className="md:hidden bg-white border-b border-gray-200 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="space-y-4">
+              <div className="flex flex-col space-y-2">
+                <Link 
+                  to="/" 
+                  className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Início
+                </Link>
+                <Link 
+                  to="/categorias" 
+                  className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Categorias
+                </Link>
+                <Link 
+                  to="/contato" 
+                  className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
+                  onClick={() => setShowMobileMenu(false)}
+                >
+                  Contato
+                </Link>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex flex-col space-y-2">
+                  {contactPhone && (
+                    <a 
+                      href={`tel:${contactPhone}`}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      <Phone className="h-4 w-4" />
+                      <span>{contactPhone}</span>
+                    </a>
+                  )}
+                  {contactEmail && (
+                    <a 
+                      href={`mailto:${contactEmail}`}
+                      className="flex items-center space-x-2 text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      <Mail className="h-4 w-4" />
+                      <span>{contactEmail}</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
     
     {/* Side Quote List */}

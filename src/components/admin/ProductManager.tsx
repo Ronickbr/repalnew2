@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Product, Category, Brand } from '../../types';
 import { 
@@ -25,6 +25,7 @@ import { useNotifications } from '../../hooks/useNotifications';
 import { useAccessibility } from '../../hooks/useAccessibility';
 import { useLoadingState } from '../../hooks/useLoadingState';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useAuth } from '../../hooks/useAuth';
 import UnifiedImageUpload, { ImageItem } from '../UnifiedImageUpload';
 
 interface ProductFormData {
@@ -94,6 +95,10 @@ const ProductManager: React.FC = () => {
   // Unified image upload state
   const [unifiedImages, setUnifiedImages] = useState<ImageItem[]>([]);
   
+  // Estado para upload de imagens por arquivo (mesma lógica do BrandManager)
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [, setFormErrors] = useState<ProductFormErrors>({});
   
   // Filters
@@ -117,6 +122,7 @@ const ProductManager: React.FC = () => {
   const { announceToScreenReader } = useAccessibility();
   const { isLoading: isGlobalLoading, startLoading, stopLoading } = useLoadingState();
   const { geminiApiKey } = useSiteSettings();
+  useAuth(); // Apenas para garantir que o hook está sendo usado
 
   // Load initial data
   useEffect(() => {
@@ -138,6 +144,79 @@ const ProductManager: React.FC = () => {
       setIsGeneratingAI(false);
       setAiGenerationMessage('');
     }
+  };
+
+  // Função para upload de múltiplas imagens por arquivo (mesma lógica do BrandManager)
+  const uploadMultipleImagesToStorage = async (files: File[]): Promise<string[]> => {
+    try {
+      setUploadingImages(true);
+      const uploadedUrls: string[] = [];
+      
+      for (const file of files) {
+        // Gerar nome único para o arquivo
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
+        const filePath = `product-images/${fileName}`;
+        
+        // Fazer upload para o Supabase Storage
+        const { error } = await supabase.storage
+          .from('products')
+          .upload(filePath, file);
+        
+        if (error) {
+          throw error;
+        }
+        
+        // Obter URL pública do arquivo
+        const { data: { publicUrl } } = supabase.storage
+          .from('products')
+          .getPublicUrl(filePath);
+        
+        uploadedUrls.push(publicUrl);
+      }
+      
+      return uploadedUrls;
+    } catch (err) {
+      handleError(err, 'Erro ao fazer upload das imagens');
+      addNotification('error', 'Erro ao fazer upload das imagens', 'Tente novamente.');
+      return [];
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  // Função para lidar com seleção de arquivos (mesma lógica do BrandManager)
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      handleFileUpload(Array.from(files));
+    }
+  };
+
+  // Função para processar upload de arquivos
+  const handleFileUpload = async (files: File[]) => {
+    try {
+      const uploadedUrls = await uploadMultipleImagesToStorage(files);
+      
+      if (uploadedUrls.length > 0) {
+        // Adicionar as novas imagens ao estado unifiedImages
+        const newImages: ImageItem[] = uploadedUrls.map((url, index) => ({
+          id: `${Date.now()}-${index}`,
+          url,
+          type: 'url' // Como são URLs públicas do Supabase, usamos 'url'
+        }));
+        
+        setUnifiedImages(prev => [...prev, ...newImages]);
+        addNotification('success', 'Imagens carregadas com sucesso!');
+      }
+    } catch (err) {
+      handleError(err, 'Erro ao processar arquivos');
+    }
+  };
+
+  // Função para abrir o seletor de arquivos
+  const openFileSelector = () => {
+    fileInputRef.current?.click();
   };
 
   const fetchProducts = async () => {
@@ -288,17 +367,193 @@ const ProductManager: React.FC = () => {
 
   // Handle form submission
 
+  // Validar tamanho de URL para evitar erro de banco de dados
+  const validateImageUrl = (url: string, fieldName: string): boolean => {
+    const MAX_URL_LENGTH = 1024;
+    if (url.length > MAX_URL_LENGTH) {
+      addNotification('error', `URL da imagem ${fieldName} muito longo (${url.length} caracteres). Máximo permitido: ${MAX_URL_LENGTH} caracteres.`);
+      return false;
+    }
+    return true;
+  };
+
+  // Função para fazer upload de imagem base64 para o Supabase Storage
+  const uploadBase64Image = async (base64Url: string): Promise<string> => {
+    try {
+      console.log('Fazendo upload de imagem base64 para o Supabase Storage...');
+      // Extrair o tipo MIME e os dados base64
+      const matches = base64Url.match(/^data:(.+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        throw new Error('Formato de imagem base64 inválido');
+      }
+      
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+      
+      // Converter base64 para Blob
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
+      
+      // Gerar nome único para o arquivo (mesma lógica do BrandManager)
+      const fileExt = mimeType.split('/')[1] || 'jpg';
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
+      const filePath = `product-images/${fileName}`;
+      
+      // Fazer upload para o Supabase Storage
+      const { error } = await supabase.storage
+        .from('products')
+        .upload(filePath, blob);
+      
+      if (error) {
+        console.error('Erro detalhado do Supabase Storage:', error);
+        if (error.message.includes('row-level security') || error.message.includes('RLS')) {
+          throw new Error('Sem permissão para fazer upload. Verifique as configurações de segurança do Supabase.');
+        }
+        if (error.message.includes('bucket')) {
+          throw new Error('Bucket não encontrado. Verifique se o bucket "products" existe.');
+        }
+        throw new Error(`Erro ao fazer upload da imagem: ${error.message}`);
+      }
+      
+      // Obter URL pública do arquivo (mesma lógica do BrandManager)
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+      
+      return publicUrl;
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem base64:', error);
+      throw error;
+    }
+  };
+
+  // Processar URL de imagem para garantir que não exceda o limite
+  const processImageUrl = async (url: string): Promise<string> => {
+    const MAX_URL_LENGTH = 1024;
+    
+    // Se a URL for muito longa, tentar encurtar
+    if (url.length > MAX_URL_LENGTH) {
+      // Verificar se é uma URL base64
+      if (url.startsWith('data:')) {
+        console.log('URL base64 muito longa detectada. Fazendo upload para o Supabase Storage...');
+        try {
+          // Fazer upload da imagem base64 para o Supabase Storage
+          const uploadedUrl = await uploadBase64Image(url);
+          console.log('Upload concluído. URL:', uploadedUrl);
+          return uploadedUrl;
+        } catch (error) {
+          console.error('Erro ao fazer upload da imagem base64:', error);
+          // Se não conseguir fazer upload, retornar vazio para indicar erro
+          return '';
+        }
+      }
+      
+      try {
+        const urlObj = new URL(url);
+        
+        // Remover parâmetros de rastreamento longos mas manter parâmetros essenciais
+        const essentialParams = ['w', 'h', 'width', 'height', 'size', 'quality', 'format'];
+        const newUrl = new URL(urlObj.origin + urlObj.pathname);
+        
+        essentialParams.forEach(param => {
+          if (urlObj.searchParams.has(param)) {
+            newUrl.searchParams.set(param, urlObj.searchParams.get(param)!);
+          }
+        });
+        
+        const processedUrl = newUrl.toString();
+        
+        // Se ainda for longa demais, retornar apenas o caminho básico
+        if (processedUrl.length > MAX_URL_LENGTH) {
+          return urlObj.origin + urlObj.pathname;
+        }
+        
+        return processedUrl;
+      } catch (error) {
+        // Se não conseguir processar a URL, retornar os primeiros 1024 caracteres
+        console.warn('Erro ao processar URL da imagem:', error);
+        return url.substring(0, MAX_URL_LENGTH);
+      }
+    }
+    
+    return url;
+  };
+
   // Sync unified images to form data
-  const syncUnifiedImagesToFormData = (images: ImageItem[]) => {
+  const syncUnifiedImagesToFormData = async (images: ImageItem[]) => {
+    console.log('syncUnifiedImagesToFormData - Total de imagens:', images.length);
+    console.log('Imagens recebidas:', images.map(img => ({ url: img.url.substring(0, 100) + '...', type: img.type })));
+    
     if (images.length > 0) {
       const mainImage = images[0]; // Primeira imagem é a principal
-      const additionalImages = images.slice(1).map(img => img.url);
       
-      setFormData(prev => ({
-        ...prev,
-        image: mainImage.url,
-        additional_images: additionalImages
-      }));
+      try {
+        // Processar URL da imagem principal
+        const processedMainImageUrl = await processImageUrl(mainImage.url);
+        console.log('Imagem principal processada:', processedMainImageUrl.substring(0, 100) + '...');
+        
+        // Se a imagem principal for uma URL base64 muito longa e falhou o upload
+        if (processedMainImageUrl === '' && mainImage.url.startsWith('data:')) {
+          addNotification('error', 'A imagem principal é muito grande e não pôde ser processada. Por favor, use uma imagem menor.');
+          return;
+        }
+        
+        // Validar URL da imagem principal
+        if (!validateImageUrl(processedMainImageUrl, 'principal')) {
+          return;
+        }
+        
+        const additionalImages = images.slice(1).map(img => img.url);
+        console.log('Imagens adicionais para processar:', additionalImages.length);
+        
+        // Processar e validar URLs das imagens adicionais
+        const processedAdditionalImages = await Promise.all(
+          additionalImages.map(async (url, index) => {
+            try {
+              console.log(`Processando imagem adicional ${index + 1}:`, url.substring(0, 100) + '...');
+              const processedUrl = await processImageUrl(url);
+              console.log(`Imagem adicional ${index + 1} processada:`, processedUrl.substring(0, 100) + '...');
+              return processedUrl;
+            } catch (error) {
+              console.error(`Erro ao processar imagem adicional ${index + 1}:`, error);
+              return '';
+            }
+          })
+        );
+        
+        const validAdditionalImages = processedAdditionalImages.filter(processedUrl => {
+          // Filtrar imagens base64 muito longas ou vazias
+          if (processedUrl === '') {
+            return false;
+          }
+          if (!validateImageUrl(processedUrl, 'adicional')) {
+            return false;
+          }
+          return true;
+        });
+        
+        console.log('Imagens adicionais válidas:', validAdditionalImages.length);
+        console.log('URLs das imagens adicionais:', validAdditionalImages.map(url => url.substring(0, 100) + '...'));
+        
+        setFormData(prev => ({
+          ...prev,
+          image: processedMainImageUrl,
+          additional_images: validAdditionalImages
+        }));
+        
+        console.log('FormData atualizado com imagens:', {
+          image: processedMainImageUrl.substring(0, 100) + '...',
+          additional_images_count: validAdditionalImages.length
+        });
+      } catch (error) {
+        console.error('Erro ao processar imagens:', error);
+        addNotification('error', 'Erro ao processar as imagens. Por favor, tente novamente.');
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -312,6 +567,24 @@ const ProductManager: React.FC = () => {
     e.preventDefault();
     
     try {
+      // Validar URLs das imagens já processadas (as imagens já foram processadas no syncUnifiedImagesToFormData)
+      if (formData.image && formData.image.trim() === '') {
+        addNotification('error', 'A imagem principal é muito grande e não pode ser usada. Por favor, escolha uma imagem menor.');
+        return;
+      }
+      
+      if (formData.image && !validateImageUrl(formData.image, 'principal')) {
+        return;
+      }
+      
+      if (formData.additional_images && formData.additional_images.length > 0) {
+        for (let i = 0; i < formData.additional_images.length; i++) {
+          if (!validateImageUrl(formData.additional_images[i], `adicional ${i + 1}`)) {
+            return;
+          }
+        }
+      }
+      
       // Validate form
       const errors = validateProductForm(formData);
       setFormErrors(errors);
@@ -324,10 +597,18 @@ const ProductManager: React.FC = () => {
       }
 
       startLoading('Processando produto...');
+      
+      // Debug: Verificar dados de imagens antes de enviar
+      console.log('Enviando produto com imagens:', {
+        image: formData.image?.substring(0, 100) + '...',
+        additional_images_count: formData.additional_images?.length || 0,
+        additional_images: formData.additional_images?.map(url => url.substring(0, 100) + '...') || []
+      });
+      
       if (editingProduct) {
-        await updateProduct();
+        await updateProduct(formData.image, formData.additional_images);
       } else {
-        await createProduct();
+        await createProduct(formData.image, formData.additional_images);
       }
       stopLoading();
     } catch (err) {
@@ -335,7 +616,7 @@ const ProductManager: React.FC = () => {
     }
   };
 
-  const createProduct = async () => {
+  const createProduct = async (image?: string, additionalImages?: string[]) => {
     try {
       // Remover additional_images dos dados do produto principal
       const { additional_images, ...productDataWithoutImages } = formData;
@@ -402,7 +683,7 @@ const ProductManager: React.FC = () => {
         category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : undefined,
         brand: formData.brand || undefined,
-        image: formData.image || undefined,
+        image: image || undefined,
         specifications: formData.specifications?.trim() || undefined,
         slug: slug,
         seo_title: formData.seo_title?.trim() || undefined,
@@ -426,8 +707,11 @@ const ProductManager: React.FC = () => {
 
       if (data) {
         // Salvar imagens adicionais na tabela product_images
-        if (formData.additional_images && formData.additional_images.length > 0) {
-          const validImages = formData.additional_images.filter(img => img && img.trim() !== '');
+        if (additionalImages && additionalImages.length > 0) {
+          const validImages = additionalImages.filter(img => img && img.trim() !== '');
+          console.log(`Preparando para salvar ${validImages.length} imagens adicionais no banco de dados`);
+          console.log('URLs das imagens adicionais:', validImages.map(url => url.substring(0, 100) + '...'));
+          
           if (validImages.length > 0) {
             const imageRecords = validImages.map((url, index) => ({
               product_id: data.id,
@@ -435,15 +719,30 @@ const ProductManager: React.FC = () => {
               sort_order: index
             }));
             
-            const { error: imagesError } = await supabase
-              .from('product_images')
-              .insert(imageRecords);
-              
-            if (imagesError) {
-              console.error('Erro ao salvar imagens adicionais:', imagesError);
-
+            console.log('Registros de imagens a serem inseridos:', imageRecords);
+            
+            try {
+              const { error: imagesError } = await supabase
+                .from('product_images')
+                .insert(imageRecords);
+                
+              if (imagesError) {
+                console.error('Erro ao salvar imagens adicionais:', imagesError);
+                console.error('Detalhes do erro:', imagesError.message, imagesError.details, imagesError.hint);
+                console.error('Código do erro:', imagesError.code);
+                addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
+              } else {
+                console.log(`Imagens adicionais salvas com sucesso: ${imageRecords.length} imagens`);
+                console.log('Product ID:', data.id);
+                addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
+              }
+            } catch (insertError) {
+              console.error('Erro crítico ao inserir imagens adicionais:', insertError);
+              addNotification('error', `Erro crítico ao salvar imagens: ${insertError instanceof Error ? insertError.message : 'Erro desconhecido'}`);
             }
           }
+        } else {
+          console.log('Nenhuma imagem adicional para salvar');
         }
         
         setProducts(prev => [data, ...prev]);
@@ -457,7 +756,7 @@ const ProductManager: React.FC = () => {
     }
   };
 
-  const updateProduct = async () => {
+  const updateProduct = async (image?: string, additionalImages?: string[]) => {
     if (!editingProduct) return;
 
     try {
@@ -469,7 +768,7 @@ const ProductManager: React.FC = () => {
         category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
         subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : undefined,
         brand: formData.brand || undefined,
-        image: formData.image || undefined,
+        image: image || undefined,
         specifications: formData.specifications?.trim() || undefined,
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: formData.seo_description?.trim() || undefined,
@@ -492,10 +791,13 @@ const ProductManager: React.FC = () => {
 
       if (data) {
         // Atualizar imagens adicionais na tabela product_images
-        if (formData.additional_images && formData.additional_images.length > 0) {
-          const validImages = formData.additional_images.filter(img => img && img.trim() !== '');
+        if (additionalImages && additionalImages.length > 0) {
+          const validImages = additionalImages.filter(img => img && img.trim() !== '');
+          console.log(`Preparando para atualizar ${validImages.length} imagens adicionais no banco de dados`);
+          console.log('URLs das imagens adicionais:', validImages.map(url => url.substring(0, 100) + '...'));
           
           // Primeiro, remover imagens antigas
+          console.log('Removendo imagens antigas do produto ID:', editingProduct.id);
           const { error: deleteError } = await supabase
             .from('product_images')
             .delete()
@@ -503,6 +805,9 @@ const ProductManager: React.FC = () => {
             
           if (deleteError) {
             console.error('Erro ao remover imagens antigas:', deleteError);
+            console.error('Detalhes do erro:', deleteError.message, deleteError.details, deleteError.hint);
+          } else {
+            console.log('Imagens antigas removidas com sucesso');
           }
           
           // Depois, inserir as novas imagens
@@ -513,13 +818,26 @@ const ProductManager: React.FC = () => {
               sort_order: index
             }));
             
-            const { error: imagesError } = await supabase
-              .from('product_images')
-              .insert(imageRecords);
-              
-            if (imagesError) {
-              console.error('Erro ao salvar imagens adicionais:', imagesError);
-
+            console.log('Registros de imagens a serem inseridos:', imageRecords);
+            
+            try {
+              const { error: imagesError } = await supabase
+                .from('product_images')
+                .insert(imageRecords);
+                
+              if (imagesError) {
+                console.error('Erro ao salvar imagens adicionais:', imagesError);
+                console.error('Detalhes do erro:', imagesError.message, imagesError.details, imagesError.hint);
+                console.error('Código do erro:', imagesError.code);
+                addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
+              } else {
+                console.log(`Imagens adicionais salvas com sucesso: ${imageRecords.length} imagens`);
+                console.log('Product ID:', editingProduct.id);
+                addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
+              }
+            } catch (insertError) {
+              console.error('Erro crítico ao inserir imagens adicionais:', insertError);
+              addNotification('error', `Erro crítico ao salvar imagens: ${insertError instanceof Error ? insertError.message : 'Erro desconhecido'}`);
             }
           }
         }
@@ -849,7 +1167,21 @@ PALAVRAS-CHAVE:
       
     } catch (error) {
       console.error('Erro ao gerar conteúdo:', error);
-      addNotification('error', 'Erro ao gerar conteúdo. Por favor, tente novamente.');
+      
+      // Tratamento específico para diferentes tipos de erros da API
+      if (error instanceof Error) {
+        if (error.message.includes('overloaded') || error.message.includes('429')) {
+          addNotification('warning', 'API do Gemini sobrecarregada. Por favor, tente novamente em alguns minutos.');
+        } else if (error.message.includes('API key')) {
+          addNotification('error', 'Erro na chave de API do Gemini. Verifique as configurações.');
+        } else if (error.message.includes('network')) {
+          addNotification('error', 'Erro de conexão. Verifique sua internet e tente novamente.');
+        } else {
+          addNotification('error', 'Erro ao gerar conteúdo. Por favor, tente novamente.');
+        }
+      } else {
+        addNotification('error', 'Erro desconhecido ao gerar conteúdo. Por favor, tente novamente.');
+      }
     } finally {
       setIsGeneratingAI(false);
       setAiGenerationMessage('');
@@ -1015,10 +1347,10 @@ PALAVRAS-CHAVE:
       </a>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Produtos</h1>
-          <p className="text-gray-600 mt-1">Gerencie os produtos da sua loja</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gerenciamento de Produtos</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie os produtos da sua loja</p>
           <div className="text-xs text-gray-500 mt-1" role="complementary" aria-label="Atalhos de teclado">
             Atalhos: Alt+N (Novo) • Alt+F (Filtros) • Alt+E (Exportar) • Alt+X (Excluir)
           </div>
@@ -1033,10 +1365,10 @@ PALAVRAS-CHAVE:
           </button>
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-md shadow-sm text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             aria-label={showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
           >
             <Filter className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -1070,8 +1402,8 @@ PALAVRAS-CHAVE:
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex flex-col lg:flex-row gap-4 mb-4">
+      <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 mb-4">
           <div className="flex-1">
             <label htmlFor="search" className="sr-only">Pesquisar produtos</label>
             <div className="relative">
@@ -1084,7 +1416,7 @@ PALAVRAS-CHAVE:
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Pesquisar por nome ou descrição..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full pl-10 pr-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 aria-label="Pesquisar produtos por nome ou descrição"
               />
             </div>
@@ -1092,7 +1424,7 @@ PALAVRAS-CHAVE:
         </div>
 
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label htmlFor="filter-category" className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
               <select
@@ -1164,8 +1496,8 @@ PALAVRAS-CHAVE:
 
       {/* Products Table */}
       <div id="product-list" className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-medium text-gray-900">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-base sm:text-lg font-medium text-gray-900">
             Lista de Produtos ({products.length})
           </h2>
           {selectedProducts.length > 0 && (
@@ -1436,9 +1768,9 @@ PALAVRAS-CHAVE:
       {/* Product Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" role="dialog" aria-modal="true" aria-labelledby="form-title">
-          <div className="relative mx-auto p-5 border w-full max-w-4xl bg-white rounded-lg shadow-lg my-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 id="form-title" className="text-xl font-bold text-gray-900">
+          <div className="relative mx-auto p-3 sm:p-5 border w-full max-w-2xl sm:max-w-4xl bg-white rounded-lg shadow-lg my-4 sm:my-8">
+            <div className="flex items-center justify-between mb-3 sm:mb-6">
+              <h2 id="form-title" className="text-lg sm:text-xl font-bold text-gray-900">
                 {editingProduct ? 'Editar Produto' : 'Novo Produto'}
               </h2>
               <button
@@ -1450,18 +1782,18 @@ PALAVRAS-CHAVE:
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="flex gap-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
                 {/* Side Navigation */}
-                <div className="w-64 flex-shrink-0">
-                  <nav className="sticky top-6 space-y-2">
+                <div className="w-full lg:w-64 flex-shrink-0">
+                  <nav className="flex lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
                     <a
                       href="#basic-info"
                       onClick={(e) => {
                         e.preventDefault();
                         document.getElementById('basic-info')?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-blue-50 text-blue-700 border border-blue-200 whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink"
                     >
                       <Anchor className="h-4 w-4 mr-2" />
                       Informações Iniciais
@@ -1472,7 +1804,7 @@ PALAVRAS-CHAVE:
                         e.preventDefault();
                         document.getElementById('additional-info')?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 border border-gray-200 whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink"
                     >
                       <Anchor className="h-4 w-4 mr-2" />
                       Informações Adicionais
@@ -1483,7 +1815,7 @@ PALAVRAS-CHAVE:
                         e.preventDefault();
                         document.getElementById('seo-info')?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 border border-gray-200 whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink"
                     >
                       <Anchor className="h-4 w-4 mr-2" />
                       SEO
@@ -1494,7 +1826,7 @@ PALAVRAS-CHAVE:
                         e.preventDefault();
                         document.getElementById('media-info')?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 border border-gray-200"
+                      className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-50 border border-gray-200 whitespace-nowrap lg:whitespace-normal flex-shrink-0 lg:flex-shrink"
                     >
                       <Anchor className="h-4 w-4 mr-2" />
                       Mídia
@@ -1506,10 +1838,10 @@ PALAVRAS-CHAVE:
                 <div className="flex-1 space-y-8">
 
               {/* Basic Information Section */}
-              <div id="basic-info" className="bg-white p-6 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Informações Iniciais</h3>
+              <div id="basic-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações Iniciais</h3>
                 <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                         Nome do Produto *
@@ -1519,7 +1851,7 @@ PALAVRAS-CHAVE:
                         id="name"
                         value={formData.name}
                         onChange={(e) => handleNameChange(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         aria-required="true"
                       />
@@ -1545,7 +1877,7 @@ PALAVRAS-CHAVE:
                             setSubcategories([]);
                           }
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         aria-required="true"
                       >
@@ -1564,7 +1896,7 @@ PALAVRAS-CHAVE:
                         id="subcategory_id"
                         value={formData.subcategory_id || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, subcategory_id: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         disabled={!formData.category_id || subcategories.length === 0}
                       >
                         <option value="">
@@ -1587,7 +1919,7 @@ PALAVRAS-CHAVE:
                         id="brand"
                         value={formData.brand || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Selecione uma marca</option>
                         {brands.map(brand => (
@@ -1600,7 +1932,7 @@ PALAVRAS-CHAVE:
               </div>
 
               {/* Additional Information Section */}
-              <div id="additional-info" className="bg-white p-6 rounded-lg border border-gray-200 relative">
+              <div id="additional-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 relative">
                 {/* Loading overlay for AI generation */}
                 {isGeneratingAI && (
                   <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center z-10">
@@ -1613,8 +1945,8 @@ PALAVRAS-CHAVE:
                     </div>
                   </div>
                 )}
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Informações Adicionais</h3>
+                <div className="flex justify-between items-center mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-900">Informações Adicionais</h3>
                   <button
                     type="button"
                     onClick={generateContentByAI}
@@ -1639,7 +1971,7 @@ PALAVRAS-CHAVE:
                       value={formData.description}
                       onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -1653,15 +1985,15 @@ PALAVRAS-CHAVE:
                       onChange={(e) => setFormData(prev => ({ ...prev, specifications: e.target.value || undefined }))}
                       rows={4}
                       placeholder="Digite as especificações técnicas do produto..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
               </div>
 
               {/* SEO Section */}
-              <div id="seo-info" className="bg-white p-6 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Informações de SEO</h3>
+              <div id="seo-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações de SEO</h3>
                 <div className="space-y-6">
                   <div>
                     <label htmlFor="seo_title" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1690,7 +2022,7 @@ PALAVRAS-CHAVE:
                       placeholder="Descrição para SEO (máx. 500 caracteres)"
                       maxLength={500}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">{formData.seo_description?.length || 0}/500 caracteres</p>
                   </div>
@@ -1706,7 +2038,7 @@ PALAVRAS-CHAVE:
                       placeholder="Palavras-chave separadas por vírgula (máx. 500 caracteres)"
                       maxLength={500}
                       rows={2}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">{formData.seo_keywords?.length || 0}/500 caracteres</p>
                   </div>
@@ -1714,18 +2046,44 @@ PALAVRAS-CHAVE:
               </div>
 
               {/* Media Section */}
-              <div id="media-info" className="bg-white p-4 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Mídia</h3>
+              <div id="media-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3">Mídia</h3>
                 
                 <UnifiedImageUpload
                   images={unifiedImages}
-                  onImagesChange={(newImages) => {
+                  onImagesChange={async (newImages) => {
                     setUnifiedImages(newImages);
-                    syncUnifiedImagesToFormData(newImages);
+                    await syncUnifiedImagesToFormData(newImages);
                   }}
                   maxImages={6}
                   maxSizeInMB={10}
                 />
+                
+                {/* Input de arquivo oculto para upload múltiplo */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                
+                {/* Botão de upload de arquivos */}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={openFileSelector}
+                    disabled={uploadingImages || unifiedImages.length >= 6}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploadingImages ? 'Enviando...' : 'Enviar Imagens'}
+                  </button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {unifiedImages.length}/6 imagens • Máx. 10MB por imagem
+                  </p>
+                </div>
               </div>
 
                   {/* Product Status - Inline */}
@@ -1778,17 +2136,17 @@ PALAVRAS-CHAVE:
               </div>
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 sm:pt-6 border-t border-gray-200">
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   {editingProduct ? 'Atualizar' : 'Criar'} Produto
                 </button>

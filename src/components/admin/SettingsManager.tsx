@@ -155,14 +155,14 @@ export default function SettingsManager({ siteSettings, onEditSettings }: Settin
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Configurações do Site</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Configurações do Site</h2>
         <button 
           onClick={onEditSettings}
-          className="bg-red-900 hover:bg-red-800 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
+          className="bg-red-900 hover:bg-red-800 text-white px-3 sm:px-4 py-2 rounded-lg font-medium flex items-center space-x-2 text-sm sm:text-base"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
           <span>Editar Configurações</span>
         </button>
       </div>
@@ -170,14 +170,14 @@ export default function SettingsManager({ siteSettings, onEditSettings }: Settin
       {/* Navigation Tabs */}
       <div className="bg-white rounded-lg shadow">
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
+          <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 transition-colors ${
+                  className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-red-900 text-red-900'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -192,13 +192,13 @@ export default function SettingsManager({ siteSettings, onEditSettings }: Settin
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* General Tab */}
           {activeTab === 'general' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Informações Gerais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações Gerais</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   {renderField('Nome do Site', siteSettings.site_name, 'site_name')}
                   {renderField('Nome da Empresa', siteSettings.company_name, 'company_name')}
                   {renderField('URL do Site', siteSettings.site_url, 'site_url')}

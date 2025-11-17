@@ -586,10 +586,10 @@ export default function BrandManager() {
       </a>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestão de Marcas</h1>
-          <p className="text-gray-600 mt-1">Gerencie as marcas dos produtos da sua loja</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gestão de Marcas</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Gerencie as marcas dos produtos da sua loja</p>
         </div>
         
         <div className="flex flex-wrap gap-2">
