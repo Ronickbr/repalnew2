@@ -58,8 +58,8 @@ const ProductManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [subcategories, setSubcategories] = useState<Category[]>([]);
-  // const [loading, setLoading] = useState(true); // Usando isGlobalLoading agora
-  // const [error, setError] = useState<string | null>(null); // Usando handleError agora
+
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -93,7 +93,7 @@ const ProductManager: React.FC = () => {
   // Unified image upload state
   const [unifiedImages, setUnifiedImages] = useState<ImageItem[]>([]);
   
-  const [, setFormErrors] = useState<ProductFormErrors>({}); // formErrors não é usado diretamente no JSX
+  const [, setFormErrors] = useState<ProductFormErrors>({});
   
   // Filters
   const [filters, setFilters] = useState({
@@ -106,10 +106,6 @@ const ProductManager: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   
-  // Form sections state
-  
-  // Image upload states (unified via UnifiedImageUpload)
-  
   // Loading state for modal operations
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiGenerationMessage, setAiGenerationMessage] = useState('');
@@ -117,7 +113,7 @@ const ProductManager: React.FC = () => {
   // Hooks
   const { handleError, clearError } = useErrorHandler();
   const { notifications, addNotification, removeNotification } = useNotifications();
-  const { announceToScreenReader } = useAccessibility(); // trapFocus não está sendo usado no momento
+  const { announceToScreenReader } = useAccessibility();
   const { isLoading: isGlobalLoading, startLoading, stopLoading } = useLoadingState();
 
   // Load initial data
@@ -136,7 +132,7 @@ const ProductManager: React.FC = () => {
     } catch (err) {
       handleError(err, 'loadInitialData');
     } finally {
-      stopLoading(); // Importante: parar o loading!
+      stopLoading();
       setIsGeneratingAI(false);
       setAiGenerationMessage('');
     }
@@ -144,7 +140,7 @@ const ProductManager: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      clearError(); // Limpa erro geral
+      clearError();
       
       let query = supabase
         .from('products')
@@ -157,7 +153,7 @@ const ProductManager: React.FC = () => {
 
       // Apply search
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%`);
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
 
       // Apply filters
@@ -204,7 +200,7 @@ const ProductManager: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      clearError(); // Limpa erro geral
+      clearError();
       
       const { data, error: supabaseError } = await supabase
         .from('categories')
@@ -227,7 +223,7 @@ const ProductManager: React.FC = () => {
 
   const fetchBrands = async () => {
     try {
-      clearError(); // Limpa erro geral
+      clearError();
       
       const { data, error: supabaseError } = await supabase
         .from('brands')
@@ -278,8 +274,6 @@ const ProductManager: React.FC = () => {
 
     return errors;
   };
-
-
 
   const isValidUrl = (url: string): boolean => {
     try {
@@ -366,7 +360,7 @@ const ProductManager: React.FC = () => {
             .from('products')
             .select('id')
             .eq('slug', slug)
-            .maybeSingle(); // Use maybeSingle() em vez de single() para evitar erro quando não encontra
+            .maybeSingle();
           
           console.log('Resultado da verificação:', { existingProduct, slugCheckError });
           
@@ -425,9 +419,6 @@ const ProductManager: React.FC = () => {
         .single();
 
       if (supabaseError) {
-        if (supabaseError.code === '23505') {
-          throw new Error('SKU já existe. Por favor, escolha um SKU único.');
-        }
         throw new Error(`Erro ao criar produto: ${supabaseError.message}`);
       }
 
@@ -440,7 +431,6 @@ const ProductManager: React.FC = () => {
               product_id: data.id,
               url: url,
               sort_order: index
-              // Não incluir o campo 'id' para permitir que o Supabase gere automaticamente
             }));
             
             const { error: imagesError } = await supabase
@@ -449,7 +439,7 @@ const ProductManager: React.FC = () => {
               
             if (imagesError) {
               console.error('Erro ao salvar imagens adicionais:', imagesError);
-              // Não lançar erro para não impedir a criação do produto
+
             }
           }
         }
@@ -495,9 +485,6 @@ const ProductManager: React.FC = () => {
         .single();
 
       if (supabaseError) {
-        if (supabaseError.code === '23505') {
-          throw new Error('SKU já existe. Por favor, escolha um SKU único.');
-        }
         throw new Error(`Erro ao atualizar produto: ${supabaseError.message}`);
       }
 
@@ -522,7 +509,6 @@ const ProductManager: React.FC = () => {
               product_id: editingProduct.id,
               url: url,
               sort_order: index
-              // Não incluir o campo 'id' para permitir que o Supabase gere automaticamente
             }));
             
             const { error: imagesError } = await supabase
@@ -531,7 +517,7 @@ const ProductManager: React.FC = () => {
               
             if (imagesError) {
               console.error('Erro ao salvar imagens adicionais:', imagesError);
-              // Não lançar erro para não impedir a atualização do produto
+
             }
           }
         }
@@ -693,9 +679,9 @@ const ProductManager: React.FC = () => {
       seo_description: undefined,
       seo_keywords: undefined,
     });
-    setUnifiedImages([]); // Clear unified images
+    setUnifiedImages([]);
     setFormErrors({});
-    setSubcategories([]); // Limpa subcategorias ao fechar formulário
+    setSubcategories([]);
   };
 
   const handleNameChange = (name: string) => {
@@ -871,12 +857,6 @@ PALAVRAS-CHAVE:
   
 
 
-  // Drag and Drop functions for image reordering
-  
-
-
-  
-
   // Handle select all products
   const handleSelectAll = () => {
     if (selectAll) {
@@ -902,11 +882,10 @@ PALAVRAS-CHAVE:
   const exportToCSV = () => {
     try {
       const csvContent = [
-        ['ID', 'Nome', 'SKU', 'Categoria', 'Marca', 'Ativo', 'Destaque'],
+        ['ID', 'Nome', 'Categoria', 'Marca', 'Ativo', 'Destaque'],
         ...products.map(product => [
           product.id,
           `"${product.name.replace(/"/g, '""')}"`,
-          product.sku,
           product.categories?.name || '',
           product.brand || '',
           product.active ? 'Sim' : 'Não',
@@ -927,7 +906,6 @@ PALAVRAS-CHAVE:
       addNotification('success', 'Dados exportados com sucesso');
       announceToScreenReader('Dados exportados para CSV com sucesso', 'polite');
       
-
     } catch (err) {
       handleError(err, 'exportToCSV');
     }
@@ -949,7 +927,6 @@ PALAVRAS-CHAVE:
       addNotification('success', 'Dados exportados com sucesso');
       announceToScreenReader('Dados exportados para JSON com sucesso', 'polite');
       
-
     } catch (err) {
       handleError(err, 'exportToJSON');
     }
@@ -1104,9 +1081,9 @@ PALAVRAS-CHAVE:
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Pesquisar por nome, descrição ou SKU..."
+                placeholder="Pesquisar por nome ou descrição..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                aria-label="Pesquisar produtos por nome, descrição ou SKU"
+                aria-label="Pesquisar produtos por nome ou descrição"
               />
             </div>
           </div>
