@@ -71,7 +71,7 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
 
   return (
     <div 
-      className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[2000] transition-opacity duration-300 ${
         isOpen ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={handleBackdropClick}
