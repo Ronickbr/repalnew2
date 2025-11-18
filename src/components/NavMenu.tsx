@@ -180,6 +180,24 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
     setMobileOpen(false);
   }, [location]);
 
+  /* função auxiliar para navegação mobile - removida pois agora usa Link direto */
+  // const handleMobileNavigation = (path: string) => {
+  //   console.log('Mobile navigation iniciada:', path);
+  //   navigate(path);
+  // };
+
+  /* Hook para detectar dispositivos móveis */
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
+  };
+
+  // Debug para mobile
+  useEffect(() => {
+    if (isMobileDevice()) {
+      console.log('Dispositivo móvel detectado:', navigator.userAgent);
+    }
+  }, []);
+
   /* render desktop – categorias na esquerda */
   const desktop = (
     <nav className="hidden lg:flex items-center gap-4">
@@ -205,11 +223,44 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
     </nav>
   );
 
+  /* Adicionar estilos CSS para performance mobile */
+  const mobileStyles = `
+    .touch-manipulation {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .mobile-menu-drawer {
+      will-change: transform;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    
+    .menu-closing {
+      transition: transform 0.25s ease-out !important;
+    }
+    
+    @media (max-width: 640px) {
+      .mobile-menu-item {
+        min-height: 44px;
+        padding: 12px;
+      }
+    }
+  `;
+
   /* render mobile – off-canvas com mesmo conteúdo */
   const mobile = (
     <>
+      <style dangerouslySetInnerHTML={{ __html: mobileStyles }} />
       <button
-        onClick={() => setMobileOpen(true)}
+        onClick={() => {
+          setMobileOpen(true);
+          // Limpar classe de fechamento ao abrir
+          const menuElement = document.querySelector('.mobile-menu-drawer');
+          if (menuElement) {
+            menuElement.classList.remove('menu-closing');
+          }
+        }}
         className="lg:hidden p-2 rounded-md text-[#D0021B]"
       >
         <Menu />
@@ -222,16 +273,24 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
       >
         {/* overlay */}
         <div
-          onClick={() => setMobileOpen(false)}
-          className={`absolute inset-0 bg-black transition-opacity ${
+          onClick={() => {
+            setMobileOpen(false);
+            setOpen(null);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setMobileOpen(false);
+            setOpen(null);
+          }}
+          className={`absolute inset-0 bg-black transition-opacity duration-200 ${
             mobileOpen ? 'opacity-50' : 'opacity-0'
           }`}
         />
         {/* drawer */}
         <div
-          className={`absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl transition-transform ${
+          className={`mobile-menu-drawer absolute right-0 top-0 h-full w-full max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-in-out ${
             mobileOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          } ${!mobileOpen ? 'menu-closing' : ''}`}
         >
           <header className="flex items-center justify-between p-4 border-b">
             <h2 className="font-semibold text-gray-800">Menu</h2>
@@ -241,47 +300,62 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
           </header>
 
           <div className="p-4 space-y-4 overflow-y-auto">
-            {tree.map((cat) => (
-              <details
-                key={cat.id}
-                className="group border-b pb-3"
-                open={open === cat.slug}
-              >
-                <summary
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setOpen(open === cat.slug ? null : cat.slug);
-                  }}
-                  className="flex items-center gap-1 px-3 py-2 rounded-md cursor-pointer text-[#D0021B] hover:bg-red-50 hover:text-[#8b0000] transition"
-                >
-                  {cat.icon &&
-                    React.createElement(iconMap[cat.icon], {
-                      className: 'w-6 h-6 text-[#D0021B]'
-                    })}
-                  <span className="font-medium text-gray-800 whitespace-nowrap">{cat.name}</span>
-                </summary>
+            {tree.map((cat) => {
+              const isOpen = open === cat.slug;
+              const Icon = cat.icon ? iconMap[cat.icon] : null;
+              
+              return (
+                <div key={cat.id} className="border-b pb-3">
+                  {/* Header da categoria */}
+                  <button
+                    onClick={() => setOpen(isOpen ? null : cat.slug)}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      setOpen(isOpen ? null : cat.slug);
+                    }}
+                    className="flex items-center gap-1 px-3 py-2 rounded-md cursor-pointer text-[#D0021B] hover:bg-red-50 hover:text-[#8b0000] transition w-full text-left active:bg-red-100 active:scale-98 touch-manipulation mobile-menu-item"
+                  >
+                    {Icon && <Icon className="w-6 h-6 text-[#D0021B]" />}
+                    <span className="font-medium text-gray-800 whitespace-nowrap flex-1">{cat.name}</span>
+                    <svg 
+                      className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
-                <div className="mt-3 grid grid-cols-1 gap-4 pl-8">
-                  <div className="max-h-64 overflow-y-auto pr-2">
-                    <ul className="space-y-2">
-                      {cat.children?.map((sub) => (
-                        <li key={sub.id}>
-                          <Link
-                            to={`/categorias/${cat.slug}/${sub.slug}`}
-                            onClick={() => setMobileOpen(false)}
-                            className="block text-sm text-gray-700 hover:text-orange-600"
-                          >
-                            {sub.name}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                  {/* Conteúdo dropdown */}
+                  <div className={`mt-3 grid grid-cols-1 gap-4 pl-8 transition-all duration-200 ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                    <div className="max-h-64 overflow-y-auto pr-2">
+                      <ul className="space-y-2">
+                        {cat.children?.map((sub) => (
+                          <li key={sub.id}>
+                            <Link
+                              to={`/categorias/${cat.slug}/${sub.slug}`}
+                              onClick={() => {
+                                console.log('Link clicado:', sub.name);
+                                // Fechar menu imediatamente
+                                setMobileOpen(false);
+                                setOpen(null);
+                              }}
+                              className="block text-sm text-gray-700 hover:text-orange-600 w-full text-left py-1 active:bg-orange-50 active:text-orange-600 transition-colors duration-150 touch-manipulation"
+                              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                            >
+                              {sub.name}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Featured categoryId={cat.id} />
                   </div>
-
-                  <Featured categoryId={cat.id} />
                 </div>
-              </details>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

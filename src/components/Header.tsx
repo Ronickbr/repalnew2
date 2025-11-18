@@ -4,9 +4,7 @@ import {
   Phone, 
   Mail,
   User,
-  List,
-  Menu,
-  X
+  ShoppingCart
 } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useAuth } from '../hooks/useAuth';
@@ -151,15 +149,6 @@ const Header: React.FC = () => {
 
           {/* User and Budget Icons */}
           <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
-            {/* Mobile Menu Button */}
-            <button 
-              className="md:hidden p-2 text-white hover:text-gray-200 transition-colors duration-200"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              title="Menu"
-            >
-              {showMobileMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-            
             {/* User Menu with Dropdown */}
             <div className="relative" ref={userMenuRef}>
               <button 
@@ -214,7 +203,7 @@ const Header: React.FC = () => {
               title="Meu Orçamento"
               onClick={() => setShowSideQuoteList(prev => !prev)}
             >
-              <List className="h-4 w-4 sm:h-5 lg:h-6" />
+              <ShoppingCart className="h-4 w-4 sm:h-5 lg:h-6" />
               {/* Badge para mostrar quantidade de itens no orçamento */}
               {budgetState.totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full h-3 w-3 sm:h-4 sm:w-4 flex items-center justify-center font-bold">
