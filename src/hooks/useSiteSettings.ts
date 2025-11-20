@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-interface SiteSettings {
+export interface SiteSettings {
   id?: number;
   site_info?: {
     site_name?: string;
     site_description?: string;
     logo_url?: string;
+    name?: string;
+    description?: string;
+    logo?: string;
     favicon_url?: string;
+    favicon?: string;
   };
   integrations?: {
     google_tag_manager_id?: string;
@@ -55,20 +59,24 @@ export const useSiteSettings = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error: supabaseError } = await supabase
+      // Primeiro vamos verificar se existe algum registro
+      const { data: allData, error: allError } = await supabase
         .from('site_settings')
-        .select('*')
-        .single();
+        .select('*');
 
-      if (supabaseError) {
-        if (supabaseError.code === 'PGRST116') {
-          // Nenhuma configuração encontrada, não é um erro crítico
-          setSettings({});
-        } else {
-          throw supabaseError;
-        }
-      } else {
+      console.log('=== DEBUG useSiteSettings ===');
+      console.log('Dados brutos do Supabase:', allData);
+      console.log('Erro do Supabase:', allError);
+
+      if (allData && allData.length > 0) {
+        const data = allData[0];
+        console.log('Primeiro registro encontrado:', data);
+        console.log('site_info:', data.site_info);
+        console.log('logo do site_info:', data.site_info?.logo);
         setSettings(data);
+      } else {
+        console.log('Nenhuma configuração encontrada');
+        setSettings({});
       }
     } catch (err) {
       console.error('Erro ao buscar configurações do site:', err);
@@ -80,6 +88,23 @@ export const useSiteSettings = () => {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Adicionar listener para mudanças em tempo real
+    const subscription = supabase
+      .channel('site_settings_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: { new?: SiteSettings }) => {
+          if (payload.new) {
+            setSettings(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const updateSettings = async (newSettings: Partial<SiteSettings>) => {
@@ -133,8 +158,10 @@ export const useSiteSettings = () => {
     gtmId: settings?.integrations?.google_tag_manager_id,
     geminiApiKey: settings?.integrations?.gemini_api_key,
     // Propriedades para compatibilidade com componentes existentes
-    siteName: settings?.site_info?.site_name,
-    siteDescription: settings?.site_info?.site_description,
+    siteName: settings?.site_info?.site_name || settings?.site_info?.name,
+    siteDescription: settings?.site_info?.site_description || settings?.site_info?.description,
+    logoUrl: settings?.site_info?.logo || settings?.site_info?.logo_url,
+    faviconUrl: settings?.site_info?.favicon_url || settings?.site_info?.favicon,
     metaTitle: settings?.seo?.default_title,
     metaDescription: settings?.seo?.default_description,
     metaKeywords: settings?.seo?.default_keywords,

@@ -1,7 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const Footer: React.FC = () => {
+  const { logoUrl, siteName } = useSiteSettings();
+  const defaultLogo = "https://i.imgur.com/rVJiu8W.png";
+  const [logoSrc, setLogoSrc] = useState<string>(defaultLogo);
+  useEffect(() => {
+    const configured = (logoUrl && typeof logoUrl === 'string' && logoUrl.trim()) ? logoUrl.trim() : '';
+    setLogoSrc(configured || defaultLogo);
+  }, [logoUrl]);
   return (
     <footer className="text-white" style={{ backgroundColor: '#1c243c' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -10,9 +18,12 @@ const Footer: React.FC = () => {
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center space-x-3">
               <img 
-                src="https://i.imgur.com/rVJiu8W.png" 
-                alt="Repal Equipamentos" 
+                src={logoSrc} 
+                alt={siteName || "Repal Equipamentos"} 
                 className="h-12 sm:h-16 w-auto"
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={() => setLogoSrc(defaultLogo)}
               />
             </div>
             <div className="text-white text-sm">

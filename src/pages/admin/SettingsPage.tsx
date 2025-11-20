@@ -374,6 +374,8 @@ const SettingsPage: React.FC = () => {
         updated_at: new Date().toISOString()
       };
 
+
+
       let error;
       if (settings.id) {
         const result = await supabase
@@ -381,11 +383,13 @@ const SettingsPage: React.FC = () => {
           .update(settingsToSave)
           .eq('id', settings.id);
         error = result.error;
+        console.log('Resultado do update:', result);
       } else {
         const result = await supabase
           .from(table('site_settings'))
           .insert([{ ...settingsToSave, created_at: new Date().toISOString() }]);
         error = result.error;
+        console.log('Resultado do insert:', result);
       }
 
       if (error) throw error;

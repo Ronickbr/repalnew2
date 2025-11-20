@@ -14,7 +14,7 @@ import { useBudget } from '../contexts/BudgetContext';
 import SideQuoteList from './SideQuoteList';
 
 const Header: React.FC = () => {
-  const { siteName, contactPhone, contactEmail } = useSiteSettings();
+  const { siteName, contactPhone, contactEmail, logoUrl } = useSiteSettings();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { state: budgetState } = useBudget();
   const navigate = useNavigate();
@@ -22,6 +22,13 @@ const Header: React.FC = () => {
   const [showSideQuoteList, setShowSideQuoteList] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const defaultLogo = "https://i.imgur.com/rVJiu8W.png";
+  const [logoSrc, setLogoSrc] = useState<string>(defaultLogo);
+
+  useEffect(() => {
+    const configured = (logoUrl && typeof logoUrl === 'string' && logoUrl.trim()) ? logoUrl.trim() : '';
+    setLogoSrc(configured || defaultLogo);
+  }, [logoUrl]);
 
 
   // Funções de navegação e autenticação
@@ -131,9 +138,12 @@ const Header: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
             <img 
-              src="https://i.imgur.com/rVJiu8W.png" 
-              alt={siteName} 
+              src={logoSrc} 
+              alt={siteName || "Repal Equipamentos"} 
               className="h-8 w-auto sm:h-10 md:h-12 lg:h-14 xl:h-16 transition-all duration-300 logo-img logo-responsive"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={() => setLogoSrc(defaultLogo)}
             />
           </Link>
 
@@ -153,10 +163,10 @@ const Header: React.FC = () => {
             <div className="relative" ref={userMenuRef}>
               <button 
                 onClick={handleUserClick}
-                className="p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
+                className="p-4 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
                 title={isAuthenticated ? `Olá, ${user?.name}` : "Minha Conta"}
               >
-                <User className="h-4 w-4 sm:h-5 lg:h-6" />
+                <User className="h-6 w-6 sm:h-7 lg:h-8" />
               </button>
               
               {/* Dropdown Menu */}
@@ -199,14 +209,14 @@ const Header: React.FC = () => {
             </div>
             
             <button 
-              className="p-2 text-white hover:text-gray-200 transition-colors duration-200 relative active:text-gray-300"
+              className="p-4 text-white hover:text-gray-200 transition-colors duration-200 relative active:text-gray-300"
               title="Meu Orçamento"
               onClick={() => setShowSideQuoteList(prev => !prev)}
             >
-              <ShoppingCart className="h-4 w-4 sm:h-5 lg:h-6" />
+              <ShoppingCart className="h-6 w-6 sm:h-7 lg:h-8" />
               {/* Badge para mostrar quantidade de itens no orçamento */}
               {budgetState.totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full h-3 w-3 sm:h-4 sm:w-4 flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-sm sm:text-base rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center font-bold">
                   {budgetState.totalItems > 99 ? '99+' : budgetState.totalItems}
                 </span>
               )}
