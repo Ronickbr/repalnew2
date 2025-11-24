@@ -21,30 +21,16 @@ const TABLES = {
     }
   },
 
-  // Tabela de categorias (sem parent_id - apenas categorias principais)
   categories: {
     name: 'categories',
     columns: {
       id: 'id',
       name: 'name',
       slug: 'slug',
+      parent_id: 'parent_id',
       active: 'active',
       sort_order: 'sort_order',
       featured_product_id: 'featured_product_id',
-      created_at: 'created_at',
-      updated_at: 'updated_at'
-    }
-  },
-
-  // Tabela de subcategorias (relacionamento com categories)
-  subcategories: {
-    name: 'subcategories',
-    columns: {
-      id: 'id',
-      name: 'name',
-      slug: 'slug',
-      category_id: 'category_id',
-      is_active: 'is_active',
       created_at: 'created_at',
       updated_at: 'updated_at'
     }

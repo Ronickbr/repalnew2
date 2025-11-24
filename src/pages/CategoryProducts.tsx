@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Filter, X, Grid, List } from 'lucide-react';
 import { useProductsByCategory, useProductsBySubcategory, useSubcategories } from '../hooks/useProducts';
-import { DatabaseTest } from '../components/DatabaseTest';
 import { useCategories } from '../hooks/useCategories';
 import ProductCard from '../components/ProductCard';
 import { OptimizedLoading, ProductCardSkeleton } from '../components/OptimizedLoading';
 import type { ProductWithCategory } from '../types/product';
-import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
+ 
 
 interface CategoryWithSubcategories {
   id: string;
@@ -19,9 +17,8 @@ interface CategoryWithSubcategories {
 
 const CategoryProducts: React.FC = () => {
   const { categorySlug, subcategorySlug } = useParams<{ categorySlug: string; subcategorySlug?: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
   const [sortBy, setSortBy] = useState<'name' | 'price-asc' | 'price-desc'>('name');
@@ -32,13 +29,7 @@ const CategoryProducts: React.FC = () => {
   const categoriaId = searchParams.get('categoriaId') || categorySlug;
   const subcategoriaId = searchParams.get('subcategoriaId') || subcategorySlug;
 
-  // Debug params
-  const [debugMode, setDebugMode] = useState<boolean>(false);
-  const [subcatCount, setSubcatCount] = useState<number | null>(null);
-  const [productsWithSubcatCount, setProductsWithSubcatCount] = useState<number | null>(null);
-  const [exampleProducts, setExampleProducts] = useState<Array<{ id: number; name: string; slug: string; subcategory_id: number | null; subcategory_slug?: string; subcategory_name?: string }>>([]);
-  const [debugLoading, setDebugLoading] = useState<boolean>(false);
-  const [debugError, setDebugError] = useState<string | null>(null);
+  
 
   // Buscar categorias do Supabase
   const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useCategories();
@@ -162,26 +153,45 @@ const CategoryProducts: React.FC = () => {
   
   // Buscar produtos - se estivermos em uma subcategoria, buscar diretamente pela subcategoria
   const targetCategorySlug = subcategoriaId || currentCategory?.slug || '';
-  
-  // Chamar ambos os hooks e escolher resultados conforme contexto para respeitar regras dos hooks
-  const subRes = useProductsBySubcategory(subcategoriaId || '', currentCategory?.slug);
+
+  const subcategoryIdNumeric = useMemo(() => {
+    if (!subcategoriaId) return undefined;
+    return subcategorySlugToIdMap.get(subcategoriaId);
+  }, [subcategoriaId, subcategorySlugToIdMap]);
+
+  const effectiveSubcategoryIdForHook = (subcategoryIdNumeric ?? subcategoriaId ?? '') as string | number;
+
+  const subRes = useProductsBySubcategory(effectiveSubcategoryIdForHook, currentCategory?.slug);
   const catRes = useProductsByCategory(targetCategorySlug);
   const allProducts = subcategoriaId ? subRes.data : catRes.data;
   const isLoading = subcategoriaId ? subRes.isLoading : catRes.isLoading;
   const error = subcategoriaId ? subRes.error : catRes.error;
+
+  const subcategoryCounts = useMemo(() => {
+    const map = new Map<number, number>();
+    (catRes.data || []).forEach((p) => {
+      const sid = p.subcategory_id !== undefined && p.subcategory_id !== null ? Number(p.subcategory_id) : null;
+      if (sid !== null) {
+        map.set(sid, (map.get(sid) || 0) + 1);
+      }
+    });
+    return map;
+  }, [catRes.data]);
   
-  // Verificar se estamos usando fallback (mostrando produtos da categoria principal)
-  const isUsingFallback = subcategoriaId && allProducts && allProducts.length > 0 && 
-    allProducts.some(product => product.category?.slug === currentCategory?.slug);
+  
   
   // Subcategorias disponíveis para a categoria atual
   const availableSubcategories = useMemo(() => {
-    console.log('Debug - currentCategory:', currentCategory);
-    console.log('Debug - currentCategory?.subcategories:', currentCategory?.subcategories);
-    console.log('Debug - dbSubcategories:', dbSubcategories);
-    console.log('Debug - subcategorySlugToIdMap:', Array.from(subcategorySlugToIdMap.entries()));
+    if (dbSubcategories && dbSubcategories.length > 0) {
+      return dbSubcategories.map((sub: any) => ({
+        id: sub.slug,
+        name: sub.name,
+        slug: sub.slug,
+        numericId: sub.id
+      })).sort((a: any, b: any) => a.name.localeCompare(b.name));
+    }
     return currentCategory?.subcategories || [];
-  }, [currentCategory, dbSubcategories, subcategorySlugToIdMap]);
+  }, [dbSubcategories, currentCategory]);
   
   // Resetar subcategorias selecionadas quando mudar de categoria
   useEffect(() => {
@@ -215,11 +225,7 @@ const CategoryProducts: React.FC = () => {
     }
   }, [subcategoriaId, subcategorySlugToIdMap]);
 
-  // Detectar modo debug via query string (?debug=1)
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setDebugMode(params.get('debug') === '1');
-  }, [location.search]);
+  
 
   // Aplicar filtros automáticos baseados nos parâmetros da URL
   useEffect(() => {
@@ -237,151 +243,7 @@ const CategoryProducts: React.FC = () => {
     }
   }, [subcategoriaId, currentCategory, subcategorySlugToIdMap]);
 
-  // Executar consultas de debug quando o modo estiver ativo
-  useEffect(() => {
-    const runDebugQueries = async () => {
-      if (!debugMode) return;
-      try {
-        setDebugLoading(true);
-        setDebugError(null);
-
-        // 1) Contar subcategorias
-        const subcatResp = await supabase
-          .from('subcategories')
-          .select('*', { count: 'exact', head: true });
-        setSubcatCount(subcatResp.count ?? 0);
-
-        // 2) Contar produtos com subcategory_id preenchido
-        const prodCountResp = await supabase
-          .from(table('products'))
-          .select('id', { count: 'exact', head: true })
-          .not('subcategory_id', 'is', null);
-        setProductsWithSubcatCount(prodCountResp.count ?? 0);
-
-        // 3) Buscar exemplos de produtos com subcategory_id
-        const prodExamplesResp = await supabase
-          .from(table('products'))
-          .select('id, name, slug, subcategory_id')
-          .not('subcategory_id', 'is', null)
-          .limit(5);
-
-        const examples = (prodExamplesResp.data || []) as Array<{ id: number; name: string; slug: string; subcategory_id: number }>; 
-
-        // Buscar slugs das subcategorias correspondentes
-        const subIds = Array.from(new Set(examples.map(e => e.subcategory_id).filter(Boolean)));
-        let subMap = new Map<number, { slug: string; name: string }>();
-        if (subIds.length > 0) {
-          const subsResp = await supabase
-            .from('subcategories')
-            .select('id, slug, name')
-            .in('id', subIds);
-          (subsResp.data || []).forEach((s: any) => {
-            subMap.set(s.id, { slug: s.slug, name: s.name });
-          });
-        }
-
-        const enriched = examples.map(e => ({
-          id: e.id,
-          name: e.name,
-          slug: e.slug,
-          subcategory_id: e.subcategory_id,
-          subcategory_slug: subMap.get(e.subcategory_id || 0)?.slug,
-          subcategory_name: subMap.get(e.subcategory_id || 0)?.name,
-        }));
-        setExampleProducts(enriched);
-        
-        // 4) Verificar subcategorias da categoria atual
-        if (currentCategoryNumericId) {
-          const currentSubcatsResp = await supabase
-            .from('subcategories')
-            .select('id, name, slug')
-            .eq('parent_id', currentCategoryNumericId);
-          
-          console.log('Debug - Subcategorias da categoria atual:', currentSubcatsResp.data);
-        }
-        
-      } catch (err: any) {
-        setDebugError(err?.message || 'Erro ao executar consultas de debug');
-      } finally {
-        setDebugLoading(false);
-      }
-    };
-
-    runDebugQueries();
-  }, [debugMode, currentCategoryNumericId]);
-  
-  // Executar consultas de debug quando o modo estiver ativo
-  useEffect(() => {
-    const runDebugQueries = async () => {
-      if (!debugMode) return;
-      try {
-        setDebugLoading(true);
-        setDebugError(null);
-
-        // 1) Contar subcategorias
-        const subcatResp = await supabase
-          .from('subcategories')
-          .select('*', { count: 'exact', head: true });
-        setSubcatCount(subcatResp.count ?? 0);
-
-        // 2) Contar produtos com subcategory_id preenchido
-        const prodCountResp = await supabase
-          .from(table('products'))
-          .select('id', { count: 'exact', head: true })
-          .not('subcategory_id', 'is', null);
-        setProductsWithSubcatCount(prodCountResp.count ?? 0);
-
-        // 3) Buscar exemplos de produtos com subcategory_id
-        const prodExamplesResp = await supabase
-          .from(table('products'))
-          .select('id, name, slug, subcategory_id')
-          .not('subcategory_id', 'is', null)
-          .limit(5);
-
-        const examples = (prodExamplesResp.data || []) as Array<{ id: number; name: string; slug: string; subcategory_id: number }>; 
-
-        // Buscar slugs das subcategorias correspondentes
-        const subIds = Array.from(new Set(examples.map(e => e.subcategory_id).filter(Boolean)));
-        let subMap = new Map<number, { slug: string; name: string }>();
-        if (subIds.length > 0) {
-          const subsResp = await supabase
-            .from('subcategories')
-            .select('id, slug, name')
-            .in('id', subIds);
-          (subsResp.data || []).forEach((s: any) => {
-            subMap.set(s.id, { slug: s.slug, name: s.name });
-          });
-        }
-
-        const enriched = examples.map(e => ({
-          id: e.id,
-          name: e.name,
-          slug: e.slug,
-          subcategory_id: e.subcategory_id,
-          subcategory_slug: subMap.get(e.subcategory_id || 0)?.slug,
-          subcategory_name: subMap.get(e.subcategory_id || 0)?.name,
-        }));
-        setExampleProducts(enriched);
-        
-        // 4) Verificar subcategorias da categoria atual
-        if (currentCategoryNumericId) {
-          const currentSubcatsResp = await supabase
-            .from('subcategories')
-            .select('id, name, slug')
-            .eq('parent_id', currentCategoryNumericId);
-          
-          console.log('Debug - Subcategorias da categoria atual:', currentSubcatsResp.data);
-        }
-        
-      } catch (err: any) {
-        setDebugError(err?.message || 'Erro ao executar consultas de debug');
-      } finally {
-        setDebugLoading(false);
-      }
-    };
-
-    runDebugQueries();
-  }, [debugMode, currentCategoryNumericId]);
+  // (Removido) Blocos de debug que consultavam tabela inexistente
 
   // Função para navegar para a página de detalhes do produto
   const handleViewDetails = (product: ProductWithCategory) => {
@@ -391,31 +253,29 @@ const CategoryProducts: React.FC = () => {
   // Filtrar e ordenar produtos
   const filteredAndSortedProducts = useMemo(() => {
     if (!allProducts) return [];
+    
+    const activeSubcategoryIds: number[] = (() => {
+      if (selectedSubcategories.length > 0) return selectedSubcategories;
+      if (subcategoriaId) {
+        const numericId = subcategorySlugToIdMap.get(subcategoriaId);
+        return numericId ? [numericId] : [];
+      }
+      return [];
+    })();
 
     let filtered = allProducts.filter(product => {
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Se estivermos em uma categoria principal (não subcategoria) e houver subcategorias selecionadas
-      // filtrar por subcategorias usando os IDs numéricos corretos
-      let matchesSubcategory = true;
-      
-      if (!subcategoriaId && selectedSubcategories.length > 0) {
-        // Converter o subcategory_id do produto (string) para número e comparar com os IDs selecionados
-        const productSubcategoryId = product.subcategory_id ? parseInt(product.subcategory_id) : null;
-        matchesSubcategory = productSubcategoryId !== null && selectedSubcategories.includes(productSubcategoryId);
-        
-        // Debug do filtro
-        if (productSubcategoryId && selectedSubcategories.length > 0) {
-          console.log('Debug - Filtro de subcategoria:', {
-            productName: product.name,
-            productSubcategoryId,
-            selectedSubcategories,
-            matchesSubcategory
-          });
-        }
-      }
-      
+
+      const productSubcategoryId = product.subcategory_id !== undefined && product.subcategory_id !== null
+        ? Number(product.subcategory_id)
+        : null;
+
+      const hasActiveSubs = activeSubcategoryIds.length > 0 || !!subcategoriaId;
+      const matchesSubcategory = hasActiveSubs
+        ? (productSubcategoryId !== null && activeSubcategoryIds.includes(productSubcategoryId))
+        : true;
+
       return matchesSearch && matchesSubcategory;
     });
 
@@ -435,6 +295,55 @@ const CategoryProducts: React.FC = () => {
 
     return filtered;
   }, [allProducts, searchTerm, selectedSubcategories, sortBy, subcategoriaId]);
+
+  const activeSubcategoryIds = useMemo(() => {
+    if (selectedSubcategories.length > 0) return selectedSubcategories;
+    if (subcategoriaId) {
+      const numericId = subcategorySlugToIdMap.get(subcategoriaId);
+      return numericId ? [numericId] : [];
+    }
+    return [];
+  }, [selectedSubcategories, subcategoriaId, subcategorySlugToIdMap]);
+
+  useEffect(() => {
+    const initialSearch = searchParams.get('q');
+    const initialSort = searchParams.get('sort');
+    const initialView = searchParams.get('view');
+
+    if (initialSearch !== null) setSearchTerm(initialSearch);
+    if (initialSort === 'name' || initialSort === 'price-asc' || initialSort === 'price-desc') {
+      setSortBy(initialSort as 'name' | 'price-asc' | 'price-desc');
+    }
+    if (initialView === 'grid' || initialView === 'list') {
+      setViewMode(initialView as 'grid' | 'list');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!subcategoriaId) {
+      const subsParam = searchParams.get('subs');
+      if (subsParam) {
+        const ids = subsParam.split(',')
+          .map(v => parseInt(v))
+          .filter(n => !Number.isNaN(n));
+        setSelectedSubcategories(ids);
+      } else {
+        setSelectedSubcategories([]);
+      }
+    }
+  }, [searchParams, subcategoriaId]);
+
+  useEffect(() => {
+    if (!subcategoriaId) {
+      const params = new URLSearchParams(searchParams);
+      if (selectedSubcategories.length > 0) {
+        params.set('subs', selectedSubcategories.join(','));
+      } else {
+        params.delete('subs');
+      }
+      setSearchParams(params, { replace: true });
+    }
+  }, [selectedSubcategories, subcategoriaId, searchParams, setSearchParams]);
 
   // Função para limpar filtros
   const clearFilters = () => {
@@ -545,41 +454,7 @@ const CategoryProducts: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
-          {/* Painel de Debug */}
-          {debugMode && (
-            <div className="w-full">
-              <DatabaseTest />
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-                <h3 className="text-base sm:text-lg font-semibold text-yellow-900">Debug do Banco (Supabase)</h3>
-                {debugLoading && (
-                  <p className="text-yellow-800 mt-2 text-sm">Executando consultas...</p>
-                )}
-                {debugError && (
-                  <p className="text-red-700 mt-2 text-sm">Erro: {debugError}</p>
-                )}
-                {!debugLoading && !debugError && (
-                  <div className="mt-3 space-y-2 text-sm text-yellow-900">
-                    <p>Subcategorias ativas (count): {subcatCount ?? '-'}</p>
-                    <p>Produtos com subcategory_id (count): {productsWithSubcatCount ?? '-'}</p>
-                    <div>
-                      <p className="font-medium">Exemplos (máx 5):</p>
-                      <ul className="list-disc ml-5 space-y-1">
-                        {exampleProducts.map((p) => (
-                          <li key={p.id} className="break-words">
-                            {p.name} (slug: {p.slug}) → subcategoria: {p.subcategory_slug || '-'} ({p.subcategory_name || '-'})
-                          </li>
-                        ))}
-                        {exampleProducts.length === 0 && (
-                          <li>Nenhum produto com subcategoria encontrado.</li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-                <p className="text-xs text-yellow-700 mt-3">Adicione "?debug=1" à URL para ver este painel.</p>
-              </div>
-            </div>
-          )}
+          
           
           <div className="flex flex-col lg:flex-row gap-6 sm:gap-8 w-full">
             {/* Sidebar de filtros - Desktop */}
@@ -610,12 +485,7 @@ const CategoryProducts: React.FC = () => {
                     ))}
                   </select>
                   
-                  {/* Debug: Mostrar info da categoria atual */}
-                  {currentCategory && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      Categoria: {currentCategory.name} | Subcategorias: {availableSubcategories.length}
-                    </div>
-                  )}
+                {/* Removido: info de categoria/subcategorias */}
                 </div>
                 
                 {/* Busca */}
@@ -638,7 +508,7 @@ const CategoryProducts: React.FC = () => {
                 {/* Subcategorias */}
                 {availableSubcategories.length > 0 && (
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label id="subcategory-filter-label" className="block text-sm font-medium text-gray-700 mb-3">
                       Filtrar por Subcategoria ({availableSubcategories.length} disponíveis)
                     </label>
                     <div className="space-y-2">
@@ -658,10 +528,11 @@ const CategoryProducts: React.FC = () => {
                         </span>
                       </button>
                       
-                      <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2">
+                      <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2" role="group" aria-labelledby="subcategory-filter-label">
                         {availableSubcategories.map((subcategory) => {
                           // Obter o ID numérico real da subcategoria
                           const numericId = subcategorySlugToIdMap.get(subcategory.id);
+                          const count = numericId ? (subcategoryCounts.get(numericId) || 0) : 0;
                           
                           return (
                             <label
@@ -682,7 +553,7 @@ const CategoryProducts: React.FC = () => {
                                 }}
                                 className="rounded border-gray-300 text-red-600 focus:ring-red-500 flex-shrink-0"
                               />
-                              <span className="text-sm text-gray-700 flex-1 leading-tight">{subcategory.name}</span>
+                              <span className="text-sm text-gray-700 flex-1 leading-tight">{subcategory.name} <span className="text-gray-500">({count})</span></span>
                             </label>
                           );
                         })}
@@ -691,14 +562,7 @@ const CategoryProducts: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Debug: Mostrar quando não há subcategorias */}
-                {availableSubcategories.length === 0 && currentCategory && (
-                  <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      Nenhuma subcategoria disponível para {currentCategory.name}
-                    </p>
-                  </div>
-                )}
+                {/* Removido: aviso quando não há subcategorias */}
 
                 {/* Limpar filtros */}
                 <button
@@ -765,27 +629,7 @@ const CategoryProducts: React.FC = () => {
 
               {/* Resultados */}
               <div className="mb-4 sm:mb-6">
-                {/* Mensagem de fallback quando mostrando produtos da categoria principal */}
-                {isUsingFallback && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <Search className="h-5 w-5 text-yellow-400" />
-                      </div>
-                      <div className="ml-3 min-w-0">
-                        <h3 className="text-sm font-medium text-yellow-800">
-                          Nenhum produto nesta subcategoria
-                        </h3>
-                        <div className="mt-2 text-sm text-yellow-700">
-                          <p>
-                            Mostrando produtos da categoria principal "{currentCategory?.name}". 
-                            Em breve adicionaremos produtos específicos para esta subcategoria.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Removido: banner de fallback para subcategoria */}
                 
                 <div className="flex items-center justify-between">
                   <p className="text-sm sm:text-base text-gray-600">
@@ -819,23 +663,19 @@ const CategoryProducts: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 sm:py-12">
-                  <div className="text-gray-400 mb-3 sm:mb-4">
-                    <Search className="h-10 sm:h-12 w-10 sm:w-12 mx-auto" />
+                activeSubcategoryIds.length > 0 || subcategoriaId ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="text-gray-400 mb-3 sm:mb-4">
+                      <Search className="h-10 sm:h-12 w-10 sm:w-12 mx-auto" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">
+                      Não há produtos disponíveis nesta subcategoria
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
+                      Selecione outra subcategoria para visualizar produtos.
+                    </p>
                   </div>
-                  <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">
-                    Nenhum produto encontrado
-                  </h3>
-                  <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">
-                    Tente ajustar os filtros ou termos de busca.
-                  </p>
-                  <button
-                    onClick={clearFilters}
-                    className="bg-red-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
-                  >
-                    Limpar Filtros
-                  </button>
-                </div>
+                ) : null
               )}
             </div>
           </div>
@@ -862,7 +702,7 @@ const CategoryProducts: React.FC = () => {
               {/* Subcategorias */}
               {availableSubcategories.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 sm:mb-3">
+                  <label id="subcategory-filter-label-mobile" className="block text-sm font-medium text-gray-700 mb-2">
                     Filtrar por Subcategoria
                   </label>
                   <div className="space-y-2">
@@ -882,7 +722,7 @@ const CategoryProducts: React.FC = () => {
                       </span>
                     </button>
                     
-                    <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2">
+                    <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2" role="group" aria-labelledby="subcategory-filter-label-mobile">
                       {availableSubcategories.map((subcategory) => {
                         // Obter o ID numérico real da subcategoria
                         const numericId = subcategorySlugToIdMap.get(subcategory.id);
@@ -946,6 +786,7 @@ const CategoryProducts: React.FC = () => {
                       {availableSubcategories.map((subcategory) => {
                         // Obter o ID numérico real da subcategoria
                         const numericId = subcategorySlugToIdMap.get(subcategory.id);
+                        const count = numericId ? (subcategoryCounts.get(numericId) || 0) : 0;
                         
                         return (
                           <label key={subcategory.id} className="flex items-center space-x-2 text-sm">
@@ -963,7 +804,7 @@ const CategoryProducts: React.FC = () => {
                               }}
                               className="rounded border-gray-300 text-red-600 focus:ring-red-500 flex-shrink-0"
                             />
-                            <span className="text-gray-700 leading-tight">{subcategory.name}</span>
+                            <span className="text-gray-700 leading-tight">{subcategory.name} <span className="text-gray-500">({count})</span></span>
                           </label>
                         );
                       })}

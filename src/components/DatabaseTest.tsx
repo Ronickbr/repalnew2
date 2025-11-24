@@ -37,20 +37,19 @@ export const DatabaseTest: React.FC = () => {
           console.log('📋 Primeira categoria:', categoriesData?.[0]);
         }
 
-        // Testar subcategorias
-        console.log('🧪 Testando subcategorias...');
+        // Testar subcategorias via categories (parent_id)
+        console.log('🧪 Testando subcategorias (via categories.parent_id)...');
         const { data: subcategoriesData, error: subcategoriesError } = await supabase
-          .from('subcategories')
+          .from('categories')
           .select('*')
+          .not('parent_id', 'is', null)
           .limit(5);
         
         if (subcategoriesError) {
-          testResult.errors.push(`Subcategorias: ${subcategoriesError.message}`);
-          console.log('❌ Erro subcategorias:', subcategoriesError.message);
+          testResult.errors.push(`Subcategorias (via categories): ${subcategoriesError.message}`);
         } else {
           testResult.subcategories = subcategoriesData || [];
           console.log('✅ Subcategorias encontradas:', subcategoriesData?.length || 0);
-          console.log('📋 Primeira subcategoria:', subcategoriesData?.[0]);
         }
 
         // Testar produtos com subcategory_id
@@ -143,7 +142,7 @@ export const DatabaseTest: React.FC = () => {
           {result.subcategories.length > 0 && (
             <div className="mt-2 text-sm text-gray-600">
               <p>Primeira: <span className="font-medium">{result.subcategories[0].name}</span></p>
-              <p>Category ID: {result.subcategories[0].category_id}</p>
+              <p>Parent ID: {result.subcategories[0].parent_id}</p>
             </div>
           )}
         </div>
@@ -163,12 +162,10 @@ export const DatabaseTest: React.FC = () => {
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
         <h4 className="font-semibold text-yellow-800 mb-2">Diagnóstico:</h4>
         <div className="text-yellow-700 text-sm space-y-1">
-          {result.subcategories.length === 0 && result.errors.some(e => e.includes('subcategorias')) ? (
-            <p>❌ A tabela <code className="bg-yellow-100 px-1 rounded">subcategories</code> não existe no banco!</p>
-          ) : result.subcategories.length === 0 ? (
-            <p>⚠️ A tabela <code className="bg-yellow-100 px-1 rounded">subcategories</code> existe mas está vazia.</p>
+          {result.subcategories.length === 0 ? (
+            <p>⚠️ Não há categorias filhas (subcategorias) cadastradas.</p>
           ) : (
-            <p>✅ A tabela <code className="bg-yellow-100 px-1 rounded">subcategories</code> existe e tem dados!</p>
+            <p>✅ Subcategorias carregadas via categories.parent_id.</p>
           )}
           
           {result.categories.length > 0 && (
