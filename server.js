@@ -149,6 +149,51 @@ app.post('/api/upload-image', upload.single('image'), (req, res) => {
   }
 });
 
+app.post('/api/seo/robots', (req, res) => {
+  try {
+    const { content } = req.body || {};
+    const publicDir = path.join(__dirname, 'public');
+    ensureDirectoryExists(publicDir);
+    const filePath = path.join(publicDir, 'robots.txt');
+    fs.writeFileSync(filePath, typeof content === 'string' ? content : '');
+    res.json({ success: true, path: '/robots.txt' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.post('/api/seo/sitemap', (req, res) => {
+  try {
+    const { enabled, baseUrl } = req.body || {};
+    const publicDir = path.join(__dirname, 'public');
+    ensureDirectoryExists(publicDir);
+    const filePath = path.join(publicDir, 'sitemap.xml');
+
+    if (!enabled) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      return res.json({ success: true, enabled: false });
+    }
+
+    const origin = typeof baseUrl === 'string' && baseUrl.trim() ? baseUrl.trim().replace(/\/+$/, '') : 'http://localhost:5173';
+    const now = new Date().toISOString();
+    const paths = ['/', '/login'];
+    const urlsXml = paths
+      .map(p => {
+        const loc = `${origin}${p}`;
+        return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${p === '/' ? '1.0' : '0.8'}</priority>\n  </url>`;
+      })
+      .join('\n');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</urlset>`;
+    fs.writeFileSync(filePath, xml);
+    res.json({ success: true, enabled: true, path: '/sitemap.xml' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
 // Middleware de tratamento de erros do multer
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {

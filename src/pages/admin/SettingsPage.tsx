@@ -394,6 +394,37 @@ const SettingsPage: React.FC = () => {
 
       if (error) throw error;
 
+      try {
+        const robotsContent = formData.seo?.robots_txt || '';
+        const sitemapEnabled = !!formData.seo?.sitemap_enabled;
+        const baseUrl = (formData.site_info?.url || formData.seo?.canonical_url || '').trim();
+
+        if (robotsContent || robotsContent === '') {
+          const resp = await fetch('/api/seo/robots', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: robotsContent })
+          });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            throw new Error(data.error || 'Falha ao criar robots.txt');
+          }
+        }
+
+        const sitemapResp = await fetch('/api/seo/sitemap', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: sitemapEnabled, baseUrl })
+        });
+        if (!sitemapResp.ok) {
+          const data = await sitemapResp.json().catch(() => ({}));
+          throw new Error(data.error || 'Falha ao processar sitemap');
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error(e instanceof Error ? e.message : 'Erro ao atualizar arquivos SEO');
+      }
+
       setSettings(formData);
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
