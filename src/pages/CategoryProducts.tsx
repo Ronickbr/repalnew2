@@ -174,7 +174,7 @@ const CategoryProducts: React.FC = () => {
               <div className="mt-4 space-y-4">
                 <div>
                   <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                  <select id="category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={currentCategory?.slug || ''} onChange={e => handleCategoryChange(e.target.value)} aria-label="Selecionar categoria">
+                  <select id="category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={categorySlug || ''} onChange={e => handleCategoryChange(e.target.value)} aria-label="Selecionar categoria">
                     <option value="">Selecione</option>
                     {categories?.map(c => (
                       <option key={c.id} value={c.slug}>{c.name}</option>
@@ -295,7 +295,7 @@ const CategoryProducts: React.FC = () => {
               <div className="mt-4 space-y-4">
                 <div>
                   <label htmlFor="m-category-select" className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                  <select id="m-category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={currentCategory?.slug || ''} onChange={e => handleCategoryChange(e.target.value)}>
+                  <select id="m-category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={categorySlug || ''} onChange={e => handleCategoryChange(e.target.value)}>
                     <option value="">Selecione</option>
                     {categories?.map(c => (
                       <option key={c.id} value={c.slug}>{c.name}</option>
