@@ -171,7 +171,7 @@ const CategoryProducts: React.FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hidden lg:block">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-gray-600" />
@@ -239,11 +239,10 @@ const CategoryProducts: React.FC = () => {
                   <span className="text-sm text-gray-600">Mostrando {totalItems === 0 ? 0 : startIndex + 1} a {endIndex} de {totalItems} produtos</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-700">Ordenar</label>
-                  <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" aria-label="Ordenar resultados">
-                    <option value="name">Nome (A–Z)</option>
-                    <option value="recent">Mais recentes</option>
-                  </select>
+                  <button onClick={() => setIsFilterModalOpen(true)} className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 lg:hidden" aria-label="Abrir filtros">
+                    <Filter className="h-4 w-4 text-gray-600" />
+                    <span>Filtros</span>
+                  </button>
                   <div className="ml-3 flex items-center gap-1" role="group" aria-label="Alternar visualização">
                     <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'grid'} aria-label="Visualização em grade">
                       <Grid2x2 className="h-4 w-4" />
@@ -263,13 +262,13 @@ const CategoryProducts: React.FC = () => {
             </div>
 
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: pageSize }).map((_, i) => (
                   <div key={i} className="h-60 bg-gray-100 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4' : 'space-y-3'}>
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4' : 'space-y-3'}>
                 {paginatedProducts.map(product => (
                   <ProductCard key={product.id} product={product} viewMode={viewMode} onViewDetails={(p) => navigate(`/produto/${p.slug || p.id}`)} />
                 ))}
