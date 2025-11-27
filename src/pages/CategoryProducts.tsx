@@ -10,7 +10,7 @@ import { useAccessibility } from '../hooks/useAccessibility'
 type ViewMode = 'grid' | 'list'
 
 const CategoryProducts: React.FC = () => {
-  const { categorySlug, subcategorySlug } = useParams()
+  const { categorySlug } = useParams()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -21,8 +21,7 @@ const CategoryProducts: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(12)
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>(() => {
     const fromQuery = searchParams.get('sub')
-    if (fromQuery) return fromQuery.split(',').filter(Boolean)
-    return subcategorySlug ? [subcategorySlug] : []
+    return fromQuery ? fromQuery.split(',').filter(Boolean) : []
   })
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
 
@@ -59,10 +58,10 @@ const CategoryProducts: React.FC = () => {
 
   useEffect(() => {
     const fromQuery = searchParams.get('sub')
-    const next = fromQuery ? fromQuery.split(',').filter(Boolean) : (subcategorySlug ? [subcategorySlug] : [])
+    const next = fromQuery ? fromQuery.split(',').filter(Boolean) : []
     setSelectedSubcategories(next)
     setCurrentPage(1)
-  }, [subcategorySlug, searchParams])
+  }, [searchParams])
 
   const subcategoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -101,13 +100,9 @@ const CategoryProducts: React.FC = () => {
   const currentCategory = useMemo(() => categories?.find(c => c.slug === (categorySlug || '')) || null, [categories, categorySlug])
   const currentSubcategory = useMemo(() => {
     if (selectedSubcategories.length === 0) return null
-    if (subcategorySlug) {
-      const bySlug = subcategories.find(s => String(s.slug) === String(subcategorySlug))
-      if (bySlug) return bySlug
-    }
     const first = selectedSubcategories[0]
     return subcategories.find(s => String(s.id) === String(first) || String(s.slug) === String(first)) || null
-  }, [subcategories, selectedSubcategories, subcategorySlug])
+  }, [subcategories, selectedSubcategories])
 
   const handleCategoryChange = (slug: string) => {
     if (!slug) return
