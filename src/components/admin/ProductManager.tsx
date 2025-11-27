@@ -1053,7 +1053,7 @@ Por favor, forneça:
 
 1. DESCRIÇÃO DO PRODUTO:
 - Crie uma descrição atrativa e persuasiva focada em marketing
-- Mínimo 200 palavras
+- Mínimo 200 palavras, formate em HTML
 - Destaque os principais benefícios e diferenciais
 - Use linguagem persuasiva para conversão
 - Inclua os principais atributos e vantagens
@@ -1626,7 +1626,7 @@ PALAVRAS-CHAVE:
                     <div className="text-sm text-gray-900">{product.categories?.name || '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">-</div>
+                    <div className="text-sm text-gray-900">{categories.find(c => c.id === product.subcategory_id)?.name || '-'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
