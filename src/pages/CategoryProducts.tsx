@@ -63,6 +63,16 @@ const CategoryProducts: React.FC = () => {
     setCurrentPage(1)
   }, [searchParams])
 
+  useEffect(() => {
+    if (!categorySlug) return
+    const hasSub = searchParams.get('sub')
+    if (hasSub) {
+      setSelectedSubcategories([])
+      setSearchParams({})
+      setCurrentPage(1)
+    }
+  }, [categorySlug])
+
   const subcategoryCounts = useMemo(() => {
     const map = new Map<string, number>()
     categoryProducts.forEach(p => {
@@ -107,8 +117,7 @@ const CategoryProducts: React.FC = () => {
   const handleCategoryChange = (slug: string) => {
     if (!slug) return
     setSelectedSubcategories([])
-    setSearchParams({})
-    navigate(`/categorias/${slug}`, { replace: true })
+    navigate({ pathname: `/categorias/${slug}`, search: '' }, { replace: true })
     setCurrentPage(1)
   }
 
