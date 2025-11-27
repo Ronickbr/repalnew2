@@ -106,8 +106,9 @@ const CategoryProducts: React.FC = () => {
 
   const handleCategoryChange = (slug: string) => {
     if (!slug) return
-    navigate(`/categorias/${slug}`)
     setSelectedSubcategories([])
+    setSearchParams({})
+    navigate(`/categorias/${slug}`, { replace: true })
     setCurrentPage(1)
   }
 
