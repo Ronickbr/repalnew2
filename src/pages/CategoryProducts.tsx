@@ -31,13 +31,13 @@ const CategoryProducts: React.FC = () => {
 
   const { data: categories } = useCategories()
 
-  const { data: categoryProducts = [], isLoading } = useProductsByCategory(categorySlug || '')
+  const { data: categoryProducts = [], isLoading } = useProductsByCategory(selectedCategorySlug || '')
 
   const { data: subcategories = [] } = useSubcategoriesByCategory(
     useMemo(() => {
-      const found = categories?.find(c => c.slug === (categorySlug || ''))
+      const found = categories?.find(c => c.slug === (selectedCategorySlug || ''))
       return found?.id || ''
-    }, [categories, categorySlug])
+    }, [categories, selectedCategorySlug])
   )
 
   useEffect(() => {
@@ -69,14 +69,14 @@ const CategoryProducts: React.FC = () => {
   }, [searchParams])
 
   useEffect(() => {
-    if (!categorySlug) return
+    if (!selectedCategorySlug) return
     const hasSub = searchParams.get('sub')
     if (hasSub) {
       setSelectedSubcategories([])
       setSearchParams({})
       setCurrentPage(1)
     }
-  }, [categorySlug])
+  }, [selectedCategorySlug])
 
   const subcategoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -112,7 +112,7 @@ const CategoryProducts: React.FC = () => {
   const endIndex = Math.min(startIndex + pageSize, totalItems)
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex)
 
-  const currentCategory = useMemo(() => categories?.find(c => c.slug === (categorySlug || '')) || null, [categories, categorySlug])
+  const currentCategory = useMemo(() => categories?.find(c => c.slug === (selectedCategorySlug || '')) || null, [categories, selectedCategorySlug])
   const currentSubcategory = useMemo(() => {
     if (selectedSubcategories.length === 0) return null
     const first = selectedSubcategories[0]
