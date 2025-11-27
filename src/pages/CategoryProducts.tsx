@@ -24,6 +24,7 @@ const CategoryProducts: React.FC = () => {
     return fromQuery ? fromQuery.split(',').filter(Boolean) : []
   })
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState<string>(categorySlug || '')
 
   const { trapFocus } = useAccessibility()
   const modalRef = useRef<HTMLDivElement | null>(null)
@@ -42,6 +43,10 @@ const CategoryProducts: React.FC = () => {
   useEffect(() => {
     if (isFilterModalOpen && modalRef.current) trapFocus(modalRef.current)
   }, [isFilterModalOpen, trapFocus])
+
+  useEffect(() => {
+    setSelectedCategorySlug(categorySlug || '')
+  }, [categorySlug])
 
   useEffect(() => {
     const params: Record<string, string> = {}
@@ -116,8 +121,9 @@ const CategoryProducts: React.FC = () => {
 
   const handleCategoryChange = (slug: string) => {
     if (!slug) return
+    setSelectedCategorySlug(slug)
     setSelectedSubcategories([])
-    navigate({ pathname: `/categorias/${slug}`, search: '' }, { replace: true })
+    navigate(`/categorias/${slug}`)
     setCurrentPage(1)
   }
 
@@ -179,7 +185,7 @@ const CategoryProducts: React.FC = () => {
               <div className="mt-4 space-y-4">
                 <div>
                   <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                  <select id="category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={categorySlug || ''} onChange={e => handleCategoryChange(e.target.value)} aria-label="Selecionar categoria">
+                  <select id="category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={selectedCategorySlug} onChange={e => handleCategoryChange(e.target.value)} aria-label="Selecionar categoria">
                     <option value="">Selecione</option>
                     {categories?.map(c => (
                       <option key={c.id} value={c.slug}>{c.name}</option>
