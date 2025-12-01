@@ -10,8 +10,7 @@ import CategoryProducts from './pages/CategoryProducts';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
-import TestUnifiedUpload from './pages/TestUnifiedUpload';
-import TestPage from './pages/TestPage';
+ 
 import AdminLayout from './layouts/AdminLayout';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -37,14 +36,12 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const SidebarTest = lazy(() => import('./components/admin/SidebarTest'));
 
 function App() {
-  console.log('🚀 App: Aplicação iniciada!');
   return <AppContent />;
 }
 
 function AppContent() {
   const { gtmId } = useSiteSettings();
   
-  console.log('🚀 App: Aplicação iniciada!');
   return (
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
@@ -62,8 +59,7 @@ function AppContent() {
               <Route path="produto/:slug" element={<ProductDetail />} />
             </Route>
             <Route path="/login" element={<Login />} />
-            <Route path="/test-upload" element={<TestUnifiedUpload />} />
-            <Route path="/test-db" element={<TestPage />} />
+            
             <Route 
               path="/perfil" 
               element={

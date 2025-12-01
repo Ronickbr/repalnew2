@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Award, Truck, Shield, MessageCircle } from 'lucide-react';
 import BannerCarousel from '../components/BannerCarousel';
@@ -8,6 +9,7 @@ import { useBudget } from '../contexts/BudgetContext';
 import { useLatestProducts } from '../hooks/useProducts';
 
 import WhatsAppButton from '../components/WhatsAppButton';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 interface FeaturedProduct {
   id: number;
@@ -27,6 +29,7 @@ const Home: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { addItem } = useBudget();
   const { data: latestProducts, isLoading: loadingLatest } = useLatestProducts(6);
+  const { siteName, canonicalBaseUrl, metaTitle, metaDescription, metaKeywords } = useSiteSettings();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,14 +146,64 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>{metaTitle || 'Os Melhores Equipamentos e Peças para o seu Negócio gastronômico'}</title>
+        <meta name="description" content={metaDescription || 'A Repal oferece equipamentos gastronômicos profissionais e peças originais para cozinhas industriais, restaurantes, padarias e bares. Soluções completas com atendimento especializado e entrega rápida.'} />
+        <meta name="keywords" content={metaKeywords || 'equipamentos gastronômicos, peças para cozinha industrial, equipamentos profissionais, restaurante, padaria, bar, manutenção, assistência técnica'} />
+        {canonicalBaseUrl && (
+          <link rel="canonical" href={`${(canonicalBaseUrl || '').trim().replace(/\/+$/, '')}/`} />
+        )}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: siteName || 'Repal Equipamentos',
+            url: (canonicalBaseUrl || '').trim() || undefined,
+            logo: (canonicalBaseUrl || '').trim() ? `${(canonicalBaseUrl || '').trim().replace(/\/+$/, '')}/logo.png` : undefined,
+            sameAs: [],
+          })}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: siteName || 'Repal Equipamentos',
+            url: (canonicalBaseUrl || '').trim() || undefined,
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: `${(canonicalBaseUrl || '').trim().replace(/\/+$/, '')}/buscar?q={search_term_string}`,
+              'query-input': 'required name=search_term_string'
+            }
+          })}
+        </script>
+      </Helmet>
       {/* Banner Carousel */}
       <BannerCarousel />
 
-      {/* Produtos Populares Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-6 bg-white" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900">
+            Os Melhores Equipamentos e Peças para o seu Negócio gastronômico
+          </h1>
+          <p className="mt-3 text-gray-700 max-w-3xl">
+            Com soluções completas em equipamentos gastronômicos profissionais e peças originais, a Repal apoia restaurantes, padarias, açougues e cozinhas industriais na conquista de desempenho, segurança e qualidade.
+          </p>
+        </div>
+      </section>
+
+      {/* Nossos Produtos */}
+      <section className="py-16 bg-gray-50" aria-labelledby="heading-nossos-produtos">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Produtos Populares</h2>
+            <h2 id="heading-nossos-produtos" className="text-3xl font-bold text-gray-900">Nossos Produtos</h2>
+            <div className="mt-2" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+              <h3 className="text-xl font-semibold text-gray-800">Equipamentos Profissionais</h3>
+              <p className="text-gray-600">Linha completa para cozinhas industriais com robustez, eficiência e segurança, pronta para atender grandes demandas.</p>
+            </div>
+            <div className="mt-3" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+              <h3 className="text-xl font-semibold text-gray-800">Peças e Acessórios</h3>
+              <p className="text-gray-600">Peças originais e acessórios compatíveis para manutenção preventiva e corretiva, garantindo disponibilidade e performance contínua.</p>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -624,6 +677,102 @@ const Home: React.FC = () => {
             </WhatsAppButton>
           </div>
         </div>
+      </section>
+
+      <section className="py-16 bg-white" aria-labelledby="heading-sobre-repal" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 id="heading-sobre-repal" className="text-3xl font-bold text-gray-900 mb-4">Sobre a Repal</h2>
+          <div className="space-y-4 text-gray-700">
+            <p>
+              A Repal nasceu com a missão de simplificar a operação de negócios gastronômicos por meio de equipamentos profissionais confiáveis e peças originais que asseguram alto desempenho. Valorizamos ética, transparência e compromisso com resultados. Nosso histórico é marcado por parcerias duradouras com restaurantes, padarias, açougues, bares, hotéis e cozinhas industriais que exigem produtividade, segurança e qualidade de acabamento em cada preparo.
+            </p>
+            <p>
+              Investimos continuamente em curadoria de marcas reconhecidas, em suporte técnico especializado e em uma experiência de compra consultiva. Assim, entregamos soluções adequadas ao porte da operação, ao fluxo de clientes e ao perfil dos cardápios. Do dimensionamento de frota térmica ao detalhamento de instalação, cada projeto considera eficiência energética, durabilidade e conformidade com normas sanitárias e de segurança.
+            </p>
+            <p>
+              Atuamos com foco regional e nacional, oferecendo atendimento ágil, logística otimizada e acompanhamento pós-venda. Nossa equipe orienta a escolha de equipamentos, organiza cronogramas de implantação e indica práticas de manutenção preventiva, reduzindo paradas e custos operacionais.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gray-50" aria-labelledby="heading-atuacao-localizacao" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 id="heading-atuacao-localizacao" className="text-3xl font-bold text-gray-900 mb-4">Área de atuação e localização</h2>
+          <div className="space-y-4 text-gray-700">
+            <p>
+              Atendemos operações gastronômicas em todo o Brasil com ênfase no Sul e Sudeste, mantendo estoques estratégicos para entregas rápidas. Nossa base operacional facilita coletas e envios, e o suporte remoto orienta instalação, configuração e cuidados diários.
+            </p>
+            <p>
+              Em projetos maiores, alinhamos visitas técnicas e integração com fornecedores para garantir que a cozinha opere dentro dos requisitos de fluxo, ergonomia e segurança, respeitando as particularidades de cada nicho, como produção de panificação, corte e processamento de carnes, confeitaria e serviço à la carte.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-white" aria-labelledby="heading-diferenciais" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 id="heading-diferenciais" className="text-3xl font-bold text-gray-900 mb-4">Diferenciais competitivos</h2>
+          <div className="space-y-4 text-gray-700">
+            <p>
+              Seleção de equipamentos gastronômicos com garantia de procedência, peças originais e orientação técnica dedicada. Priorizamos eficiência energética, facilidade de higienização, ergonomia e segurança operacional. A consultoria ajuda a prever capacidade instalada e expansão, evitando gargalos.
+            </p>
+            <p>
+              Oferecemos peças e acessórios compatíveis para manutenção ágil e redução de downtime, incluindo componentes de refrigeração, elementos de aquecimento, conjuntos de corte e itens de reposição. O catálogo é atualizado conforme demanda e novas tecnologias.
+            </p>
+            <p>
+              Nosso atendimento integra comunicação clara, prazos realistas e acompanhamento pós-venda, criando uma relação confiável e duradoura.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gray-50" aria-labelledby="heading-fale-conosco" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 id="heading-fale-conosco" className="text-3xl font-bold text-gray-900 mb-4">Fale Conosco</h2>
+          <div className="space-y-4 text-gray-700">
+            <p>
+              Precisa dimensionar sua cozinha industrial, comparar equipamentos ou encontrar peças originais? Fale com nossa equipe para receber uma proposta personalizada.
+            </p>
+            <p>
+              Use o botão de WhatsApp, acesse a página de contato ou ligue para nossa central. Responderemos com agilidade, indicando modelos, prazos e condições.
+            </p>
+            <div className="mt-6">
+              <Link to="/contato" className="inline-block bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">Solicitar orçamento</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Conteúdo SEO oculto" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <h2>Apresentação da empresa</h2>
+        <p>
+          A Repal é referência em equipamentos gastronômicos e peças para cozinha industrial, oferecendo soluções que reúnem desempenho, confiabilidade e suporte técnico. Nossa missão é ajudar restaurantes, padarias, açougues, bares e operações de produção a obter produtividade com segurança e controle de custos. Com um portfólio criterioso e atendimento consultivo, orientamos a escolha de equipamentos, a configuração de ambientes e a implementação de rotinas de manutenção preventiva.
+        </p>
+        <p>
+          Valorizamos relações transparentes e resultados mensuráveis. Cada recomendação considera fluxo de clientes, cardápio, espaço físico, consumo energético e normas sanitárias. O objetivo é que a cozinha funcione com estabilidade, reduzindo paradas e garantindo a qualidade final dos preparos.
+        </p>
+        <h2>Descrição de produtos e serviços</h2>
+        <h3>Equipamentos Profissionais</h3>
+        <p>
+          Disponibilizamos fogões industriais, fornos combinados, chapas, fritadeiras, masseiras, câmaras frias, balcões refrigerados, expositores, seladoras, moedores, serras, liquidificadores profissionais e soluções de preparo, cocção e refrigeração. Os modelos oferecem robustez, eficiência energética, facilidade de limpeza e conformidade com requisitos de segurança, apoiando operações de alta demanda.
+        </p>
+        <h3>Peças e Acessórios</h3>
+        <p>
+          Mantemos estoque de peças originais e acessórios compatíveis, como resistências, termostatos, controladores, motores, facas, discos, correias, componentes de refrigeração e itens de reposição para linha de aquecimento e processamento. A disponibilidade reduz o tempo de parada e garante que a produtividade se mantenha estável.
+        </p>
+        <h2>Área de atuação e localização</h2>
+        <p>
+          Atendemos todo o Brasil, com foco operacional no Sul e Sudeste, realizando entregas rápidas e suporte remoto. Em projetos complexos, alinhamos visitas técnicas e integração com fornecedores para garantir que as instalações atendam fluxo, ergonomia e padrões de segurança exigidos.
+        </p>
+        <h2>Diferenciais competitivos</h2>
+        <p>
+          Curadoria de marcas e catálogo atualizado, orientação técnica especializada, peças originais, logística eficiente e pós-venda atento compõem nossos diferenciais. Buscamos reduzir custos operacionais e melhorar o desempenho por meio de escolhas inteligentes e manutenção planejada.
+        </p>
+        <h2>Chamadas para ação</h2>
+        <p>
+          Entre em contato para receber uma recomendação personalizada de equipamentos gastronômicos e peças para sua cozinha industrial. Solicite orçamento, tire dúvidas sobre instalação e escolha acessórios de reposição para manutenção preventiva.
+        </p>
       </section>
     </div>
   );
