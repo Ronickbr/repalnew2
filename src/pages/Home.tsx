@@ -54,7 +54,6 @@ const Home: React.FC = () => {
 
         // Se não houver produtos em destaque na homepage, tenta apenas featured
         if (!productsData || productsData.length === 0) {
-          console.log('🔄 Nenhum produto com featured=true, tentando apenas featured_on_homepage=true');
           const { data: featuredData, error: featuredError } = await supabase
             .from(table('products'))
             .select(`
@@ -79,7 +78,6 @@ const Home: React.FC = () => {
 
         // Se ainda não houver produtos, busca os mais recentes ativos
         if (!productsData || productsData.length === 0) {
-          console.log('🔄 Nenhum produto com featured=true, buscando produtos ativos recentes');
           const { data: recentData, error: recentError } = await supabase
             .from(table('products'))
             .select(`
@@ -107,7 +105,6 @@ const Home: React.FC = () => {
         }
 
         if (productsData) {
-          console.log('📦 Produtos em destaque carregados:', productsData.length, 'produtos');
           const transformedProducts = productsData.map((product: any) => ({
             id: product.id,
             name: product.name,
@@ -119,7 +116,6 @@ const Home: React.FC = () => {
             created_at: product.created_at || new Date().toISOString(),
             updated_at: new Date().toISOString()
           }));
-          console.log('🔄 Produtos transformados:', transformedProducts.length, 'produtos');
           setFeaturedProducts(transformedProducts);
         }
       } catch (error) {
@@ -229,8 +225,6 @@ const Home: React.FC = () => {
                       <Link
                         to={product.slug ? `/produto/${product.slug}` : '#'}
                         onClick={(e) => {
-                          console.log('🎯 Link clicado - Product slug:', product.slug, 'Product name:', product.name);
-                          console.log('🎯 URL completa:', product.slug ? `/produto/${product.slug}` : 'SEM SLUG');
                           if (!product.slug) {
                             console.error('❌ Produto sem slug!');
                             e.preventDefault();
@@ -419,8 +413,6 @@ const Home: React.FC = () => {
                       <Link
                         to={product.slug ? `/produto/${product.slug}` : '#'}
                         onClick={(e) => {
-                          console.log('🎯 Novidades - Link clicado - Product slug:', product.slug, 'Product name:', product.name);
-                          console.log('🎯 Novidades - URL completa:', product.slug ? `/produto/${product.slug}` : 'SEM SLUG');
                           if (!product.slug) {
                             console.error('❌ Novidades - Produto sem slug!');
                             e.preventDefault();

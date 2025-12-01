@@ -1,12 +1,15 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from './Header';
 import Footer from './Footer';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const Layout: React.FC = () => {
-  const { siteName, metaTitle, metaDescription, metaKeywords } = useSiteSettings();
+  const { siteName, metaTitle, metaDescription, metaKeywords, canonicalBaseUrl } = useSiteSettings();
+  const location = useLocation();
+  const origin = (canonicalBaseUrl || '').trim().replace(/\/+$/, '');
+  const canonicalHref = origin ? `${origin}${location.pathname}` : undefined;
 
   return (
     <>
@@ -14,6 +17,7 @@ const Layout: React.FC = () => {
         <title>{metaTitle || `${siteName || 'Repal Equipamentos'} - Equipamentos Gastronômicos Profissionais`}</title>
         <meta name="description" content={metaDescription || 'Equipamentos gastronômicos profissionais de alta qualidade para restaurantes, padarias e cozinhas industriais. Fogões, fornos, geladeiras e muito mais.'} />
         <meta name="keywords" content={metaKeywords || 'equipamentos gastronômicos, cozinha industrial, fogões profissionais, fornos industriais, geladeiras comerciais, equipamentos para restaurante'} />
+        {canonicalHref && <link rel="canonical" href={canonicalHref} />}
         <meta name="author" content={siteName || 'Repal Equipamentos'} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta property="og:title" content={metaTitle || `${siteName || 'Repal Equipamentos'} - Equipamentos Gastronômicos`} />

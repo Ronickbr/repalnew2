@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Star, Shield, Truck, Award, Clock, X, ZoomIn, Plus, Check } from 'lucide-react'
 import { useProductBySlug, useSimilarProducts } from '../hooks/useProducts'
@@ -9,6 +10,7 @@ import ProductCard from '../components/ProductCard'
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
   const { data: product, isLoading: loading, error } = useProductBySlug(slug || '')
+  const { canonicalBaseUrl } = useSiteSettings()
   const { data: similarProducts, isLoading: loadingSimilar } = useSimilarProducts(product?.id || '', product?.subcategory?.id, 4)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -117,8 +119,23 @@ const ProductDetail: React.FC = () => {
     }
   }
 
+  const metaTitle = (product?.seo_title && sanitizeMetaTitle(product.seo_title)) || product?.name || 'Produto'
+  const metaDescription = sanitizeMetaDescription(product?.seo_description || product?.description || '')
+  const metaKeywords = normalizeKeywords(product?.seo_keywords || (product?.tags || []).join(', '))
+  const origin = (canonicalBaseUrl || '').trim().replace(/\/+$/, '')
+  const canonicalHref = origin ? `${origin}/produto/${product.slug}` : undefined
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <Helmet>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <meta name="keywords" content={metaKeywords} />
+        {canonicalHref && <link rel="canonical" href={canonicalHref} />}
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:type" content="product" />
+      </Helmet>
       {/* Hidden SEO Tags */}
       {product?.tags && product.tags.length > 0 && (
         <div className="hidden" aria-hidden="true">
@@ -627,3 +644,5 @@ const ProductDetail: React.FC = () => {
 }
 
 export default ProductDetail
+import { useSiteSettings } from '../hooks/useSiteSettings'
+import { sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../lib/seo'
