@@ -113,7 +113,7 @@ export const useProducts = () => {
         cacheTimestamp = now
         
         setProducts(transformedProducts)
-      console.log('✅ useLatestProducts: Produtos transformados:', transformedProducts.length);
+      
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Erro desconhecido');
       } finally {
@@ -149,27 +149,23 @@ export const useProductsBySubcategory = (subcategoryId: string | number, categor
   const filteredProducts = useMemo(() => {
     if (!allProducts || !subcategoryId) return []
     
-    console.log('🔍 useProductsBySubcategory: Filtrando produtos para subcategoria:', subcategoryId)
-    console.log('📦 useProductsBySubcategory: Total de produtos disponíveis:', allProducts.length)
+    
     
     // Se subcategoryId for string (slug), filtrar por subcategory_id com lookup na tabela subcategories
     if (typeof subcategoryId === 'string') {
-      console.log('🔍 DEBUG: Todos os produtos com subcategory_id:')
-      allProducts.forEach(product => {
-        console.log(`  - ${product.name}: subcategory_id = ${product.subcategory_id}`)
-      })
+      
       
       const filtered = allProducts.filter(product => {
         const productSubcategoryId = product.subcategory_id
-        console.log('🏷️ Produto:', product.name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
+        
         return String(productSubcategoryId) === subcategoryId
       })
       
-      console.log('✅ useProductsBySubcategory: Produtos filtrados por subcategoria:', filtered.length)
+      
       
       // Se não encontrou produtos na subcategoria e temos categoryId, mostrar produtos da categoria principal
       if (filtered.length === 0 && categoryId) {
-        console.log('⚠️ Nenhum produto encontrado na subcategoria. Buscando produtos da categoria principal:', categoryId)
+        
         
         const fallbackProducts = allProducts.filter(product => {
           if (typeof categoryId === 'string') {
@@ -179,7 +175,7 @@ export const useProductsBySubcategory = (subcategoryId: string | number, categor
           }
         })
         
-        console.log('✅ Fallback: Produtos da categoria principal encontrados:', fallbackProducts.length)
+        
         return fallbackProducts
       }
       
@@ -189,15 +185,15 @@ export const useProductsBySubcategory = (subcategoryId: string | number, categor
     // Se subcategoryId for number (id), filtrar por subcategory_id
     const filtered = allProducts.filter(product => {
       const productSubcategoryId = product.subcategory_id
-      console.log('🏷️ Produto:', product.name, 'Subcategory ID:', productSubcategoryId, 'Buscando:', subcategoryId)
+      
       return String(productSubcategoryId) === String(subcategoryId)
     })
     
-    console.log('✅ useProductsBySubcategory: Produtos filtrados por ID de subcategoria:', filtered.length)
+    
     
     // Se não encontrou produtos na subcategoria e temos categoryId, mostrar produtos da categoria principal
     if (filtered.length === 0 && categoryId) {
-      console.log('⚠️ Nenhum produto encontrado na subcategoria. Buscando produtos da categoria principal:', categoryId)
+      
       
       const fallbackProducts = allProducts.filter(product => {
         if (typeof categoryId === 'string') {
@@ -207,7 +203,7 @@ export const useProductsBySubcategory = (subcategoryId: string | number, categor
         }
       })
       
-      console.log('✅ Fallback: Produtos da categoria principal encontrados:', fallbackProducts.length)
+      
       return fallbackProducts
     }
     
@@ -227,32 +223,28 @@ export const useProductsByCategory = (categoryId: string | number) => {
   const filteredProducts = useMemo(() => {
     if (!allProducts || !categoryId) return []
     
-    console.log('🔍 useProductsByCategory: Filtrando produtos para categoria:', categoryId)
-    console.log('📦 useProductsByCategory: Total de produtos disponíveis:', allProducts.length)
+    
     
     // Se categoryId for string (slug), filtrar por category.slug
     if (typeof categoryId === 'string') {
-      console.log('🔍 DEBUG: Todos os produtos disponíveis:')
-      allProducts.forEach(product => {
-        console.log(`  - ${product.name}: category.slug = ${product.category?.slug}`)
-      })
+      
       
       const filtered = allProducts.filter(product => {
         const productCategorySlug = product.category?.slug
-        console.log('🏷️ Produto:', product.name, 'Category Slug:', productCategorySlug, 'Buscando:', categoryId)
+        
         return productCategorySlug === categoryId
       })
-      console.log('✅ useProductsByCategory: Produtos filtrados por slug:', filtered.length)
+      
       return filtered
     }
     
     // Se categoryId for number (id), filtrar por category.id
     const filtered = allProducts.filter(product => {
       const productCategoryId = product.category?.id
-      console.log('🏷️ Produto:', product.name, 'Category ID:', productCategoryId, 'Buscando:', categoryId)
+      
       return String(productCategoryId) === String(categoryId)
     })
-    console.log('✅ useProductsByCategory: Produtos filtrados por ID:', filtered.length)
+    
     return filtered
   }, [allProducts, categoryId])
   
@@ -267,50 +259,33 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
   const { data: allProducts, isLoading, error } = useProducts()
   
   const featuredProduct = useMemo(() => {
-    console.log('🎯 useFeaturedProductByCategory: Iniciando busca para categoria', categoryId, 'tipo:', typeof categoryId)
+    
     
     if (!allProducts) {
-      console.log('🎯 useFeaturedProductByCategory: allProducts é null')
       return null
     }
     
-    console.log('🎯 useFeaturedProductByCategory: Filtrando produtos em destaque para categoria', categoryId)
-    console.log('📦 useFeaturedProductByCategory: Total de produtos disponíveis:', allProducts.length)
     
-    // Verificar todos os produtos com featured_in_dropdown=true (para debug)
-    const allFeaturedProducts = allProducts.filter(product => product.featured_in_dropdown === true)
-    console.log('🔍 Todos os produtos com featured_in_dropdown=true:', allFeaturedProducts.length)
-    allFeaturedProducts.forEach(p => {
-      console.log(`  - ${p.name}: categoria=${p.category?.name} (${p.category?.id}), slug=${p.category?.slug}`)
-    })
+    
+    
     
     // Filtrar produtos que pertencem à categoria E têm featured_in_dropdown=true
     const featuredProducts = allProducts.filter(product => {
-      console.log(`🔍 Processando produto: ${product.name}`)
-      console.log(`   - category.id: ${product.category?.id} (tipo: ${typeof product.category?.id})`)
-      console.log(`   - category.slug: ${product.category?.slug}`)
-      console.log(`   - featured_in_dropdown: ${product.featured_in_dropdown}`)
+      
       
       // Se categoryId for string (slug), filtrar por category.slug
       if (typeof categoryId === 'string') {
         const match = product.category?.slug === categoryId
-        console.log(`   - Comparação slug: ${product.category?.slug} === ${categoryId} = ${match}`)
         return match && product.featured_in_dropdown === true
       }
       
       // Se categoryId for number (id), filtrar por category.id
       const categoryIdStr = String(categoryId)
       const match = String(product.category?.id) === categoryIdStr
-      console.log(`   - Comparação id: ${product.category?.id} === ${categoryIdStr} = ${match}`)
       return match && product.featured_in_dropdown === true
     })
     
-    console.log('⭐ useFeaturedProductByCategory: Produtos featured encontrados para categoria', categoryId, ':', featuredProducts.length)
-    if (featuredProducts.length > 0) {
-      console.log('✅ Produto em destaque selecionado para categoria', categoryId, ':', featuredProducts[0].name)
-    } else {
-      console.log('⚠️ Nenhum produto featured encontrado para categoria', categoryId)
-    }
+    
     
     // Retornar o primeiro produto featured ou null se não houver
     return featuredProducts.length > 0 ? featuredProducts[0] : null
@@ -469,25 +444,19 @@ export const useFeaturedDropdownProducts = () => {
   const featuredProducts = useMemo(() => {
     if (!allProducts) return []
     
-    console.log('🎯 useFeaturedDropdownProducts: Filtrando produtos em destaque no dropdown')
-    console.log('📦 useFeaturedDropdownProducts: Total de produtos disponíveis:', allProducts.length)
+    
     
     // Filtrar apenas produtos ativos E com featured_in_dropdown=true
     const filtered = allProducts.filter(product => {
       const isFeatured = product.featured_in_dropdown === true
       const isActive = !product.is_disabled
       
-      console.log('🏷️ Produto:', product.name, {
-        featured_in_dropdown: product.featured_in_dropdown,
-        is_disabled: product.is_disabled,
-        incluir: isFeatured && isActive
-      })
+      
       
       return isFeatured && isActive
     })
     
-    console.log('✅ useFeaturedDropdownProducts: Produtos filtrados:', filtered.length)
-    console.log('📋 useFeaturedDropdownProducts: Produtos encontrados:', filtered.map(p => p.name))
+    
     
     return filtered
   }, [allProducts])
@@ -506,25 +475,19 @@ export const useFeaturedProductsByCategory = (categoryId: string | number) => {
   const featuredProducts = useMemo(() => {
     if (!allProducts) return []
     
-    console.log('🎯 useFeaturedProductsByCategory: Filtrando produtos featured da categoria', categoryId)
-    console.log('📦 Total de produtos na categoria:', allProducts.length)
+    
     
     // Filtrar apenas produtos com featured_in_dropdown=true e ativos
     const filtered = allProducts.filter(product => {
       const isFeatured = product.featured_in_dropdown === true
       const isActive = !product.is_disabled
       
-      console.log('🏷️ Produto:', product.name, {
-        featured_in_dropdown: product.featured_in_dropdown,
-        is_disabled: product.is_disabled,
-        incluir: isFeatured && isActive
-      })
+      
       
       return isFeatured && isActive
     })
     
-    console.log('✅ Produtos featured encontrados:', filtered.length)
-    console.log('📋 Produtos:', filtered.map(p => p.name))
+    
     
     return filtered
   }, [allProducts, categoryId])
@@ -544,7 +507,7 @@ export const useLatestProducts = (limit: number = 6) => {
 
   const fetchLatestProducts = useCallback(async () => {
     try {
-      console.log('🔄 useLatestProducts: Iniciando busca de produtos recentes...')
+      
       setIsLoading(true)
       setError(null)
 
@@ -570,35 +533,22 @@ export const useLatestProducts = (limit: number = 6) => {
         .limit(limit)
 
       if (productsError) {
-        console.log('❌ useLatestProducts: Erro ao buscar produtos:', productsError.message)
+        
         throw new Error(`Falha ao carregar produtos recentes: ${productsError.message}`)
       }
 
-      console.log('✅ useLatestProducts: Produtos brutos encontrados:', productsData?.length || 0)
+      
       
       // Debug dos dados brutos do primeiro produto
-      if (productsData && productsData.length > 0) {
-        console.log('📋 DADOS BRUTOS DO PRIMEIRO PRODUTO:', {
-          id: productsData[0].id,
-          name: productsData[0].name,
-          category_id: productsData[0].category_id,
-          active: productsData[0].active,
-          is_disabled: productsData[0].is_disabled,
-          slug: productsData[0].slug
-        });
-      }
+      
 
       // Buscar categorias para mapeamento
-      const { data: categoriesData, error: categoriesError } = await supabase
+      const { data: categoriesData } = await supabase
         .from('categories')
         .select('id, name, slug')
         .eq('active', true);
 
-      if (categoriesError) {
-        console.log('❌ useLatestProducts: Erro ao buscar categorias:', categoriesError.message);
-      } else {
-        console.log('✅ useLatestProducts: Categorias encontradas:', categoriesData?.length || 0);
-      }
+      
 
       const categoryMap = new Map();
       categoriesData?.forEach((cat: any) => {

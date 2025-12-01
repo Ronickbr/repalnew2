@@ -12,6 +12,7 @@ export interface SiteSettings {
     logo?: string;
     favicon_url?: string;
     favicon?: string;
+    url?: string;
   };
   integrations?: {
     google_tag_manager_id?: string;
@@ -44,6 +45,10 @@ export interface SiteSettings {
     default_title?: string;
     default_description?: string;
     default_keywords?: string;
+    meta_title?: string;
+    meta_description?: string;
+    meta_keywords?: string;
+    canonical_url?: string;
   };
   created_at?: string;
   updated_at?: string;
@@ -60,22 +65,16 @@ export const useSiteSettings = () => {
       setError(null);
 
       // Primeiro vamos verificar se existe algum registro
-      const { data: allData, error: allError } = await supabase
+      const { data: allData } = await supabase
         .from('site_settings')
         .select('*');
 
-      console.log('=== DEBUG useSiteSettings ===');
-      console.log('Dados brutos do Supabase:', allData);
-      console.log('Erro do Supabase:', allError);
+      
 
       if (allData && allData.length > 0) {
         const data = allData[0];
-        console.log('Primeiro registro encontrado:', data);
-        console.log('site_info:', data.site_info);
-        console.log('logo do site_info:', data.site_info?.logo);
         setSettings(data);
       } else {
-        console.log('Nenhuma configuração encontrada');
         setSettings({});
       }
     } catch (err) {
@@ -162,9 +161,10 @@ export const useSiteSettings = () => {
     siteDescription: settings?.site_info?.site_description || settings?.site_info?.description,
     logoUrl: settings?.site_info?.logo || settings?.site_info?.logo_url,
     faviconUrl: settings?.site_info?.favicon_url || settings?.site_info?.favicon,
-    metaTitle: settings?.seo?.default_title,
-    metaDescription: settings?.seo?.default_description,
-    metaKeywords: settings?.seo?.default_keywords,
+    metaTitle: settings?.seo?.meta_title || settings?.seo?.default_title,
+    metaDescription: settings?.seo?.meta_description || settings?.seo?.default_description,
+    metaKeywords: settings?.seo?.meta_keywords || settings?.seo?.default_keywords,
+    canonicalBaseUrl: settings?.seo?.canonical_url || settings?.site_info?.url,
     contactEmail: settings?.contact?.email,
     contactPhone: settings?.contact?.phone,
     address: settings?.contact?.address

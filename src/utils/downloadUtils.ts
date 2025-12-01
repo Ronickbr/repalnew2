@@ -90,8 +90,6 @@ export const downloadFileData = async (
     const mimeType = getMimeType(format);
 
     downloadFile(fileData, filename, mimeType);
-    
-    console.log(`Download iniciado: ${filename}`);
   } catch (error) {
     console.error('Erro ao fazer download do arquivo:', error);
     throw error;

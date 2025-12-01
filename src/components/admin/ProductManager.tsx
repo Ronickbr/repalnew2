@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { stripHtmlNormalize, normalizeKeywords } from '../../lib/seo';
 import { Product, Category, Brand } from '../../types';
 import { 
   Plus, 
@@ -380,7 +381,7 @@ const ProductManager: React.FC = () => {
   // Função para fazer upload de imagem base64 para o Supabase Storage
   const uploadBase64Image = async (base64Url: string): Promise<string> => {
     try {
-      console.log('Fazendo upload de imagem base64 para o Supabase Storage...');
+      
       // Extrair o tipo MIME e os dados base64
       const matches = base64Url.match(/^data:(.+);base64,(.+)$/);
       if (!matches || matches.length !== 3) {
@@ -440,11 +441,11 @@ const ProductManager: React.FC = () => {
     if (url.length > MAX_URL_LENGTH) {
       // Verificar se é uma URL base64
       if (url.startsWith('data:')) {
-        console.log('URL base64 muito longa detectada. Fazendo upload para o Supabase Storage...');
+        
         try {
           // Fazer upload da imagem base64 para o Supabase Storage
           const uploadedUrl = await uploadBase64Image(url);
-          console.log('Upload concluído. URL:', uploadedUrl);
+          
           return uploadedUrl;
         } catch (error) {
           console.error('Erro ao fazer upload da imagem base64:', error);
@@ -486,8 +487,7 @@ const ProductManager: React.FC = () => {
 
   // Sync unified images to form data
   const syncUnifiedImagesToFormData = async (images: ImageItem[]) => {
-    console.log('syncUnifiedImagesToFormData - Total de imagens:', images.length);
-    console.log('Imagens recebidas:', images.map(img => ({ url: img.url.substring(0, 100) + '...', type: img.type })));
+    
     
     if (images.length > 0) {
       const mainImage = images[0]; // Primeira imagem é a principal
@@ -495,7 +495,7 @@ const ProductManager: React.FC = () => {
       try {
         // Processar URL da imagem principal
         const processedMainImageUrl = await processImageUrl(mainImage.url);
-        console.log('Imagem principal processada:', processedMainImageUrl.substring(0, 100) + '...');
+        
         
         // Se a imagem principal for uma URL base64 muito longa e falhou o upload
         if (processedMainImageUrl === '' && mainImage.url.startsWith('data:')) {
@@ -509,15 +509,15 @@ const ProductManager: React.FC = () => {
         }
         
         const additionalImages = images.slice(1).map(img => img.url);
-        console.log('Imagens adicionais para processar:', additionalImages.length);
+        
         
         // Processar e validar URLs das imagens adicionais
         const processedAdditionalImages = await Promise.all(
           additionalImages.map(async (url, index) => {
             try {
-              console.log(`Processando imagem adicional ${index + 1}:`, url.substring(0, 100) + '...');
+              
               const processedUrl = await processImageUrl(url);
-              console.log(`Imagem adicional ${index + 1} processada:`, processedUrl.substring(0, 100) + '...');
+              
               return processedUrl;
             } catch (error) {
               console.error(`Erro ao processar imagem adicional ${index + 1}:`, error);
@@ -537,19 +537,12 @@ const ProductManager: React.FC = () => {
           return true;
         });
         
-        console.log('Imagens adicionais válidas:', validAdditionalImages.length);
-        console.log('URLs das imagens adicionais:', validAdditionalImages.map(url => url.substring(0, 100) + '...'));
-        
         setFormData(prev => ({
           ...prev,
           image: processedMainImageUrl,
           additional_images: validAdditionalImages
         }));
         
-        console.log('FormData atualizado com imagens:', {
-          image: processedMainImageUrl.substring(0, 100) + '...',
-          additional_images_count: validAdditionalImages.length
-        });
       } catch (error) {
         console.error('Erro ao processar imagens:', error);
         addNotification('error', 'Erro ao processar as imagens. Por favor, tente novamente.');
@@ -598,12 +591,7 @@ const ProductManager: React.FC = () => {
 
       startLoading('Processando produto...');
       
-      // Debug: Verificar dados de imagens antes de enviar
-      console.log('Enviando produto com imagens:', {
-        image: formData.image?.substring(0, 100) + '...',
-        additional_images_count: formData.additional_images?.length || 0,
-        additional_images: formData.additional_images?.map(url => url.substring(0, 100) + '...') || []
-      });
+      
       
       if (editingProduct) {
         await updateProduct(formData.image, formData.additional_images);
@@ -635,7 +623,7 @@ const ProductManager: React.FC = () => {
       let slug = baseSlug;
       let counter = 1;
       
-      console.log('Verificando unicidade do slug:', baseSlug);
+      
       
       try {
         while (true) {
@@ -645,7 +633,7 @@ const ProductManager: React.FC = () => {
             .eq('slug', slug)
             .maybeSingle();
           
-          console.log('Resultado da verificação:', { existingProduct, slugCheckError });
+          
           
           if (slugCheckError) {
             console.warn('Erro ao verificar slug:', slugCheckError);
@@ -655,18 +643,18 @@ const ProductManager: React.FC = () => {
           }
           
           if (!existingProduct) {
-            console.log('Slug disponível:', slug);
+            
             break; // Slug está disponível
           }
           
-          console.log('Slug já existe, tentando alternativa:', slug);
+          
           slug = `${baseSlug}-${counter}`;
           counter++;
           
           if (counter > 100) {
             // Usar timestamp como fallback para garantir unicidade
             slug = `${baseSlug}-${Date.now()}`;
-            console.log('Limite de tentativas atingido, usando timestamp:', slug);
+            
             break;
           }
         }
@@ -676,7 +664,7 @@ const ProductManager: React.FC = () => {
         slug = `${baseSlug}-${Date.now()}`;
       }
       
-      console.log('Slug final:', slug);
+      
 
       const productData = {
         ...productDataWithoutImages,
@@ -687,8 +675,8 @@ const ProductManager: React.FC = () => {
         specifications: formData.specifications?.trim() || undefined,
         slug: slug,
         seo_title: formData.seo_title?.trim() || undefined,
-        seo_description: formData.seo_description?.trim() || undefined,
-        seo_keywords: formData.seo_keywords?.trim() || undefined,
+        seo_description: stripHtmlNormalize(formData.seo_description) || undefined,
+        seo_keywords: normalizeKeywords(formData.seo_keywords) || undefined,
         // Campos de preço e estoque serão gerenciados em outro módulo
       };
 
@@ -709,8 +697,7 @@ const ProductManager: React.FC = () => {
         // Salvar imagens adicionais na tabela product_images
         if (additionalImages && additionalImages.length > 0) {
           const validImages = additionalImages.filter(img => img && img.trim() !== '');
-          console.log(`Preparando para salvar ${validImages.length} imagens adicionais no banco de dados`);
-          console.log('URLs das imagens adicionais:', validImages.map(url => url.substring(0, 100) + '...'));
+          
           
           if (validImages.length > 0) {
             const imageRecords = validImages.map((url, index) => ({
@@ -719,7 +706,7 @@ const ProductManager: React.FC = () => {
               sort_order: index
             }));
             
-            console.log('Registros de imagens a serem inseridos:', imageRecords);
+            
             
             try {
               const { error: imagesError } = await supabase
@@ -732,8 +719,7 @@ const ProductManager: React.FC = () => {
                 console.error('Código do erro:', imagesError.code);
                 addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
               } else {
-                console.log(`Imagens adicionais salvas com sucesso: ${imageRecords.length} imagens`);
-                console.log('Product ID:', data.id);
+                
                 addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
               }
             } catch (insertError) {
@@ -742,7 +728,7 @@ const ProductManager: React.FC = () => {
             }
           }
         } else {
-          console.log('Nenhuma imagem adicional para salvar');
+          
         }
         
         setProducts(prev => [data, ...prev]);
@@ -771,8 +757,8 @@ const ProductManager: React.FC = () => {
         image: image || undefined,
         specifications: formData.specifications?.trim() || undefined,
         seo_title: formData.seo_title?.trim() || undefined,
-        seo_description: formData.seo_description?.trim() || undefined,
-        seo_keywords: formData.seo_keywords?.trim() || undefined,
+        seo_description: stripHtmlNormalize(formData.seo_description) || undefined,
+        seo_keywords: normalizeKeywords(formData.seo_keywords) || undefined,
       };
 
       const { data, error: supabaseError } = await supabase
@@ -793,11 +779,10 @@ const ProductManager: React.FC = () => {
         // Atualizar imagens adicionais na tabela product_images
         if (additionalImages && additionalImages.length > 0) {
           const validImages = additionalImages.filter(img => img && img.trim() !== '');
-          console.log(`Preparando para atualizar ${validImages.length} imagens adicionais no banco de dados`);
-          console.log('URLs das imagens adicionais:', validImages.map(url => url.substring(0, 100) + '...'));
+          
           
           // Primeiro, remover imagens antigas
-          console.log('Removendo imagens antigas do produto ID:', editingProduct.id);
+          
           const { error: deleteError } = await supabase
             .from('product_images')
             .delete()
@@ -807,7 +792,7 @@ const ProductManager: React.FC = () => {
             console.error('Erro ao remover imagens antigas:', deleteError);
             console.error('Detalhes do erro:', deleteError.message, deleteError.details, deleteError.hint);
           } else {
-            console.log('Imagens antigas removidas com sucesso');
+            
           }
           
           // Depois, inserir as novas imagens
@@ -818,7 +803,7 @@ const ProductManager: React.FC = () => {
               sort_order: index
             }));
             
-            console.log('Registros de imagens a serem inseridos:', imageRecords);
+            
             
             try {
               const { error: imagesError } = await supabase
@@ -831,8 +816,7 @@ const ProductManager: React.FC = () => {
                 console.error('Código do erro:', imagesError.code);
                 addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
               } else {
-                console.log(`Imagens adicionais salvas com sucesso: ${imageRecords.length} imagens`);
-                console.log('Product ID:', editingProduct.id);
+                
                 addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
               }
             } catch (insertError) {

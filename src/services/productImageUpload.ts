@@ -49,7 +49,6 @@ export async function uploadProductMainImage(file: File): Promise<UploadResult> 
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}${data ? ' ' + JSON.stringify(data) : ''}`;
     logs.push(logEntry);
-    console.log(logEntry);
   };
 
   try {
@@ -211,24 +210,7 @@ export async function uploadProductMainImage(file: File): Promise<UploadResult> 
       }
     };
   } finally {
-    // Salvar log detalhado
-    const uploadLog: UploadLog = {
-      timestamp: new Date().toISOString(),
-      fileName: file.name,
-      originalName: file.name,
-      size: file.size,
-      type: file.type,
-      success: false,
-      userAgent: navigator.userAgent,
-      userId: (await supabase.auth.getUser()).data.user?.id
-    };
-
-    // Log para debug (em produção, enviar para serviço de logging)
-    console.log('Upload log completo:', {
-      log: uploadLog,
-      logs,
-      duration: Date.now() - startTime
-    });
+    
   }
 }
 
@@ -243,7 +225,6 @@ export async function uploadProductAdditionalImage(file: File, index: number): P
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}${data ? ' ' + JSON.stringify(data) : ''}`;
     logs.push(logEntry);
-    console.log(logEntry);
   };
 
   try {
@@ -389,7 +370,7 @@ export async function uploadProductAdditionalImage(file: File, index: number): P
  */
 export async function deleteProductImage(imageUrl: string): Promise<boolean> {
   try {
-    console.log('Removendo imagem do produto:', imageUrl);
+    
 
     // Extrair o caminho do arquivo da URL
     const url = new URL(imageUrl);
@@ -401,7 +382,7 @@ export async function deleteProductImage(imageUrl: string): Promise<boolean> {
     }
 
     const filePath = pathMatch[1];
-    console.log('Caminho do arquivo para remoção:', filePath);
+    
 
     const { error } = await supabase.storage
       .from('products')
@@ -412,7 +393,7 @@ export async function deleteProductImage(imageUrl: string): Promise<boolean> {
       return false;
     }
 
-    console.log('Imagem removida com sucesso');
+    
     return true;
 
   } catch (error) {

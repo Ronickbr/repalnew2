@@ -8,7 +8,7 @@ export function useCategories() {
   return useQuery({
     queryKey: queryKeys.categories,
     queryFn: async (): Promise<Category[]> => {
-      console.log('🔍 useCategories: Buscando categorias principais...');
+      
       const { data, error } = await supabase
         .from(table('categories'))
         .select('*')
@@ -21,8 +21,7 @@ export function useCategories() {
         throw new Error(`Erro ao buscar categorias: ${error.message}`)
       }
       
-      console.log('✅ useCategories: Categorias carregadas:', data?.length || 0, 'categorias');
-      console.log('📋 useCategories: Dados das categorias:', data);
+      
       return data || []
     },
   })
@@ -33,7 +32,7 @@ export function useSubcategoriesByCategory(parentId: string | number) {
   return useQuery({
     queryKey: [...queryKeys.categories, 'subcategories', parentId],
     queryFn: async (): Promise<Category[]> => {
-      console.log(`🔍 useSubcategoriesByCategory: Buscando subcategorias para categoria ${parentId}...`);
+      
       const { data, error } = await supabase
         .from(table('categories'))
         .select('*')
@@ -46,7 +45,7 @@ export function useSubcategoriesByCategory(parentId: string | number) {
         throw new Error(`Erro ao buscar subcategorias: ${error.message}`)
       }
       
-      console.log('✅ useSubcategoriesByCategory: Subcategorias carregadas:', data?.length || 0, 'subcategorias');
+      
       return data || []
     },
     enabled: !!parentId,

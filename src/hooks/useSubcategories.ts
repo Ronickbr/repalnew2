@@ -24,8 +24,7 @@ export const useSubcategories = () => {
   return useQuery({
     queryKey: ['subcategories'],
     queryFn: async () => {
-      console.log('=== DEBUG useSubcategories ===')
-      console.log('Buscando categorias hierárquicas do banco de dados...')
+      
       
       // Buscar todas as categorias (principais e subcategorias) ativas
       const { data: allCategoriesData, error: categoriesError } = await supabase
@@ -45,19 +44,13 @@ export const useSubcategories = () => {
         throw categoriesError
       }
 
-      console.log('=== DEBUG useSubcategories ===')
-      console.log('Total de categorias retornadas:', allCategoriesData?.length || 0)
+      
       
       // Separar categorias principais (parent_id = NULL) de subcategorias
       const mainCategories = allCategoriesData?.filter((cat: any) => cat.parent_id === null) || []
       const subcategories = allCategoriesData?.filter((cat: any) => cat.parent_id !== null) || []
       
-      console.log('Categorias principais:', mainCategories.length)
-      console.log('Subcategorias:', subcategories.length)
-      console.log('Subcategorias por categoria:')
-      subcategories.forEach((sub: any) => {
-        console.log(`- ${sub.name} (parent_id: ${sub.parent_id})`)
-      })
+      
 
       // Combinar categorias principais com suas subcategorias
       const result = mainCategories.map((category: any) => {
@@ -77,7 +70,7 @@ export const useSubcategories = () => {
         }
       }) || []
 
-      console.log('Resultado final:', result)
+      
       return result
     },
     staleTime: 1000 * 60 * 5, // 5 minutos
@@ -90,7 +83,7 @@ export const useSubcategoriesByCategory = (categoryId: number) => {
   return useQuery({
     queryKey: ['subcategories', categoryId],
     queryFn: async () => {
-      console.log(`Buscando subcategorias para categoria ${categoryId}...`)
+      
       
       const { data, error } = await supabase
         .from('categories')
@@ -104,7 +97,7 @@ export const useSubcategoriesByCategory = (categoryId: number) => {
         throw error
       }
 
-      console.log(`Subcategorias encontradas para categoria ${categoryId}:`, data?.length || 0)
+      
       return data as Subcategory[]
     },
     enabled: !!categoryId,

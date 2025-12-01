@@ -186,17 +186,9 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
   //   navigate(path);
   // };
 
-  /* Hook para detectar dispositivos móveis */
-  const isMobileDevice = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
-  };
+  
 
-  // Debug para mobile
-  useEffect(() => {
-    if (isMobileDevice()) {
-      console.log('Dispositivo móvel detectado:', navigator.userAgent);
-    }
-  }, []);
+  // Debug para mobile removido
 
   /* render desktop – categorias na esquerda */
   const desktop = (
@@ -336,7 +328,7 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
                             <Link
                               to={`/categorias/${cat.slug}/${sub.slug}?sub=${sub.id}`}
                               onClick={() => {
-                                console.log('Link clicado:', sub.name);
+                                
                                 // Fechar menu imediatamente
                                 setMobileOpen(false);
                                 setOpen(null);

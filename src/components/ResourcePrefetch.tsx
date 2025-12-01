@@ -84,8 +84,8 @@ export const useImagePrefetch = (imageUrls: string[]) => {
       });
     });
 
-    Promise.allSettled(imagePromises).then(results => {
-      console.log(`${results.filter(r => r.status === 'fulfilled').length} imagens pré-carregadas`);
+    Promise.allSettled(imagePromises).then(() => {
+      
     });
   }, [imageUrls]);
 };

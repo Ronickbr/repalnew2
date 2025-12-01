@@ -116,7 +116,7 @@ export function useBanners() {
         throw new Error('URL da imagem inválida');
       }
       
-      console.log('Criando banner com dados:', bannerData);
+      
       
       const { data, error } = await supabase
         .from(table('banners'))
@@ -135,7 +135,7 @@ export function useBanners() {
         throw new Error(`Erro ao criar banner: ${error.message}`);
       }
       
-      console.log('Banner criado com sucesso:', data);
+      
       
       // Refresh banners list
       await fetchBanners();
@@ -175,7 +175,7 @@ export function useBanners() {
         .single();
 
       if (error) {
-        console.error('Erro ao atualizar banner:', error);
+        
         throw new Error('Erro ao atualizar banner. Verifique os dados e tente novamente.');
       }
       
@@ -183,7 +183,7 @@ export function useBanners() {
       await fetchBanners();
       return data;
     } catch (err) {
-      console.error('Error updating banner:', err);
+      
       setError(err instanceof Error ? err.message : 'Erro ao atualizar banner');
       return null;
     }
@@ -206,7 +206,7 @@ export function useBanners() {
       
       return true;
     } catch (err) {
-      console.error('Error deleting banner:', err);
+        
       setError(err instanceof Error ? err.message : 'Erro ao deletar banner');
       return false;
     }
@@ -229,7 +229,7 @@ export function useBanners() {
       
       return true;
     } catch (err) {
-      console.error('Error toggling banner status:', err);
+      
       setError(err instanceof Error ? err.message : 'Erro ao alterar status do banner');
       return false;
     }
@@ -252,7 +252,7 @@ export function useBanners() {
       
       return true;
     } catch (err) {
-      console.error('Error updating banner order:', err);
+      
       setError(err instanceof Error ? err.message : 'Erro ao alterar ordem do banner');
       return false;
     }
@@ -265,12 +265,11 @@ export function useBanners() {
       
       // Verificar se Supabase está configurado
       if (!supabaseUrl || !supabaseAnonKey) {
-        console.error('Supabase não está configurado corretamente');
+        
         throw new Error('Configuração do Supabase incompleta');
       }
       
-      console.log('Supabase URL:', supabaseUrl);
-      console.log('Supabase Key configured:', !!supabaseAnonKey);
+      
       
       // Verificar autenticação
       const { data: { user } } = await supabase.auth.getUser();
@@ -278,7 +277,7 @@ export function useBanners() {
         throw new Error('Usuário não autenticado');
       }
       
-      console.log('Uploading banner image:', file.name, 'User:', user.id);
+      
       
       // Método direto: tentar upload sem verificar buckets
       // Isso evita problemas de permissão para listar buckets
@@ -287,13 +286,7 @@ export function useBanners() {
         const fileExt = file.name.split('.').pop();
         const fileName = `banner-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
         
-        console.log('Tentando upload direto para bucket banners, filename:', fileName);
-        console.log('File details:', { 
-          name: file.name, 
-          size: file.size, 
-          type: file.type,
-          lastModified: file.lastModified 
-        });
+        
         
         // Tentar upload direto
         const { error: uploadError } = await supabase.storage
@@ -304,11 +297,11 @@ export function useBanners() {
           });
 
         if (uploadError) {
-          console.error('Upload direto falhou:', uploadError);
+          
           
           // Se falhar por causa do bucket, tentar criar
           if (uploadError.message?.includes('bucket') || uploadError.message?.includes('not found')) {
-            console.log('Bucket pode não existir, tentando criar...');
+            
             
             // Tentar criar bucket via RPC
             try {
@@ -320,9 +313,9 @@ export function useBanners() {
               });
               
               if (createError) {
-                console.error('Erro ao criar bucket via RPC:', createError);
+                
               } else {
-                console.log('Bucket criado com sucesso via RPC, tentando upload novamente...');
+                
                 
                 // Tentar upload novamente
                 const { error: retryError } = await supabase.storage
@@ -345,60 +338,60 @@ export function useBanners() {
           }
         }
         
-        console.log('Upload bem-sucedido!');
+        
         
         // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('banners')
           .getPublicUrl(fileName);
         
-        console.log('Upload successful, public URL:', publicUrl);
+        
         return publicUrl;
         
       } catch (directError) {
-        console.error('Erro no método direto:', directError);
+        
         
         // Se o método direto falhar, tentar o método tradicional
-        console.log('Tentando método tradicional com verificação de buckets...');
+        
         
         // Verificar se o bucket existe
         let buckets;
         try {
           const { data, error: bucketError } = await supabase.storage.listBuckets();
           if (bucketError) {
-            console.error('Error listing buckets:', bucketError);
+            
             throw new Error('Sem permissão para listar buckets. Verifique as configurações do Supabase.');
           }
           buckets = data;
         } catch (listError) {
-          console.error('Exception listing buckets:', listError);
+          
           throw new Error('Erro ao listar buckets. O usuário pode não ter permissões adequadas.');
         }
         
         if (!buckets || buckets.length === 0) {
-          console.error('No buckets found or user lacks permissions');
+          
           throw new Error('Nenhum bucket encontrado. Verifique as permissões do usuário.');
         }
         
         const bannerBucket = buckets.find((bucket: any) => bucket.id === 'banners');
         if (!bannerBucket) {
-          console.error('Banner bucket not found. Available buckets:', buckets.map((bucket: any) => bucket.id));
+          
           throw new Error(`Bucket 'banners' não encontrado.`);
         }
         
-        console.log('Banner bucket found:', bannerBucket.id, 'Public:', bannerBucket.public);
+        
         
         // Generate unique filename
         const fileExt = file.name.split('.').pop();
         const fileName = `banner-${Date.now()}.${fileExt}`;
         
-        console.log('Uploading to bucket banners, filename:', fileName);
+        
         
         // Tentar upload com retry
         let uploadError = null;
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
-            console.log(`Upload attempt ${attempt}...`);
+            
             
             const { error } = await supabase.storage
               .from('banners')
@@ -408,11 +401,11 @@ export function useBanners() {
               });
 
             if (error) {
-              console.error(`Upload attempt ${attempt} failed:`, error);
+              
               uploadError = error;
               
               if (error.message?.includes('network') || error.message?.includes('fetch')) {
-                console.log('Waiting 1 second before retry...');
+                
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 continue;
               }
@@ -420,12 +413,12 @@ export function useBanners() {
               throw error;
             }
             
-            console.log(`Upload attempt ${attempt} successful!`);
+            
             uploadError = null;
             break;
             
           } catch (err) {
-            console.error(`Upload attempt ${attempt} exception:`, err);
+            
             uploadError = err;
             
             if (attempt === 2) {
@@ -435,7 +428,7 @@ export function useBanners() {
         }
 
         if (uploadError) {
-          console.error('All upload attempts failed:', uploadError);
+          
           throw uploadError;
         }
         
@@ -444,7 +437,7 @@ export function useBanners() {
           .from('banners')
           .getPublicUrl(fileName);
         
-        console.log('Upload successful, public URL:', publicUrl);
+        
         return publicUrl;
       }
     } catch (err) {

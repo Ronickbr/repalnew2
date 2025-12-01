@@ -32,8 +32,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
   const handleAddToBudget = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Log 1: Iniciando processo de adicionar à lista
-    console.log(`[ProductCard] Adicionando produto à lista: ${product.name} (ID: ${product.id})`);
+    
     
     addItem({
       id: product.id.toString(),
@@ -41,8 +40,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
       image: product.product_images?.[0]?.image_url || product.image_url || '/placeholder-product.png'
     });
     
-    // Log 2: Produto adicionado com sucesso
-    console.log(`[ProductCard] Produto adicionado com sucesso: ${product.name}`);
+    
     
     setIsAddedToBudget(true);
   };

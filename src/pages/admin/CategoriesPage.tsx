@@ -9,7 +9,7 @@ const CategoriesPage: React.FC = () => {
     <div>
       <CategoryManager
         onCategorySelect={(category) => {
-          console.log('Categoria selecionada:', category);
+          
           setEditingCategory(category);
         }}
         selectedCategory={editingCategory}

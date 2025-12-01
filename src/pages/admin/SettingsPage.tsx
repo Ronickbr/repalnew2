@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { isValidUrl as isValidUrlStrict, formatCanonicalUrl, sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../../lib/seo';
 import { table } from '../../lib/schema';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'sonner';
@@ -301,6 +302,12 @@ const SettingsPage: React.FC = () => {
         if (section?.meta_description && section.meta_description.length > 160) {
           newErrors[sectionKey] = 'Meta descrição não pode ter mais de 160 caracteres';
         }
+        if (section?.canonical_url) {
+          const formatted = formatCanonicalUrl(section.canonical_url);
+          if (!isValidUrlStrict(formatted)) {
+            newErrors[sectionKey] = 'URL canônica inválida';
+          }
+        }
         break;
     }
 
@@ -309,12 +316,7 @@ const SettingsPage: React.FC = () => {
   };
 
   const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
+    return isValidUrlStrict(url);
   };
 
   const isValidEmail = (email: string): boolean => {
@@ -369,8 +371,21 @@ const SettingsPage: React.FC = () => {
         throw new Error('Supabase não está configurado');
       }
 
+      const sanitizedSeo = {
+        ...formData.seo,
+        meta_title: sanitizeMetaTitle(formData.seo?.meta_title),
+        meta_description: sanitizeMetaDescription(formData.seo?.meta_description),
+        meta_keywords: normalizeKeywords(formData.seo?.meta_keywords),
+        canonical_url: formData.seo?.canonical_url ? formatCanonicalUrl(formData.seo.canonical_url) : ''
+      };
+
+      if (sanitizedSeo.canonical_url && !isValidUrlStrict(sanitizedSeo.canonical_url)) {
+        throw new Error('URL canônica inválida');
+      }
+
       const settingsToSave = {
         ...formData,
+        seo: sanitizedSeo,
         updated_at: new Date().toISOString()
       };
 
@@ -383,21 +398,21 @@ const SettingsPage: React.FC = () => {
           .update(settingsToSave)
           .eq('id', settings.id);
         error = result.error;
-        console.log('Resultado do update:', result);
+        
       } else {
         const result = await supabase
           .from(table('site_settings'))
           .insert([{ ...settingsToSave, created_at: new Date().toISOString() }]);
         error = result.error;
-        console.log('Resultado do insert:', result);
+        
       }
 
       if (error) throw error;
 
       try {
-        const robotsContent = formData.seo?.robots_txt || '';
-        const sitemapEnabled = !!formData.seo?.sitemap_enabled;
-        const baseUrl = (formData.site_info?.url || formData.seo?.canonical_url || '').trim();
+        const robotsContent = settingsToSave.seo?.robots_txt || '';
+        const sitemapEnabled = !!settingsToSave.seo?.sitemap_enabled;
+        const baseUrl = (settingsToSave.site_info?.url || settingsToSave.seo?.canonical_url || '').trim();
 
         if (robotsContent || robotsContent === '') {
           const resp = await fetch('/api/seo/robots', {
@@ -425,7 +440,7 @@ const SettingsPage: React.FC = () => {
         toast.error(e instanceof Error ? e.message : 'Erro ao atualizar arquivos SEO');
       }
 
-      setSettings(formData);
+      setSettings(settingsToSave);
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);

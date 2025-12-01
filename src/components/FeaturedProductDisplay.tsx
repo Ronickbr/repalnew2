@@ -47,7 +47,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
   const isLoading = isLoadingFeatured || isLoadingAll;
   const hasFeaturedProduct = !!featuredProduct;
   
-  console.log('🎯 FeaturedProductDisplay: hasFeaturedProduct:', hasFeaturedProduct);
+  
     
   // Forçar modo de demonstração apenas quando não há Supabase configurado ou erro de API
   const shouldUseDemo = !isSupabaseConfigured || hasApiError;
@@ -68,14 +68,11 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
     displayProduct = allProducts[0];
   }
 
-  console.log('🎯 FeaturedProductDisplay: Supabase configurado?', Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY));
-  console.log('🎯 FeaturedProductDisplay: Produto selecionado:', displayProduct?.name, 'Categoria:', categoryId);
-  console.log('🎯 FeaturedProductDisplay: Produto featured encontrado:', featuredProduct?.name);
-  console.log('🎯 FeaturedProductDisplay: Fallback ativado?', !featuredProduct && allProducts && allProducts.length > 0);
+  
 
   // Teste: verificar se categoryId é válido
   if (!categoryId) {
-    console.log('⚠️ FeaturedProductDisplay: categoryId é inválido:', categoryId);
+    
     return null;
   }
 
@@ -152,7 +149,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
           onClick={() => {
             // Ação para adicionar o produto à lista
-            console.log('Adicionar à Lista:', displayProduct.name);
+            
           }}
           aria-label={`Adicionar ${displayProduct.name} à lista`}
         >
@@ -165,7 +162,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
 
   if (shouldUseDemo) {
     // Para debug, vamos mostrar o produto de exemplo
-    console.log('🎯 Mostrando produto de exemplo para debug');
+    
     return (
       <div className="text-center p-4">
         <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4 overflow-hidden rounded-lg group">
@@ -202,7 +199,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <button
           className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
           onClick={() => {
-            console.log('Adicionar à Lista (Demo):', mockProduct.name);
+            
           }}
         >
           Add a Lista
@@ -256,7 +253,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
           className="w-full py-3 bg-gray-100 text-gray-800 font-semibold rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 shadow-sm"
           onClick={() => {
             // Ação para adicionar o produto à lista
-            console.log('Adicionar à Lista:', displayProduct?.name || 'Produto');
+            
           }}
           aria-label={`Adicionar ${displayProduct?.name || 'produto'} à lista`}
         >
