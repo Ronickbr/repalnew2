@@ -23,6 +23,89 @@ app.use(express.json());
 // Servir arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Utilitário: cliente Supabase com chave de serviço (bypassa RLS)
+const getServiceClient = () => {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!supabaseUrl || !serviceKey) {
+    throw new Error('Variáveis de ambiente do Supabase não configuradas (URL ou SERVICE ROLE KEY)');
+  }
+  return createClient(supabaseUrl, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+};
+
+// Utilitário: validar token admin simples (id:timestamp em base64) e checar usuário ativo
+const validateAdminToken = async (token) => {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf-8');
+    const parts = decoded.split(':');
+    const adminId = parts[0];
+    if (!adminId) return null;
+    const supabase = getServiceClient();
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id, email, name, role, active')
+      .eq('id', adminId)
+      .eq('active', true)
+      .maybeSingle();
+    if (error) return null;
+    return data || null;
+  } catch {
+    return null;
+  }
+};
+
+// Endpoint: criar produto com chave de serviço, validando token admin
+app.post('/api/admin/products', async (req, res) => {
+  try {
+    const adminToken = req.headers['x-admin-token'];
+    const adminUser = await validateAdminToken(adminToken);
+    if (!adminUser) {
+      return res.status(401).json({ success: false, error: 'Não autorizado' });
+    }
+
+    const { product, additionalImages } = req.body || {};
+    if (!product || !product.name || !product.category_id) {
+      return res.status(400).json({ success: false, error: 'Dados do produto inválidos' });
+    }
+
+    const supabase = getServiceClient();
+    // Inserir produto
+    const { data: inserted, error: insertError } = await supabase
+      .from('products')
+      .insert([product])
+      .select('*')
+      .single();
+    if (insertError) {
+      return res.status(500).json({ success: false, error: insertError.message, code: insertError.code, details: insertError.details, hint: insertError.hint });
+    }
+
+    // Inserir imagens adicionais, se houver
+    if (Array.isArray(additionalImages) && additionalImages.length > 0) {
+      const records = additionalImages.filter(Boolean).map((url, idx) => ({
+        product_id: inserted.id,
+        url,
+        sort_order: idx
+      }));
+      if (records.length > 0) {
+        const { error: imagesError } = await supabase
+          .from('product_images')
+          .insert(records);
+        if (imagesError) {
+          // Não falhar o request por causa das imagens; retornar aviso
+          return res.status(200).json({ success: true, data: inserted, images_warning: imagesError.message });
+        }
+      }
+    }
+
+    return res.json({ success: true, data: inserted });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
 // Rotas da API
 // Endpoint para obter chaves de integrações
 app.get('/api/integrations', async (req, res) => {

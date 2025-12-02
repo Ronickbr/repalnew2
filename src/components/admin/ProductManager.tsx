@@ -683,58 +683,26 @@ const ProductManager: React.FC = () => {
         // Campos de preço e estoque serão gerenciados em outro módulo
       };
 
-      const { data, error: supabaseError } = await supabase
-        .from('products')
-        .insert([productData])
-        .select(`
-          *,
-          categories(name)
-        `)
-        .single();
-
-      if (supabaseError) {
-        const details = (supabaseError as any).details ? ` - ${(supabaseError as any).details}` : '';
-        const hint = (supabaseError as any).hint ? ` - ${(supabaseError as any).hint}` : '';
-        const code = (supabaseError as any).code ? ` (${(supabaseError as any).code})` : '';
-        throw new Error(`Erro ao criar produto: ${supabaseError.message}${details}${hint}${code}`);
+      const adminToken = localStorage.getItem('admin_token') || '';
+      const resp = await fetch('http://localhost:3001/api/admin/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': adminToken,
+        },
+        body: JSON.stringify({ product: productData, additionalImages })
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.success) {
+        const msg = json?.error || `Erro HTTP ${resp.status}`;
+        throw new Error(`Erro ao criar produto: ${msg}`);
       }
+      const data = json.data;
 
       if (data) {
         // Salvar imagens adicionais na tabela product_images
-        if (additionalImages && additionalImages.length > 0) {
-          const validImages = additionalImages.filter(img => img && img.trim() !== '');
-          
-          
-          if (validImages.length > 0) {
-            const imageRecords = validImages.map((url, index) => ({
-              product_id: data.id,
-              url: url,
-              sort_order: index
-            }));
-            
-            
-            
-            try {
-              const { error: imagesError } = await supabase
-                .from('product_images')
-                .insert(imageRecords);
-                
-              if (imagesError) {
-                console.error('Erro ao salvar imagens adicionais:', imagesError);
-                console.error('Detalhes do erro:', imagesError.message, imagesError.details, imagesError.hint);
-                console.error('Código do erro:', imagesError.code);
-                addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
-              } else {
-                
-                addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
-              }
-            } catch (insertError) {
-              console.error('Erro crítico ao inserir imagens adicionais:', insertError);
-              addNotification('error', `Erro crítico ao salvar imagens: ${insertError instanceof Error ? insertError.message : 'Erro desconhecido'}`);
-            }
-          }
-        } else {
-          
+        if (json.images_warning) {
+          addNotification('warning', `Imagens adicionais não foram salvas: ${json.images_warning}`);
         }
         
         setProducts(prev => [data, ...prev]);
