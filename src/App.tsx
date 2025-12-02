@@ -63,7 +63,7 @@ function AppContent() {
             <Route 
               path="/perfil" 
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin={false}>
                   <UserProfile />
                 </ProtectedRoute>
               } 
