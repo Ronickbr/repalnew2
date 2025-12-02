@@ -146,14 +146,10 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
       if (result) {
         const allCategories = (result as any).data || [];
-        console.log('Todas as categorias carregadas:', allCategories.length);
         setCategories(allCategories);
         
         // Filtrar apenas as categorias principais (sem parent_id) para contagem
         const parentCategories = allCategories.filter((cat: Category) => !cat.parent_id);
-        console.log('Categorias principais:', parentCategories.length);
-        const subcategories = allCategories.filter((cat: Category) => cat.parent_id);
-        console.log('Subcategorias encontradas:', subcategories.length);
         announceToScreenReader(`${parentCategories.length} categorias carregadas com sucesso`);
       }
     } catch (error) {
@@ -166,7 +162,6 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   };
 
   useEffect(() => {
-    console.log('CategoryManager iniciado - carregando categorias...');
     fetchCategories();
     fetchAllSubcategories();
   }, []);
@@ -174,13 +169,11 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   // Notification system
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     addNotification(type, message, type === 'error' ? 'Erro na operação' : undefined);
-    console.log(`[${type.toUpperCase()}] ${message}`);
   };
 
   // Fetch all subcategories
   const fetchAllSubcategories = async () => {
     try {
-      console.log('Buscando subcategorias...');
       const result = await handleAsync(
         supabase
           .from(table('categories'))
@@ -192,9 +185,6 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
 
       if (result) {
         const subcategoriesData = (result as any).data || [];
-        console.log('Subcategorias carregadas:', subcategoriesData.length);
-        console.log('Exemplos de subcategorias:', subcategoriesData.slice(0, 3));
-        console.log('Primeira subcategoria exemplo:', subcategoriesData[0]);
         setSubcategories(subcategoriesData);
       }
     } catch (error) {
@@ -581,7 +571,6 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
     // Group by subcategories from categories table usando parent_id
     const processed = filtered.map(parent => {
       const children = subcategories.filter(sub => sub.parent_id === parent.id);
-      console.log(`Categoria ${parent.name} (${parent.id}) tem ${children.length} subcategorias`);
       return {
         ...parent,
         children: children
@@ -674,16 +663,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gestão de Categorias</h1>
             <p className="text-gray-600 text-sm sm:text-base">Organize suas categorias e subcategorias de produtos</p>
-            <button 
-              onClick={() => {
-                console.log('Categorias atuais:', categories);
-                console.log('Subcategorias atuais:', subcategories);
-                console.log('Categorias processadas:', processedCategories);
-              }}
-              className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded hover:bg-blue-200"
-            >
-              Debug: Ver Dados
-            </button>
+            
           </div>
         
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 md:space-x-3">

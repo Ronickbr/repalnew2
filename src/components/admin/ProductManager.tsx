@@ -606,6 +606,10 @@ const ProductManager: React.FC = () => {
 
   const createProduct = async (image?: string, additionalImages?: string[]) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Você precisa estar autenticado para criar produtos.');
+      }
       // Remover additional_images dos dados do produto principal
       const { additional_images, ...productDataWithoutImages } = formData;
       
@@ -690,7 +694,10 @@ const ProductManager: React.FC = () => {
         .single();
 
       if (supabaseError) {
-        throw new Error(`Erro ao criar produto: ${supabaseError.message}`);
+        const details = (supabaseError as any).details ? ` - ${(supabaseError as any).details}` : '';
+        const hint = (supabaseError as any).hint ? ` - ${(supabaseError as any).hint}` : '';
+        const code = (supabaseError as any).code ? ` (${(supabaseError as any).code})` : '';
+        throw new Error(`Erro ao criar produto: ${supabaseError.message}${details}${hint}${code}`);
       }
 
       if (data) {

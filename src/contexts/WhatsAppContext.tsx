@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
+import { table } from '../lib/schema';
 
 export interface Store {
   id: string;
@@ -48,8 +50,30 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const redirectToWhatsApp = (store: Store, message: string = 'Olá, gostaria de mais informações') => {
     const whatsappUrl = `https://wa.me/${store.phone}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-    closeStoreSelector();
+    const details = {
+      store_id: store.id,
+      store_name: store.name,
+      phone: store.phone,
+      path: window.location.pathname,
+      message,
+    };
+    supabase
+      .from(table('activity_logs'))
+      .insert({
+        action: 'whatsapp_click',
+        resource_type: 'store',
+        resource_id: store.id,
+        details: JSON.stringify(details),
+        user_agent: navigator.userAgent,
+        status: 'success',
+      })
+      .catch(() => {
+        // silencioso
+      })
+      .finally(() => {
+        window.open(whatsappUrl, '_blank');
+        closeStoreSelector();
+      });
   };
 
   const value = {

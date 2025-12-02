@@ -4,7 +4,6 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { table } from '../../lib/schema';
 // import DashboardStats from '../../components/admin/DashboardStats';
 import DashboardCharts from '../../components/admin/DashboardCharts';
-import RecentLeads from '../../components/admin/RecentLeads';
 import { Users, Package, ShoppingCart, Eye, Filter, FileText, ArrowRight } from 'lucide-react';
 
 interface DashboardData {
@@ -15,6 +14,10 @@ interface DashboardData {
   totalLeads: number;
   totalBanners: number;
   recentLeads: any[];
+  totalVisitors: number;
+  topProducts: { id: string; name: string; count: number }[];
+  whatsappClicksByStore: { id: string; name: string; count: number }[];
+  productsByCategory: { name: string; value: number }[];
 }
 
 const DashboardPage: React.FC = () => {
@@ -26,7 +29,11 @@ const DashboardPage: React.FC = () => {
     totalUsers: 0,
     totalLeads: 0,
     totalBanners: 0,
-    recentLeads: []
+    recentLeads: [],
+    totalVisitors: 0,
+    topProducts: [],
+    whatsappClicksByStore: [],
+    productsByCategory: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +57,25 @@ const DashboardPage: React.FC = () => {
         categoriesData,
         brandsData,
         usersData,
-        bannersData
+        bannersData,
+        storesRows,
+        siteVisitsRows,
+        productViewRows,
+        whatsappClickRows,
+        categoriesListRows,
+        productsLightRows
       ] = await Promise.all([
         supabase.from(table('products')).select('*', { count: 'exact', head: true }),
         supabase.from(table('categories')).select('id', { count: 'exact', head: true }),
         supabase.from(table('brands')).select('*', { count: 'exact', head: true }),
         supabase.from(table('admin_users')).select('*', { count: 'exact', head: true }),
-        supabase.from(table('banners')).select('*', { count: 'exact', head: true })
+        supabase.from(table('banners')).select('*', { count: 'exact', head: true }),
+        supabase.from(table('stores')).select('id, name').limit(1000),
+        supabase.from(table('activity_logs')).select('details').eq('action', 'site_visit').limit(50000),
+        supabase.from(table('activity_logs')).select('resource_id, details').eq('action', 'product_view').limit(50000),
+        supabase.from(table('activity_logs')).select('resource_id, details').eq('action', 'whatsapp_click').limit(50000),
+        supabase.from(table('categories')).select('id, name').eq('active', true).limit(1000),
+        supabase.from(table('products')).select('category_id').eq('active', true).limit(50000)
       ]);
 
       // Buscar leads recentes
@@ -73,6 +92,70 @@ const DashboardPage: React.FC = () => {
       if (leadsError) console.warn('Erro ao buscar leads:', leadsError);
       if (recentLeadsError) console.warn('Erro ao buscar leads recentes:', recentLeadsError);
 
+      const categoryNameMap = new Map<string, string>();
+      for (const c of (categoriesListRows.data || []) as any[]) {
+        categoryNameMap.set(String(c.id), String(c.name || ''));
+      }
+      const categoryCountMap = new Map<string, number>();
+      for (const p of (productsLightRows.data || []) as any[]) {
+        const cid = p.category_id != null ? String(p.category_id) : '';
+        if (!cid) continue;
+        categoryCountMap.set(cid, (categoryCountMap.get(cid) || 0) + 1);
+      }
+      const productsByCategory = Array.from(categoryCountMap.entries())
+        .map(([id, count]) => ({ name: categoryNameMap.get(id) || id, value: count }))
+        .sort((a, b) => b.value - a.value);
+
+      const uniqueVisitors = (() => {
+        const arr = siteVisitsRows.data || [];
+        const ids = new Set<string>();
+        for (const r of arr as any[]) {
+          const d = typeof r.details === 'string' ? (() => { try { return JSON.parse(r.details); } catch { return {}; } })() : r.details || {};
+          if (d && d.visitor_id) ids.add(String(d.visitor_id));
+        }
+        return ids.size;
+      })();
+
+      const productCountsMap = new Map<string, { name: string; count: number }>();
+      for (const r of (productViewRows.data || []) as any[]) {
+        const id = String(r.resource_id);
+        const d = typeof r.details === 'string' ? (() => { try { return JSON.parse(r.details); } catch { return {}; } })() : r.details || {};
+        const name = d.product_name || d.name || '';
+        const entry = productCountsMap.get(id) || { name, count: 0 };
+        entry.count += 1;
+        if (!entry.name && name) entry.name = name;
+        productCountsMap.set(id, entry);
+      }
+      const topProducts = Array.from(productCountsMap.entries())
+        .map(([id, v]) => ({ id, name: v.name || id, count: v.count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const storeCountsMap = new Map<string, { name: string; count: number }>();
+      for (const r of (whatsappClickRows.data || []) as any[]) {
+        const id = String(r.resource_id);
+        const d = typeof r.details === 'string' ? (() => { try { return JSON.parse(r.details); } catch { return {}; } })() : r.details || {};
+        const name = d.store_name || '';
+        const entry = storeCountsMap.get(id) || { name, count: 0 };
+        entry.count += 1;
+        if (!entry.name && name) entry.name = name;
+        storeCountsMap.set(id, entry);
+      }
+      const storeNameMap = new Map<string, string>();
+      for (const s of (storesRows.data || []) as any[]) {
+        storeNameMap.set(String(s.id), String(s.name || ''));
+      }
+
+      const allStoresBase = Array.from(storeNameMap.entries()).map(([id, name]) => ({ id, name, count: 0 }));
+      const countsFromLogs = Array.from(storeCountsMap.entries()).map(([id, v]) => ({ id, name: storeNameMap.get(id) || v.name || id, count: v.count }));
+      const mergedStoreCountsMap = new Map<string, { id: string; name: string; count: number }>();
+      for (const s of allStoresBase) mergedStoreCountsMap.set(s.id, s);
+      for (const s of countsFromLogs) {
+        const existing = mergedStoreCountsMap.get(s.id);
+        mergedStoreCountsMap.set(s.id, { id: s.id, name: s.name || (existing ? existing.name : s.id), count: s.count });
+      }
+      const whatsappClicksByStore = Array.from(mergedStoreCountsMap.values()).sort((a, b) => b.count - a.count);
+
       setData({
         totalProducts: productsData.count || 0,
         totalCategories: categoriesData.count || 0,
@@ -80,7 +163,11 @@ const DashboardPage: React.FC = () => {
         totalUsers: usersData.count || 0,
         totalLeads: leadsData?.count || 0,
         totalBanners: bannersData.count || 0,
-        recentLeads: recentLeadsData || []
+        recentLeads: recentLeadsData || [],
+        totalVisitors: uniqueVisitors,
+        topProducts,
+        whatsappClicksByStore,
+        productsByCategory
       });
 
     } catch (err) {
@@ -190,43 +277,46 @@ const DashboardPage: React.FC = () => {
       title: 'Total de Produtos',
       value: data.totalProducts,
       icon: Package,
-      color: 'blue',
-      trend: { value: '+12%', isPositive: true }
+      color: 'blue'
     },
     {
       title: 'Categorias',
       value: data.totalCategories,
       icon: Filter,
-      color: 'green',
-      trend: { value: '+5%', isPositive: true }
+      color: 'green'
     },
     {
       title: 'Marcas',
       value: data.totalBrands,
       icon: ShoppingCart,
-      color: 'purple',
-      trend: { value: '+8%', isPositive: true }
+      color: 'purple'
     },
     {
       title: 'Usuários',
       value: data.totalUsers,
       icon: Users,
-      color: 'orange',
-      trend: { value: '+15%', isPositive: true }
+      color: 'orange'
     },
     {
       title: 'Leads',
       value: data.totalLeads,
       icon: Eye,
-      color: 'indigo',
-      trend: { value: '+22%', isPositive: true }
+      color: 'indigo'
     },
     {
       title: 'Banners',
       value: data.totalBanners,
       icon: Eye,
-      color: 'pink',
-      trend: { value: '+3%', isPositive: true }
+      color: 'pink'
+    }
+  ];
+
+  const extraCards = [
+    {
+      title: 'Visitantes',
+      value: data.totalVisitors,
+      icon: Users,
+      color: 'blue'
     }
   ];
 
@@ -251,9 +341,8 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        {statsCards.map((card, index) => {
+        {[...statsCards, ...extraCards].map((card, index) => {
           const IconComponent = card.icon;
           // const colorClasses = {
           //   blue: 'bg-blue-500 text-blue-500 border-blue-500',
@@ -271,11 +360,6 @@ const DashboardPage: React.FC = () => {
                   <p className="text-sm font-medium text-gray-600">{card.title}</p>
                   <div className="flex items-baseline mt-1">
                     <p className="text-2xl font-semibold text-gray-900">{card.value}</p>
-                    <span className={`ml-2 text-sm font-medium ${
-                      card.trend.isPositive ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {card.trend.value}
-                    </span>
                   </div>
                 </div>
                 <div className={`flex-shrink-0 p-3 rounded-full bg-opacity-10 border-2`}>
@@ -287,10 +371,46 @@ const DashboardPage: React.FC = () => {
         })}
       </div>
 
-      {/* Gráficos e Métricas */}
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        <DashboardCharts
+          whatsappClicksByStore={data.whatsappClicksByStore.map((s) => ({ name: s.name, value: s.count }))}
+          productsByCategory={data.productsByCategory}
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <DashboardCharts />
-        <RecentLeads leads={data.recentLeads} />
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Produtos mais acessados</h3>
+          </div>
+          <div className="divide-y">
+            {data.topProducts.slice(0, 10).map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-3">
+                <div className="text-sm text-gray-700">{p.name}</div>
+                <div className="text-sm font-semibold text-gray-900">{p.count}</div>
+              </div>
+            ))}
+            {data.topProducts.length === 0 && (
+              <div className="text-sm text-gray-500">Sem dados</div>
+            )}
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Cliques no WhatsApp por loja</h3>
+          </div>
+          <div className="divide-y">
+            {data.whatsappClicksByStore.map((s) => (
+              <div key={s.id} className="flex items-center justify-between py-3">
+                <div className="text-sm text-gray-700">{s.name}</div>
+                <div className="text-sm font-semibold text-gray-900">{s.count}</div>
+              </div>
+            ))}
+            {data.whatsappClicksByStore.length === 0 && (
+              <div className="text-sm text-gray-500">Sem dados</div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Status do Sistema */}

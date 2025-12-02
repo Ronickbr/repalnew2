@@ -4,12 +4,48 @@ import { Helmet } from 'react-helmet-async';
 import Header from './Header';
 import Footer from './Footer';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { supabase } from '../lib/supabase';
+import { table } from '../lib/schema';
 
 const Layout: React.FC = () => {
   const { siteName, metaTitle, metaDescription, metaKeywords, canonicalBaseUrl } = useSiteSettings();
   const location = useLocation();
   const origin = (canonicalBaseUrl || '').trim().replace(/\/+$/, '');
   const canonicalHref = origin ? `${origin}${location.pathname}` : undefined;
+
+  React.useEffect(() => {
+    const vidKey = 'repal_visitor_id';
+    const visitLoggedKey = 'repal_visit_logged';
+    let visitorId = localStorage.getItem(vidKey);
+    if (!visitorId) {
+      visitorId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(vidKey, visitorId);
+    }
+    const alreadyLogged = localStorage.getItem(visitLoggedKey);
+    if (!alreadyLogged) {
+      const details = {
+        visitor_id: visitorId,
+        path: location.pathname,
+        referrer: document.referrer || undefined,
+      };
+      supabase
+        .from(table('activity_logs'))
+        .insert({
+          action: 'site_visit',
+          resource_type: 'site',
+          resource_id: 'repal',
+          details: JSON.stringify(details),
+          user_agent: navigator.userAgent,
+          status: 'success',
+        })
+        .then(() => {
+          localStorage.setItem(visitLoggedKey, '1');
+        })
+        .catch(() => {
+          // silencioso
+        });
+    }
+  }, [location.pathname]);
 
   return (
     <>
