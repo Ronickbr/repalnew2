@@ -154,7 +154,17 @@ const DashboardPage: React.FC = () => {
         const existing = mergedStoreCountsMap.get(s.id);
         mergedStoreCountsMap.set(s.id, { id: s.id, name: s.name || (existing ? existing.name : s.id), count: s.count });
       }
-      const whatsappClicksByStore = Array.from(mergedStoreCountsMap.values()).sort((a, b) => b.count - a.count);
+      const aggregatedByName = new Map<string, { id: string; name: string; count: number }>();
+      for (const s of mergedStoreCountsMap.values()) {
+        const norm = String(s.name || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const e = aggregatedByName.get(norm);
+        if (e) {
+          aggregatedByName.set(norm, { id: e.id, name: e.name, count: e.count + s.count });
+        } else {
+          aggregatedByName.set(norm, { id: norm || s.id, name: s.name, count: s.count });
+        }
+      }
+      const whatsappClicksByStore = Array.from(aggregatedByName.values()).sort((a, b) => b.count - a.count);
 
       setData({
         totalProducts: productsData.count || 0,
