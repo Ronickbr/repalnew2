@@ -4,14 +4,16 @@
 alter table if exists public.activity_logs enable row level security;
 
 -- Política de INSERT para visitantes anônimos
-create policy if not exists "anon_can_insert_activity_logs"
+drop policy if exists "anon_can_insert_activity_logs" on public.activity_logs;
+create policy "anon_can_insert_activity_logs"
   on public.activity_logs
   for insert
   to anon
   with check (true);
 
 -- Política de SELECT para visitantes anônimos (para agregação no dashboard)
-create policy if not exists "anon_can_select_activity_logs"
+drop policy if exists "anon_can_select_activity_logs" on public.activity_logs;
+create policy "anon_can_select_activity_logs"
   on public.activity_logs
   for select
   to anon
