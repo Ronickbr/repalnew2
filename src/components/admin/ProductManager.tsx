@@ -123,7 +123,7 @@ const ProductManager: React.FC = () => {
   const { announceToScreenReader } = useAccessibility();
   const { isLoading: isGlobalLoading, startLoading, stopLoading } = useLoadingState();
   const { geminiApiKey } = useSiteSettings();
-  const { isAuthenticated, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
 
   // Load initial data
   useEffect(() => {
@@ -606,8 +606,8 @@ const ProductManager: React.FC = () => {
 
   const createProduct = async (image?: string, additionalImages?: string[]) => {
     try {
-      if (!isAuthenticated || !hasPermission('manage_content')) {
-        throw new Error('Você precisa estar autenticado para criar produtos.');
+      if (!hasPermission('manage_content')) {
+        throw new Error('Você não tem permissão para criar produtos.');
       }
       // Remover additional_images dos dados do produto principal
       const { additional_images, ...productDataWithoutImages } = formData;
