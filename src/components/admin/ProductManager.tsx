@@ -684,7 +684,8 @@ const ProductManager: React.FC = () => {
       };
 
       const adminToken = localStorage.getItem('admin_token') || '';
-      const resp = await fetch('http://localhost:3001/api/admin/products', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+      const resp = await fetch(`${apiBase}/api/admin/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
