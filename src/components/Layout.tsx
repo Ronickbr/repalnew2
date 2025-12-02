@@ -4,8 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import Header from './Header';
 import Footer from './Footer';
 import { useSiteSettings } from '../hooks/useSiteSettings';
-import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
+import { logActivity } from '../lib/supabase';
 
 const Layout: React.FC = () => {
   const { siteName, metaTitle, metaDescription, metaKeywords, canonicalBaseUrl } = useSiteSettings();
@@ -28,22 +27,15 @@ const Layout: React.FC = () => {
         path: location.pathname,
         referrer: document.referrer || undefined,
       };
-      supabase
-        .from(table('activity_logs'))
-        .insert({
-          action: 'site_visit',
-          resource_type: 'site',
-          resource_id: 'repal',
-          details: JSON.stringify(details),
-          user_agent: navigator.userAgent,
-          status: 'success',
-        })
-        .then(() => {
-          localStorage.setItem(visitLoggedKey, '1');
-        })
-        .catch(() => {
-          // silencioso
-        });
+      logActivity({
+        action: 'site_visit',
+        resource_type: 'site',
+        resource_id: 'repal',
+        details: JSON.stringify(details),
+        user_agent: navigator.userAgent,
+        status: 'success',
+      })
+      localStorage.setItem(visitLoggedKey, '1');
     }
   }, [location.pathname]);
 

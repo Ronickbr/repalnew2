@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
+import { logActivity } from '../lib/supabase';
 
 export interface Store {
   id: string;
@@ -57,23 +56,16 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
       path: window.location.pathname,
       message,
     };
-    supabase
-      .from(table('activity_logs'))
-      .insert({
-        action: 'whatsapp_click',
-        resource_type: 'store',
-        resource_id: store.id,
-        details: JSON.stringify(details),
-        user_agent: navigator.userAgent,
-        status: 'success',
-      })
-      .catch(() => {
-        // silencioso
-      })
-      .finally(() => {
-        window.open(whatsappUrl, '_blank');
-        closeStoreSelector();
-      });
+    logActivity({
+      action: 'whatsapp_click',
+      resource_type: 'store',
+      resource_id: store.id,
+      details: JSON.stringify(details),
+      user_agent: navigator.userAgent,
+      status: 'success',
+    })
+    window.open(whatsappUrl, '_blank');
+    closeStoreSelector();
   };
 
   const value = {

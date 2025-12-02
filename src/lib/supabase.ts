@@ -81,6 +81,26 @@ function createSupabaseStub() {
 const isEnvConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 export const isSupabaseConfigured = isEnvConfigured
 export const supabase = isEnvConfigured ? createClient(supabaseUrl!, supabaseAnonKey!) : createSupabaseStub()
+export const isActivityLogsEnabled = import.meta.env.VITE_ACTIVITY_LOGS !== 'false'
+import { table } from './schema'
+
+export async function logActivity(payload: {
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  details?: string;
+  user_agent?: string;
+  status?: string;
+}) {
+  if (!isSupabaseConfigured || !isActivityLogsEnabled) return
+  try {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const hasSession = Boolean(sessionData?.session)
+    const allowAnon = import.meta.env.VITE_ACTIVITY_LOGS_ALLOW_ANON === 'true'
+    if (!hasSession && !allowAnon) return
+    await supabase.from(table('activity_logs')).insert(payload)
+  } catch {}
+}
 
 // Types para o banco de dados
 export interface Database {

@@ -8,8 +8,7 @@ import { useBudget } from '../contexts/BudgetContext'
 import ProductCard from '../components/ProductCard'
 import { useSiteSettings } from '../hooks/useSiteSettings'
 import { sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../lib/seo'
-import { supabase } from '../lib/supabase'
-import { table } from '../lib/schema'
+import { logActivity } from '../lib/supabase'
 
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
@@ -49,26 +48,20 @@ const ProductDetail: React.FC = () => {
   }, [product, budgetState.items])
 
   React.useEffect(() => {
-    if (product) {
-      const details = {
-        product_id: product.id,
-        product_name: product.name,
-        slug: product.slug,
-      }
-      supabase
-        .from(table('activity_logs'))
-        .insert({
-          action: 'product_view',
-          resource_type: 'product',
-          resource_id: String(product.id),
-          details: JSON.stringify(details),
-          user_agent: navigator.userAgent,
-          status: 'success',
-        })
-        .catch(() => {
-          // silencioso
-        })
-    }
+    if (!product) return;
+    const details = {
+      product_id: product.id,
+      product_name: product.name,
+      slug: product.slug,
+    };
+    logActivity({
+      action: 'product_view',
+      resource_type: 'product',
+      resource_id: String(product.id),
+      details: JSON.stringify(details),
+      user_agent: navigator.userAgent,
+      status: 'success',
+    })
   }, [product])
 
   if (loading) {
