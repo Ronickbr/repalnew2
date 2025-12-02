@@ -94,10 +94,6 @@ export async function logActivity(payload: {
 }) {
   if (!isSupabaseConfigured || !isActivityLogsEnabled) return
   try {
-    const { data: sessionData } = await supabase.auth.getSession()
-    const hasSession = Boolean(sessionData?.session)
-    const allowAnon = import.meta.env.VITE_ACTIVITY_LOGS_ALLOW_ANON === 'true'
-    if (!hasSession && !allowAnon) return
     await supabase.from(table('activity_logs')).insert(payload)
   } catch {}
 }
