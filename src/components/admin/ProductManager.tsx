@@ -123,7 +123,7 @@ const ProductManager: React.FC = () => {
   const { announceToScreenReader } = useAccessibility();
   const { isLoading: isGlobalLoading, startLoading, stopLoading } = useLoadingState();
   const { geminiApiKey } = useSiteSettings();
-  useAuth(); // Apenas para garantir que o hook está sendo usado
+  const { isAuthenticated, hasPermission } = useAuth();
 
   // Load initial data
   useEffect(() => {
@@ -606,8 +606,7 @@ const ProductManager: React.FC = () => {
 
   const createProduct = async (image?: string, additionalImages?: string[]) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!isAuthenticated || !hasPermission('manage_content')) {
         throw new Error('Você precisa estar autenticado para criar produtos.');
       }
       // Remover additional_images dos dados do produto principal
