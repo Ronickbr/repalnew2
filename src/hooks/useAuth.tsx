@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { apiFetch, ensureCsrf, apiBase } from '../lib/api';
+import { apiFetch, ensureCsrf, apiBase, apiFetchAny } from '../lib/api';
 
 // Flags de ambiente para permitir bypass de autenticação em desenvolvimento
 const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -83,18 +83,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (me?.success && me?.data) setUser(me.data);
         return { success: true, requires2fa: false };
       }
-      const resp = await fetch(`${apiBase}/api/auth/login`, {
+      const json = await apiFetchAny([
+        '/api/auth/login',
+        '/api/auth-login'
+      ], {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const json = await resp.json();
-      if (!resp.ok || json.success === false) return { success: false, error: json.error || 'Credenciais inválidas' };
       if (json.requires2fa) {
         return { success: true, requires2fa: true, tempToken: json.tempToken };
       }
-      const me = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' }).then(r => r.json());
+      const me = await apiFetchAny([
+        '/api/auth/me',
+        '/api/auth-me'
+      ]);
       if (me?.success && me?.data) setUser(me.data);
       await ensureCsrf();
       return { success: true };

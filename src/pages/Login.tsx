@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { apiFetchAny } from '../lib/api';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -70,14 +71,15 @@ const Login: React.FC = () => {
     }
     setLoading(true);
     try {
-      const resp = await fetch('/api/auth/verify-2fa', {
+      const json = await apiFetchAny([
+        '/api/auth/verify-2fa',
+        '/api/auth-verify-2fa'
+      ], {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tempToken, code: twoFaCode.trim() })
       });
-      const json = await resp.json();
-      if (!resp.ok || json.success === false) {
+      if (json.success === false) {
         setError(json.error || 'Código inválido');
       } else {
         const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/admin';
