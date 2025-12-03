@@ -1,6 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
+import { apiFetch, ensureCsrf, apiBase } from '../lib/api';
 
 // Flags de ambiente para permitir bypass de autenticação em desenvolvimento
 const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -17,7 +16,7 @@ interface AdminUser {
 interface AuthContextType {
   user: AdminUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; requires2fa?: boolean; tempToken?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -43,132 +42,63 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há um usuário logado no localStorage
     const checkAuth = async () => {
-      // Bypass de autenticação em desenvolvimento quando Supabase não está configurado
-      // ou quando habilitado explicitamente via VITE_DEV_AUTH_BYPASS
       if (devAuthBypass || !isSupabaseConfigured) {
-        const devUser: AdminUser = {
-          id: 'dev-admin',
-          email: 'dev@local',
-          name: 'Dev Admin',
-          role: 'super_admin',
-          active: true,
-        };
+        const devUser: AdminUser = { id: 'dev-admin', email: 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
         setUser(devUser);
         setLoading(false);
         return;
       }
       try {
-        const storedUser = localStorage.getItem('admin_user');
-        const storedToken = localStorage.getItem('admin_token');
-        
-        if (storedUser && storedToken) {
-          const userData = JSON.parse(storedUser);
-          
-          // Verificar se o token ainda é válido
-          const { data, error } = await supabase
-            .from(table('admin_users'))
-            .select('id, email, name, role, active')
-            .eq('id', userData.id)
-            .eq('active', true)
-            .single();
-          
-          if (data && !error) {
-            setUser(data);
-          } else {
-            // Token inválido ou usuário inativo, limpar dados
-            localStorage.removeItem('admin_user');
-            localStorage.removeItem('admin_token');
-          }
+        const resp = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' });
+        const json = await resp.json();
+        if (resp.ok && json.success && json.data) {
+          setUser(json.data);
+        } else {
+          setUser(null);
         }
       } catch {
-        // Erro já tratado pelo estado
-        localStorage.removeItem('admin_user');
-        localStorage.removeItem('admin_token');
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
-
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; requires2fa?: boolean; tempToken?: string }> => {
     try {
       setLoading(true);
-      // Em desenvolvimento, permitir login automático sem consultar o banco
       if (devAuthBypass || !isSupabaseConfigured) {
-        const devUser: AdminUser = {
-          id: 'dev-admin',
-          email: email || 'dev@local',
-          name: 'Dev Admin',
-          role: 'super_admin',
-          active: true,
-        };
-        const token = btoa(`${devUser.id}:${Date.now()}`);
-        localStorage.setItem('admin_user', JSON.stringify(devUser));
-        localStorage.setItem('admin_token', token);
-        setUser(devUser);
-        return { success: true };
+        // Backend tratará como dev; apenas chama login
+        const resp = await fetch(`${apiBase}/api/auth/login`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await resp.json();
+        if (!resp.ok || json.success === false) return { success: false, error: json.error || 'Falha no login' };
+        const me = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' }).then(r => r.json());
+        if (me?.success && me?.data) setUser(me.data);
+        return { success: true, requires2fa: false };
       }
-      
-      // Buscar usuário pelo email
-      const emailLower = email.toLowerCase();
-      let { data: userData, error: userError } = await supabase
-        .from(table('admin_users'))
-        .select('id, email, password_hash, name, role, active')
-        .eq('email', emailLower)
-        .eq('active', true)
-        .single();
-
-      if (userError || !userData) {
-        // Fallback: tentar variação .com.br quando informado .com
-        if (emailLower.endsWith('.com')) {
-          const altEmail = `${emailLower}.br`;
-          const alt = await supabase
-            .from(table('admin_users'))
-            .select('id, email, password_hash, name, role, active')
-            .eq('email', altEmail)
-            .eq('active', true)
-            .single();
-          userData = alt.data as any;
-        }
-        if (!userData) {
-          return { success: false, error: 'Credenciais inválidas' };
-        }
+      const resp = await fetch(`${apiBase}/api/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const json = await resp.json();
+      if (!resp.ok || json.success === false) return { success: false, error: json.error || 'Credenciais inválidas' };
+      if (json.requires2fa) {
+        return { success: true, requires2fa: true, tempToken: json.tempToken };
       }
-      
-      // Verificar senha
-      // Como estamos armazenando a senha em texto simples por simplicidade
-      // Em produção, usar bcrypt para hash da senha
-      const isValidPassword = userData.password_hash === password;
-      
-      if (!isValidPassword) {
-        return { success: false, error: 'Credenciais inválidas' };
-      }
-      
-      // Criar dados do usuário sem a senha
-      const userDataWithoutPassword = {
-        id: userData.id,
-        email: userData.email,
-        name: userData.name,
-        role: userData.role,
-        active: userData.active
-      };
-      
-      // Gerar token simples (em produção usar JWT)
-      const token = btoa(`${userData.id}:${Date.now()}`);
-      
-      // Salvar no localStorage
-      localStorage.setItem('admin_user', JSON.stringify(userDataWithoutPassword));
-      localStorage.setItem('admin_token', token);
-      
-      setUser(userDataWithoutPassword);
-      
+      const me = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' }).then(r => r.json());
+      if (me?.success && me?.data) setUser(me.data);
+      await ensureCsrf();
       return { success: true };
     } catch {
-      // Erro já tratado pelo retorno
       return { success: false, error: 'Erro interno do servidor' };
     } finally {
       setLoading(false);
@@ -177,15 +107,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   
   const logout = async (): Promise<void> => {
     try {
-      // Limpar dados do localStorage
-      localStorage.removeItem('admin_user');
-      localStorage.removeItem('admin_token');
-      
-      // Limpar estado
+      await apiFetch('/api/auth/logout', { method: 'POST' });
       setUser(null);
-    } catch {
-      // Erro já tratado pelo retorno
-    }
+    } catch {}
   };
   
   const isAuthenticated = !!user;

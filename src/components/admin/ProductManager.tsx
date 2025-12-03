@@ -683,21 +683,11 @@ const ProductManager: React.FC = () => {
         // Campos de preço e estoque serão gerenciados em outro módulo
       };
 
-      const adminToken = localStorage.getItem('admin_token') || '';
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-      const resp = await fetch(`${apiBase}/api/admin/products`, {
+      const { apiFetch } = await import('../../lib/api');
+      const json = await apiFetch('/api/admin/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': adminToken,
-        },
         body: JSON.stringify({ product: productData, additionalImages })
-      });
-      const json = await resp.json();
-      if (!resp.ok || !json.success) {
-        const msg = json?.error || `Erro HTTP ${resp.status}`;
-        throw new Error(`Erro ao criar produto: ${msg}`);
-      }
+      }, true);
       const data = json.data;
 
       if (data) {

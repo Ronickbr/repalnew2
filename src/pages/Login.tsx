@@ -7,6 +7,9 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [requires2fa, setRequires2fa] = useState(false);
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const [tempToken, setTempToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -40,12 +43,45 @@ const Login: React.FC = () => {
     
     try {
       const result = await login(email, password);
-      
+      if (result.success && result.requires2fa) {
+        setRequires2fa(true);
+        setTempToken(result.tempToken || '');
+        return;
+      }
       if (result.success) {
         const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/admin';
         navigate(from, { replace: true });
       } else {
         setError(result.error || 'Erro ao fazer login');
+      }
+    } catch {
+      setError('Erro interno. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify2fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!twoFaCode.trim()) {
+      setError('Informe o código de 2FA');
+      return;
+    }
+    setLoading(true);
+    try {
+      const resp = await fetch('/api/auth/verify-2fa', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tempToken, code: twoFaCode.trim() })
+      });
+      const json = await resp.json();
+      if (!resp.ok || json.success === false) {
+        setError(json.error || 'Código inválido');
+      } else {
+        const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/admin';
+        navigate(from, { replace: true });
       }
     } catch {
       setError('Erro interno. Tente novamente.');
@@ -74,7 +110,7 @@ const Login: React.FC = () => {
         
         {/* Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={requires2fa ? handleVerify2fa : handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -128,6 +164,24 @@ const Login: React.FC = () => {
                 </button>
               </div>
             </div>
+
+            {requires2fa && (
+              <div>
+                <label htmlFor="twofa" className="block text-sm font-medium text-gray-700 mb-2">
+                  Código 2FA
+                </label>
+                <input
+                  id="twofa"
+                  type="text"
+                  value={twoFaCode}
+                  onChange={(e) => setTwoFaCode(e.target.value)}
+                  className="block w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Digite o código do app autenticador"
+                  disabled={loading}
+                />
+                <p className="text-xs text-gray-500 mt-1">Abra seu app (Google Authenticator/1Password/etc.) e digite o código.</p>
+              </div>
+            )}
             
             {/* Error Message */}
             {error && (
@@ -146,10 +200,10 @@ const Login: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                  Entrando...
+                  {requires2fa ? 'Verificando...' : 'Entrando...'}
                 </>
               ) : (
-                'Entrar'
+                requires2fa ? 'Verificar 2FA' : 'Entrar'
               )}
             </button>
           </form>

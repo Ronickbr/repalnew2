@@ -92,7 +92,7 @@ interface SiteSettings {
 }
 
 interface SettingsSection {
-  key: keyof Omit<SiteSettings, 'id' | 'created_at' | 'updated_at'>;
+  key: keyof Omit<SiteSettings, 'id' | 'created_at' | 'updated_at'> | 'security';
   title: string;
   icon: React.ReactNode;
   description: string;
@@ -156,6 +156,12 @@ const SettingsPage: React.FC = () => {
       title: 'Manutenção',
       icon: <Shield className="w-5 h-5" />,
       description: 'Modo de manutenção'
+    },
+    {
+      key: 'security',
+      title: 'Segurança',
+      icon: <Shield className="w-5 h-5" />,
+      description: 'Autenticação e 2FA'
     },
 
   ];
@@ -414,27 +420,19 @@ const SettingsPage: React.FC = () => {
         const sitemapEnabled = !!settingsToSave.seo?.sitemap_enabled;
         const baseUrl = (settingsToSave.site_info?.url || settingsToSave.seo?.canonical_url || '').trim();
 
+        const { apiFetch, ensureCsrf } = await import('../../lib/api');
+        await ensureCsrf();
         if (robotsContent || robotsContent === '') {
-          const resp = await fetch('/api/seo/robots', {
+          await apiFetch('/api/seo/robots', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: robotsContent })
-          });
-          if (!resp.ok) {
-            const data = await resp.json().catch(() => ({}));
-            throw new Error(data.error || 'Falha ao criar robots.txt');
-          }
+          }, true);
         }
 
-        const sitemapResp = await fetch('/api/seo/sitemap', {
+        await apiFetch('/api/seo/sitemap', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enabled: sitemapEnabled, baseUrl })
-        });
-        if (!sitemapResp.ok) {
-          const data = await sitemapResp.json().catch(() => ({}));
-          throw new Error(data.error || 'Falha ao processar sitemap');
-        }
+        }, true);
       } catch (e) {
         console.error(e);
         toast.error(e instanceof Error ? e.message : 'Erro ao atualizar arquivos SEO');
@@ -956,6 +954,14 @@ const SettingsPage: React.FC = () => {
                 </div>
               </>
             )}
+          </div>
+        );
+      
+      case 'security':
+        const Section = require('./Security2FASection').default;
+        return (
+          <div className="space-y-6">
+            <Section />
           </div>
         );
       
