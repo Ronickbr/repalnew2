@@ -32,9 +32,12 @@ export const ensureCsrf = async (): Promise<string> => {
 };
 
 export const apiFetchAny = async (paths: string[], init: RequestInit = {}, requireCsrf: boolean = false) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   const options: RequestInit = {
     ...init,
     credentials: 'include',
+    signal: controller.signal,
     headers: {
       'Content-Type': 'application/json',
       ...(init.headers || {})
@@ -45,21 +48,25 @@ export const apiFetchAny = async (paths: string[], init: RequestInit = {}, requi
     (options.headers as Record<string, string>)['X-CSRF-Token'] = token;
   }
   let lastError: Error | null = null;
+  let lastStatus: number | null = null;
   for (const p of paths) {
     const url = `${apiBase}${p}`;
     try {
       const resp = await fetch(url, options);
       const json = await resp.json().catch(() => ({}));
-      if (resp.status === 405 || resp.status === 404) continue;
+      if (resp.status === 405 || resp.status === 404) { lastStatus = resp.status; continue; }
       if (!resp.ok || json.success === false) {
         const msg = json.error || `Erro HTTP ${resp.status}`;
         throw new Error(msg);
       }
+      clearTimeout(timeout);
       return json;
-    } catch (e) {
-      lastError = e as Error;
+    } catch {
+      lastError = new Error('Falha na requisição');
     }
   }
+  if (lastStatus === 405) throw new Error('Serviço indisponível (405). Tente novamente em instantes.');
+  if (lastStatus === 404) throw new Error('Endpoint não encontrado (404).');
   throw lastError || new Error('Falha na requisição');
 };
 

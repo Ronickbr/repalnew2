@@ -247,3 +247,47 @@ Para suporte técnico, entre em contato:
 ---
 
 **Desenvolvido com ❤️ para Repal Equipamentos**
+# Repal New — Autenticação e Login
+
+## Correções e Melhorias Implementadas
+
+- Unificação do roteamento API na Vercel para respeitar limite do plano Hobby (1 função): `api/[...path].js` com rewrite apenas para rotas não-API
+- Handlers robustos para autenticação: login, logout, me, 2FA, CSRF e admin/products
+- CORS consistente: `Access-Control-Allow-Origin` baseado em `Origin/Host` e `Allow-Credentials: true`
+- Tratamento de erros com mensagens claras (401, 403, 404, 405, 429) e logs de auditoria
+- Frontend resiliente: `apiFetchAny` com fallback de rotas, timeout (15s) e mensagens amigáveis
+- Testes automatizados (Vitest) cobrindo UI de login, erros comuns e integração básica
+
+## Variáveis de Ambiente (Vercel)
+
+- `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — acesso de leitura
+- `SUPABASE_SERVICE_ROLE_KEY` — operações administrativas
+- `JWT_SECRET` — assinatura de sessão
+- `VITE_DEV_AUTH_BYPASS=false` — produção
+- `VITE_API_BASE_URL` — vazio em produção (same-origin)
+
+## Deploy — vercel.json
+
+```json
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/[...path].js", "use": "@vercel/node" },
+    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
+  ],
+  "rewrites": [
+    { "source": "/((?!api).*)", "destination": "/index.html" }
+  ]
+}
+```
+
+## Testes
+
+- Executar: `npm run test`
+- E2E básico: `npm run e2e:auth` (define `TARGET_URL` quando necessário)
+
+## Segurança
+
+- Cookies de sessão: `HttpOnly`, `Secure`, `SameSite=Strict`
+- CSRF: cookie `csrf_token` + cabeçalho `X-CSRF-Token` em mutações
+- 2FA: TOTP com verificação no backend
