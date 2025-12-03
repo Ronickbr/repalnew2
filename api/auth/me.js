@@ -1,4 +1,4 @@
-import { getServiceClient, verifyJwt, readCookies } from './lib/util.js'
+import { getServiceClient, verifyJwt, readCookies } from '../lib/util.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ success: false })

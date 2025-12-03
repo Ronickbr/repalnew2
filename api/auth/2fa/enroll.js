@@ -1,6 +1,6 @@
 import speakeasy from 'speakeasy'
 import qrcode from 'qrcode'
-import { getServiceClient, verifyJwt, readCookies, logAdminActivity } from './lib/util.js'
+import { getServiceClient, verifyJwt, readCookies, logAdminActivity } from '../../lib/util.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ success: false })

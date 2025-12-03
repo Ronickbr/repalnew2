@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { getServiceClient, issueJwt, setCookie, logAdminActivity } from './lib/util.js'
+import { getServiceClient, issueJwt, setCookie, logAdminActivity } from '../lib/util.js'
 
 const readJson = async (req) => {
   const chunks = []

@@ -1,5 +1,5 @@
 import speakeasy from 'speakeasy'
-import { getServiceClient, verifyJwt, setCookie, logAdminActivity } from './lib/util.js'
+import { getServiceClient, verifyJwt, setCookie, logAdminActivity, issueJwt } from '../lib/util.js'
 
 const readJson = async (req) => {
   const chunks = []
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   const verified = speakeasy.totp.verify({ secret: String(userData.totp_secret || ''), encoding: 'base32', token: String(code) })
   if (!verified) return res.status(401).json({ success: false, error: 'Código 2FA inválido' })
   const baseUser = { id: userData.id, email: userData.email, name: userData.name, role: userData.role, active: userData.active }
-  const token = require('./lib/util.js').issueJwt(baseUser)
+  const token = issueJwt(baseUser)
   setCookie(res, 'admin_token', token, { sameSite: 'Strict', secure: true, httpOnly: true, maxAge: 60 * 60 * 2 })
   await logAdminActivity(baseUser, 'login_2fa', {})
   res.json({ success: true })
