@@ -7,8 +7,11 @@ export default async function handler(req, res) {
   }
   const token = Math.random().toString(36).slice(2) + Date.now().toString(36)
   setCookie(res, 'csrf_token', token, { sameSite: 'Strict', secure: true, httpOnly: false })
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*')
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
   console.info('[auth/csrf-token] emitido')
   res.json({ success: true, csrfToken: token })
 }

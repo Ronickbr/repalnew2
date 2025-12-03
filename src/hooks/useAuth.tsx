@@ -70,39 +70,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       setLoading(true);
       if (devAuthBypass || !isSupabaseConfigured) {
-        // Backend tratará como dev; apenas chama login
-        const resp = await fetch(`${apiBase}/api/auth/login`, {
+        try {
+          const json = await apiFetchAny([
+            '/api/auth/login',
+            '/api/auth-login'
+          ], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const me = await apiFetchAny([
+            '/api/auth/me',
+            '/api/auth-me'
+          ]);
+          if (me?.success && me?.data) setUser(me.data);
+          return { success: true, requires2fa: !!json.requires2fa, tempToken: json.tempToken };
+        } catch (e: any) {
+          return { success: false, error: String(e?.message || 'Falha no login') };
+        }
+      }
+      try {
+        const json = await apiFetchAny([
+          '/api/auth/login',
+          '/api/auth-login'
+        ], {
           method: 'POST',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        const json = await resp.json();
-        if (!resp.ok || json.success === false) return { success: false, error: json.error || 'Falha no login' };
-        const me = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' }).then(r => r.json());
+        if (json.requires2fa) {
+          return { success: true, requires2fa: true, tempToken: json.tempToken };
+        }
+        const me = await apiFetchAny([
+          '/api/auth/me',
+          '/api/auth-me'
+        ]);
         if (me?.success && me?.data) setUser(me.data);
-        return { success: true, requires2fa: false };
+        await ensureCsrf();
+        return { success: true };
+      } catch (e: any) {
+        return { success: false, error: String(e?.message || 'Erro interno do servidor') };
       }
-      const json = await apiFetchAny([
-        '/api/auth/login',
-        '/api/auth-login'
-      ], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      if (json.requires2fa) {
-        return { success: true, requires2fa: true, tempToken: json.tempToken };
-      }
-      const me = await apiFetchAny([
-        '/api/auth/me',
-        '/api/auth-me'
-      ]);
-      if (me?.success && me?.data) setUser(me.data);
-      await ensureCsrf();
-      return { success: true };
-    } catch {
-      return { success: false, error: 'Erro interno do servidor' };
     } finally {
       setLoading(false);
     }

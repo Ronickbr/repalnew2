@@ -13,9 +13,11 @@ export default async function handler(req, res) {
     console.warn('[auth/verify-2fa] Método não permitido', { method: req.method, origin: req.headers.origin })
     return res.status(405).json({ success: false })
   }
-  const origin = req.headers.origin || '*'
-  res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
   const { tempToken, code } = await readJson(req)
   if (!tempToken || !code) {
     console.warn('[auth/verify-2fa] dados ausentes')

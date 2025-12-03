@@ -11,9 +11,13 @@ const readJson = async (req) => {
 export default async function handler(req, res) {
   const startedAt = Date.now()
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*')
-    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+      res.setHeader('Access-Control-Allow-Credentials', 'true')
+    }
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
     return res.status(200).end()
   }
   if (req.method !== 'POST') {
@@ -23,9 +27,11 @@ export default async function handler(req, res) {
   const { email, password } = await readJson(req)
   if (!email || !password) return res.status(400).json({ success: false, error: 'Email e senha obrigatórios' })
 
-  const origin = req.headers.origin || '*'
-  res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
 
   const devBypass = process.env.VITE_DEV_AUTH_BYPASS === 'true' || process.env.VITE_DEV_AUTH_BYPASS === true
   const client = getServiceClient()

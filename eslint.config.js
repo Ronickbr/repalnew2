@@ -52,6 +52,12 @@ export default tseslint.config(
     }
   },
   {
+    files: ['src/pages/__tests__/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off'
+    }
+  },
+  {
     files: ['src/components/ResourcePrefetch.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off'
