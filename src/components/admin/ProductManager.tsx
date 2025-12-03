@@ -683,19 +683,28 @@ const ProductManager: React.FC = () => {
         // Campos de preço e estoque serão gerenciados em outro módulo
       };
 
-      const { apiFetch } = await import('../../lib/api');
-      const json = await apiFetch('/api/admin/products', {
-        method: 'POST',
-        body: JSON.stringify({ product: productData, additionalImages })
-      }, true);
-      const data = json.data;
+      const { data: inserted, error: insertError } = await supabase
+        .from('products')
+        .insert([productData])
+        .select('*')
+        .single();
+
+      if (insertError) {
+        throw new Error(`Erro ao criar produto: ${insertError.message}`);
+      }
+      const data = inserted;
 
       if (data) {
         // Salvar imagens adicionais na tabela product_images
-        if (json.images_warning) {
-          addNotification('warning', `Imagens adicionais não foram salvas: ${json.images_warning}`);
+        if (additionalImages && additionalImages.length > 0) {
+          const records = additionalImages.filter(Boolean).map((url, idx) => ({ product_id: data.id, url, sort_order: idx }));
+          if (records.length > 0) {
+            const { error: imgError } = await supabase.from('product_images').insert(records);
+            if (imgError) {
+              addNotification('warning', `Algumas imagens adicionais não foram salvas: ${imgError.message}`);
+            }
+          }
         }
-        
         setProducts(prev => [data, ...prev]);
         addNotification('success', 'Produto criado com sucesso');
         announceToScreenReader(`Produto ${data.name} criado com sucesso`, 'polite');

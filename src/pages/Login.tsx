@@ -2,15 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { apiFetchAny } from '../lib/api';
+ 
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [requires2fa, setRequires2fa] = useState(false);
-  const [twoFaCode, setTwoFaCode] = useState('');
-  const [tempToken, setTempToken] = useState('');
+  const [requires2fa] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -44,11 +42,6 @@ const Login: React.FC = () => {
     
     try {
       const result = await login(email, password);
-      if (result.success && result.requires2fa) {
-        setRequires2fa(true);
-        setTempToken(result.tempToken || '');
-        return;
-      }
       if (result.success) {
         const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/admin';
         navigate(from, { replace: true });
@@ -62,35 +55,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleVerify2fa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (!twoFaCode.trim()) {
-      setError('Informe o código de 2FA');
-      return;
-    }
-    setLoading(true);
-    try {
-      const json = await apiFetchAny([
-        '/api/auth/verify-2fa',
-        '/api/auth-verify-2fa'
-      ], {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tempToken, code: twoFaCode.trim() })
-      });
-      if (json.success === false) {
-        setError(json.error || 'Código inválido');
-      } else {
-        const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/admin';
-        navigate(from, { replace: true });
-      }
-    } catch {
-      setError('Erro interno. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -112,7 +77,7 @@ const Login: React.FC = () => {
         
         {/* Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <form onSubmit={requires2fa ? handleVerify2fa : handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -167,23 +132,7 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            {requires2fa && (
-              <div>
-                <label htmlFor="twofa" className="block text-sm font-medium text-gray-700 mb-2">
-                  Código 2FA
-                </label>
-                <input
-                  id="twofa"
-                  type="text"
-                  value={twoFaCode}
-                  onChange={(e) => setTwoFaCode(e.target.value)}
-                  className="block w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Digite o código do app autenticador"
-                  disabled={loading}
-                />
-                <p className="text-xs text-gray-500 mt-1">Abra seu app (Google Authenticator/1Password/etc.) e digite o código.</p>
-              </div>
-            )}
+            
             
             {/* Error Message */}
             {error && (

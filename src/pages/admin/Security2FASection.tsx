@@ -3,25 +3,15 @@ import { ShieldCheck, QrCode } from 'lucide-react';
 
 const Security2FASection: React.FC = () => {
   const [loading, setLoading] = useState(false);
-  const [qr, setQr] = useState<string>('');
-  const [secret, setSecret] = useState<string>('');
+  const [qr] = useState<string>('');
+  const [secret] = useState<string>('');
   const [message, setMessage] = useState<string>('');
 
   const handleEnable2FA = async () => {
     setLoading(true);
     setMessage('');
     try {
-      const resp = await fetch('/api/auth/2fa/enroll', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' } });
-      const json = await resp.json();
-      if (!resp.ok || json.success === false) {
-        setMessage(json.error || 'Falha ao habilitar 2FA');
-        return;
-      }
-      setQr(json.qr as string);
-      setSecret(json.secret as string);
-      setMessage('2FA habilitado. Escaneie o QR no seu aplicativo autenticador.');
-    } catch {
-      setMessage('Erro interno');
+      setMessage('2FA indisponível neste modo de login.');
     } finally {
       setLoading(false);
     }
@@ -53,4 +43,3 @@ const Security2FASection: React.FC = () => {
 };
 
 export default Security2FASection;
-

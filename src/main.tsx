@@ -5,6 +5,7 @@ import { queryClient } from './lib/react-query'
 import './index.css'
 import './styles/responsive.css'
 import App from './App.tsx'
+import { supabase } from './lib/supabase'
 
 function addScriptToHead(element: HTMLScriptElement) {
   document.head.appendChild(element)
@@ -37,14 +38,16 @@ function addNoScriptToBody(content: string, id: string) {
 
 async function loadIntegrations() {
   try {
-    const res = await fetch('/api/integrations', { headers: { 'Accept': 'application/json' } })
-    const json = await res.json()
-    if (!json?.success) return
-    const data = json.data || {}
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('integrations')
+      .maybeSingle()
+    if (error) return
+    const cfg = (data && (data as { integrations?: Record<string, string> }).integrations) || {}
 
-    const gaId = String(data.google_analytics_id || '').trim()
-    const gtmId = String(data.google_tag_manager_id || '').trim()
-    const pixelId = String(data.facebook_pixel_id || '').trim()
+    const gaId = String(cfg.google_analytics_id || '').trim()
+    const gtmId = String(cfg.google_tag_manager_id || '').trim()
+    const pixelId = String(cfg.facebook_pixel_id || '').trim()
 
     if (gaId) {
       createExternalScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`, 'ga4-loader')

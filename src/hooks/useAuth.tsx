@@ -1,8 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { apiFetch, ensureCsrf, apiBase, apiFetchAny } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 // Flags de ambiente para permitir bypass de autenticação em desenvolvimento
-const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 const devAuthBypass = (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true' || (import.meta.env.VITE_DEV_AUTH_BYPASS as any) === true);
 
 interface AdminUser {
@@ -43,19 +42,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (devAuthBypass || !isSupabaseConfigured) {
+      if (devAuthBypass) {
         const devUser: AdminUser = { id: 'dev-admin', email: 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
         setUser(devUser);
         setLoading(false);
         return;
       }
       try {
-        const resp = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' });
-        const json = await resp.json();
-        if (resp.ok && json.success && json.data) {
-          setUser(json.data);
-        } else {
+        const { data, error } = await supabase.auth.getUser();
+        if (error || !data?.user) {
           setUser(null);
+        } else {
+          const metaRole = (data.user.user_metadata as any)?.role || 'editor';
+          const u: AdminUser = {
+            id: data.user.id,
+            email: data.user.email || '',
+            name: (data.user.user_metadata as any)?.name || data.user.email || '',
+            role: metaRole,
+            active: true
+          };
+          setUser(u);
         }
       } catch {
         setUser(null);
@@ -69,47 +75,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; requires2fa?: boolean; tempToken?: string }> => {
     try {
       setLoading(true);
-      if (devAuthBypass || !isSupabaseConfigured) {
-        try {
-          const json = await apiFetchAny([
-            '/api/auth/login',
-            '/api/auth-login'
-          ], {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          const me = await apiFetchAny([
-            '/api/auth/me',
-            '/api/auth-me'
-          ]);
-          if (me?.success && me?.data) setUser(me.data);
-          return { success: true, requires2fa: !!json.requires2fa, tempToken: json.tempToken };
-        } catch (e: any) {
-          return { success: false, error: String(e?.message || 'Falha no login') };
-        }
+      if (devAuthBypass) {
+        const devUser: AdminUser = { id: 'dev-admin', email: email || 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
+        setUser(devUser);
+        return { success: true };
       }
       try {
-        const json = await apiFetchAny([
-          '/api/auth/login',
-          '/api/auth-login'
-        ], {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        if (json.requires2fa) {
-          return { success: true, requires2fa: true, tempToken: json.tempToken };
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          return { success: false, error: error.message || 'Credenciais inválidas' };
         }
-        const me = await apiFetchAny([
-          '/api/auth/me',
-          '/api/auth-me'
-        ]);
-        if (me?.success && me?.data) setUser(me.data);
-        await ensureCsrf();
+        const u = data.user;
+        if (!u) return { success: false, error: 'Falha ao obter usuário' };
+        const metaRole = (u.user_metadata as any)?.role || 'editor';
+        const adminUser: AdminUser = { id: u.id, email: u.email || '', name: (u.user_metadata as any)?.name || u.email || '', role: metaRole, active: true };
+        setUser(adminUser);
         return { success: true };
       } catch (e: any) {
-        return { success: false, error: String(e?.message || 'Erro interno do servidor') };
+        return { success: false, error: String(e?.message || 'Falha no login') };
       }
     } finally {
       setLoading(false);
@@ -118,7 +101,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   
   const logout = async (): Promise<void> => {
     try {
-      await apiFetch('/api/auth/logout', { method: 'POST' });
+      await supabase.auth.signOut();
       setUser(null);
     } catch {}
   };
