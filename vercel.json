@@ -2,6 +2,10 @@
   "version": 2,
   "builds": [
     {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -10,18 +14,6 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    { "src": "/api/auth/login", "dest": "/api/auth-login" },
-    { "src": "/api/auth/me", "dest": "/api/auth-me" },
-    { "src": "/api/auth/logout", "dest": "/api/auth-logout" },
-    { "src": "/api/auth/csrf-token", "dest": "/api/auth-csrf-token" },
-    { "src": "/api/auth/verify-2fa", "dest": "/api/auth-verify-2fa" },
-    { "src": "/api/auth/2fa/enroll", "dest": "/api/auth-2fa-enroll" },
-    { "src": "/api/admin/products", "dest": "/api/admin-products" },
-    { "src": "/api/integrations", "dest": "/api/integrations" },
     {
       "handle": "filesystem"
     },
