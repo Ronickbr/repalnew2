@@ -22,7 +22,7 @@ describe('Login Page', () => {
 
     render(<MemoryRouter><Login /></MemoryRouter>)
     fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
-    expect(await screen.findByText(/preencha todos os campos/i)).toBeInTheDocument()
+    expect(await screen.findByText(/preencha todos os campos/i)).toBeTruthy()
   })
 
   it('não envia login com email inválido', async () => {
@@ -61,7 +61,7 @@ describe('Login Page', () => {
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/senha/i), { target: { value: 'x' } })
     fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
-    expect(await screen.findByText(/credenciais inválidas/i)).toBeInTheDocument()
+    expect(await screen.findByText(/credenciais inválidas/i)).toBeTruthy()
   })
 
   it('fluxo com 2FA requerido', async () => {
@@ -79,6 +79,6 @@ describe('Login Page', () => {
     fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText(/senha/i), { target: { value: 'x' } })
     fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
-    expect(await screen.findByLabelText(/código 2fa/i)).toBeInTheDocument()
+    expect(await screen.findByLabelText(/código 2fa/i)).toBeTruthy()
   })
 })
