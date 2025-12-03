@@ -16,12 +16,18 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'POST')
     return res.status(200).end()
   }
-  if (req.method !== 'POST') return res.status(405).json({ success: false })
+  if (req.method !== 'POST') {
+    console.warn('[admin/products] Método não permitido', { method: req.method, origin })
+    return res.status(405).json({ success: false })
+  }
   const cookies = readCookies(req)
   const token = cookies['admin_token']
   const csrfCookie = cookies['csrf_token']
   const csrfHeader = req.headers['x-csrf-token']
-  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) return res.status(403).json({ success: false, error: 'CSRF inválido' })
+  if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    console.warn('[admin/products] CSRF inválido')
+    return res.status(403).json({ success: false, error: 'CSRF inválido' })
+  }
   const devBypass = process.env.VITE_DEV_AUTH_BYPASS === 'true' || process.env.VITE_DEV_AUTH_BYPASS === true
   const client = getServiceClient()
   let admin
@@ -37,7 +43,10 @@ export default async function handler(req, res) {
       .eq('id', payload.sub)
       .eq('active', true)
       .maybeSingle()
-    if (error || !data) return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' })
+    if (error || !data) {
+      console.warn('[admin/products] usuário inválido/inativo')
+      return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' })
+    }
     admin = data
   }
   const { product, additionalImages } = await readJson(req)
@@ -45,6 +54,7 @@ export default async function handler(req, res) {
   if (!client) {
     const fake = { ...product, id: Math.floor(Math.random() * 1000000), created_at: new Date().toISOString() }
     await logAdminActivity(admin, 'create_product_dev', { product_id: fake.id })
+    console.info('[admin/products] dev bypass, created', { product_id: fake.id })
     return res.json({ success: true, data: fake })
   }
   const { data: inserted, error: insertError } = await client
@@ -52,12 +62,15 @@ export default async function handler(req, res) {
     .insert([product])
     .select('*')
     .single()
-  if (insertError) return res.status(500).json({ success: false, error: insertError.message })
+  if (insertError) {
+    console.error('[admin/products] insert error', { message: insertError.message })
+    return res.status(500).json({ success: false, error: insertError.message })
+  }
   if (Array.isArray(additionalImages) && additionalImages.length > 0) {
     const records = additionalImages.filter(Boolean).map((url, idx) => ({ product_id: inserted.id, url, sort_order: idx }))
     if (records.length > 0) await client.from('product_images').insert(records)
   }
   await logAdminActivity(admin, 'create_product', { product_id: inserted.id })
+  console.info('[admin/products] created', { product_id: inserted.id })
   res.json({ success: true, data: inserted })
 }
-
