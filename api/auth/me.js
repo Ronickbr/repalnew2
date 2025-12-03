@@ -1,10 +1,7 @@
-import { getServiceClient, verifyJwt, readCookies } from '../lib/util.js'
+import { getServiceClient, verifyJwt, readCookies } from '../../server-lib/util.js'
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    console.warn('[auth/me] Método não permitido', { method: req.method, origin: req.headers.origin })
-    return res.status(405).json({ success: false })
-  }
+  if (req.method !== 'GET') return res.status(405).json({ success: false })
   const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin)
@@ -26,9 +23,6 @@ export default async function handler(req, res) {
     .eq('id', payload.sub)
     .eq('active', true)
     .maybeSingle()
-  if (error || !data) {
-    console.warn('[auth/me] usuário inválido/inativo')
-    return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' })
-  }
+  if (error || !data) return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' })
   res.json({ success: true, data })
 }

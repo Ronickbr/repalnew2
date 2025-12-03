@@ -1,12 +1,14 @@
 import speakeasy from 'speakeasy'
 import qrcode from 'qrcode'
-import { getServiceClient, verifyJwt, readCookies, logAdminActivity } from '../../lib/util.js'
+import { getServiceClient, verifyJwt, readCookies, logAdminActivity } from '../../../server-lib/util.js'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ success: false })
-  const origin = req.headers.origin || '*'
-  res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
   const cookies = readCookies(req)
   const token = cookies['admin_token']
   const payload = token ? verifyJwt(token) : null
@@ -27,4 +29,3 @@ export default async function handler(req, res) {
   await logAdminActivity(userData, 'enable_2fa', {})
   res.json({ success: true, secret: secret.base32, otpauth, qr })
 }
-

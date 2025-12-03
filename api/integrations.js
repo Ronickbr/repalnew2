@@ -2,9 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ success: false })
-  const origin = req.headers.origin || '*'
-  res.setHeader('Access-Control-Allow-Origin', origin)
-  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  const origin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '')
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+  }
   const supabaseUrl = process.env.VITE_SUPABASE_URL
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -21,4 +23,3 @@ export default async function handler(req, res) {
   }
   res.json({ success: true, data: response })
 }
-
