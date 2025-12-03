@@ -40,7 +40,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vitest"]
+    "types": ["vitest", "node"]
   },
   "include": ["src", "vitest.config.ts"]
 }

@@ -45,6 +45,13 @@ export default tseslint.config(
     ignores: [],
   },
   {
+    files: ['src/tests/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  },
+  {
     files: ['src/components/ResourcePrefetch.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off'
