@@ -61,6 +61,7 @@ const ProductManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [subcategories, setSubcategories] = useState<Category[]>([]);
+  const [filterSubcategories, setFilterSubcategories] = useState<Category[]>([]);
 
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,7 +106,7 @@ const ProductManager: React.FC = () => {
   // Filters
   const [filters, setFilters] = useState({
     category_id: '',
-    brand: '',
+    subcategory_id: '',
     featured: '',
     active: '',
   });
@@ -242,8 +243,8 @@ const ProductManager: React.FC = () => {
       if (filters.category_id) {
         query = query.eq('category_id', filters.category_id);
       }
-      if (filters.brand) {
-        query = query.eq('brand', filters.brand);
+      if (filters.subcategory_id) {
+        query = query.eq('subcategory_id', filters.subcategory_id);
       }
 
       if (filters.featured) {
@@ -896,6 +897,25 @@ const ProductManager: React.FC = () => {
     }
   };
 
+  const fetchFilterSubcategories = async (categoryId: string) => {
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('parent_id', categoryId)
+        .eq('is_active', true)
+        .order('name');
+
+      if (supabaseError) {
+        throw new Error(`Erro ao buscar subcategorias: ${supabaseError.message}`);
+      }
+
+      setFilterSubcategories(data || []);
+    } catch (err) {
+      handleError(err, 'fetchFilterSubcategories');
+    }
+  };
+
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
     // Carregar subcategorias da categoria do produto
@@ -1388,7 +1408,15 @@ PALAVRAS-CHAVE:
               <select
                 id="filter-category"
                 value={filters.category_id}
-                onChange={(e) => setFilters(prev => ({ ...prev, category_id: e.target.value }))}
+                onChange={(e) => {
+                  const categoryId = e.target.value;
+                  setFilters(prev => ({ ...prev, category_id: categoryId, subcategory_id: '' }));
+                  if (categoryId) {
+                    fetchFilterSubcategories(categoryId);
+                  } else {
+                    setFilterSubcategories([]);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todas as categorias</option>
@@ -1398,15 +1426,23 @@ PALAVRAS-CHAVE:
               </select>
             </div>
             <div>
-              <label htmlFor="filter-brand" className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
-              <input
-                type="text"
-                id="filter-brand"
-                value={filters.brand}
-                onChange={(e) => setFilters(prev => ({ ...prev, brand: e.target.value }))}
-                placeholder="Filtrar por marca"
+              <label htmlFor="filter-subcategory" className="block text-sm font-medium text-gray-700 mb-1">Subcategoria</label>
+              <select
+                id="filter-subcategory"
+                value={filters.subcategory_id}
+                onChange={(e) => setFilters(prev => ({ ...prev, subcategory_id: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+                disabled={!filters.category_id || filterSubcategories.length === 0}
+              >
+                <option value="">
+                  {filters.category_id
+                    ? (filterSubcategories.length > 0 ? 'Todas as subcategorias' : 'Nenhuma subcategoria disponível')
+                    : 'Selecione uma categoria primeiro'}
+                </option>
+                {filterSubcategories.map(sub => (
+                  <option key={sub.id} value={String(sub.id)}>{sub.name}</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -1437,12 +1473,15 @@ PALAVRAS-CHAVE:
             </div>
             <div className="flex items-end">
               <button
-                onClick={() => setFilters({
-                  category_id: '',
-                  brand: '',
-                  featured: '',
-                  active: '',
-                })}
+                onClick={() => {
+                  setFilters({
+                    category_id: '',
+                    subcategory_id: '',
+                    featured: '',
+                    active: '',
+                  });
+                  setFilterSubcategories([]);
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               >
                 Limpar Filtros
