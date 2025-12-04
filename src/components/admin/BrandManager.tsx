@@ -426,21 +426,18 @@ export default function BrandManager() {
     try {
       setUploadingLogo(true);
       
-      // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `brand-logos/${fileName}`;
+      const filePath = `logos/${fileName}`;
 
-      // Fazer upload para o Supabase Storage
       const { error } = await supabase.storage
         .from('brand-logos')
-        .upload(filePath, file);
+        .upload(filePath, file, { contentType: file.type, upsert: true });
 
       if (error) {
         throw error;
       }
 
-      // Obter URL pública do arquivo
       const { data: { publicUrl } } = supabase.storage
         .from('brand-logos')
         .getPublicUrl(filePath);
