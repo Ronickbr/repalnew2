@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { lazy, Suspense } from 'react';
 import Layout from './components/Layout';
 import Home from './pages/Home';
+import CategoriesIndex from './pages/CategoriesIndex';
 import CategoryProducts from './pages/CategoryProducts';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
@@ -53,6 +54,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
+              <Route path="categorias" element={<CategoriesIndex />} />
               <Route path="categorias/:categorySlug" element={<CategoryProducts />} />
               <Route path="categorias/:categorySlug/:subcategorySlug" element={<CategoryProducts />} />
               <Route path="CategoryProducts" element={<CategoryProducts />} />
