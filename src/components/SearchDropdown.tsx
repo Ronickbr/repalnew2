@@ -50,8 +50,12 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
   return (
     <div 
       ref={dropdownRef}
+      id="search-dropdown"
       className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-[1002] max-h-96 overflow-y-auto"
       style={{ minWidth: '300px' }}
+      role="listbox"
+      aria-label="Resultados da busca"
+      aria-live="polite"
     >
       {isSearching ? (
         <div className="flex items-center justify-center py-8">
@@ -90,6 +94,8 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                 className={`flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 transition-colors duration-150 border-b border-gray-50 last:border-b-0 ${
                   isSelected ? 'bg-red-50 border-red-100' : ''
                 }`}
+                role="option"
+                aria-selected={isSelected}
               >
                 {/* Imagem do produto */}
                 <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">

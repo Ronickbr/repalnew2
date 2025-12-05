@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useProductSearch, SearchResult } from '../hooks/useProductSearch';
 import SearchDropdown from './SearchDropdown';
 
@@ -19,8 +19,6 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
   className = "",
   isMobile = false,
   style,
-  buttonClassName,
-  buttonStyle,
   iconClassName
 }) => {
   const [query, setQuery] = useState('');
@@ -143,15 +141,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
     }
   };
   
-  // Clique no botão de busca
-  const handleSearchClick = () => {
-    if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
-      const selectedResult = searchResults[selectedIndex];
-      handleResultClick(selectedResult);
-    } else {
-      handleSearch();
-    }
-  };
+  
   
   return (
     <div ref={containerRef} className="relative w-full z-[1001]">
@@ -168,16 +158,17 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
           }`}
           style={style}
           autoComplete="off"
+          aria-label="Buscar produtos"
+          aria-haspopup="listbox"
+          aria-controls="search-dropdown"
+          aria-expanded={isDropdownOpen}
+          aria-busy={isSearching}
         />
-        <button 
-          onClick={handleSearchClick}
-          className={buttonClassName || `absolute right-2 lg:right-3 top-1/2 transform -translate-y-1/2 text-red-600 hover:text-red-700 transition-colors duration-200 active:text-red-800 ${
-            isMobile ? 'min-h-[44px] min-w-[44px]' : ''
-          }`}
-          style={buttonStyle}
-        >
-          <Search className={iconClassName || "h-4 w-4 lg:h-5 lg:w-5"} />
-        </button>
+        {isSearching && (
+          <div className={`absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 ${isMobile ? 'min-h-[44px] min-w-[44px]' : ''}`} aria-hidden>
+            <Loader2 className={iconClassName || 'h-4 w-4 lg:h-5 lg:w-5 animate-spin text-red-600'} />
+          </div>
+        )}
       
       <SearchDropdown
         results={searchResults}
