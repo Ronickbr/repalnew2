@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { apiFetch } from '../lib/api';
 import { table } from '../lib/schema';
 
 // Variáveis de ambiente para verificação
@@ -118,22 +119,20 @@ export function useBanners() {
       
       
       
-      const { data, error } = await supabase
-        .from(table('banners'))
-        .insert({
-          title: bannerData.title.trim(),
-          image_url: bannerData.image_url.trim(),
-          link_url: bannerData.link_url?.trim() || null,
-          active: bannerData.active ?? true,
-          sort_order: bannerData.sort_order ?? 0
+      // Tentar via API admin (bypassa RLS e aplica CSRF)
+      const response = await apiFetch('/api/admin/banners', {
+        method: 'POST',
+        body: JSON.stringify({
+          banner: {
+            title: bannerData.title.trim(),
+            image_url: bannerData.image_url.trim(),
+            link_url: bannerData.link_url?.trim() || null,
+            active: bannerData.active ?? true,
+            sort_order: bannerData.sort_order ?? 0
+          }
         })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erro ao criar banner:', error);
-        throw new Error(`Erro ao criar banner: ${error.message}`);
-      }
+      }, true);
+      const data = response?.data as Banner;
       
       
       

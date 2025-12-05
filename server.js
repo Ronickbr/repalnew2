@@ -395,6 +395,57 @@ app.post('/api/admin/products', authMiddleware, requireRole(['admin', 'super_adm
   }
 });
 
+// Endpoint: criar banner com chave de serviço, validando token admin
+app.post('/api/admin/banners', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const adminUser = req.admin;
+
+    const { banner } = req.body || {};
+    if (!banner || !banner.title || !banner.image_url) {
+      return res.status(400).json({ success: false, error: 'Dados do banner inválidos' });
+    }
+
+    if (!isSupabaseConfigured) {
+      const fake = { 
+        id: Math.floor(Math.random() * 1000000),
+        title: String(banner.title).trim(),
+        image_url: String(banner.image_url).trim(),
+        link_url: banner.link_url ? String(banner.link_url).trim() : null,
+        active: banner.active ?? true,
+        sort_order: banner.sort_order ?? 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      await logAdminActivity(adminUser, 'create_banner_dev', { banner_id: fake.id });
+      return res.json({ success: true, data: fake });
+    }
+
+    const supabase = getServiceClient();
+    const payload = {
+      title: String(banner.title).trim(),
+      image_url: String(banner.image_url).trim(),
+      link_url: banner.link_url ? String(banner.link_url).trim() : null,
+      active: banner.active ?? true,
+      sort_order: banner.sort_order ?? 0
+    };
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('banners')
+      .insert([payload])
+      .select('*')
+      .single();
+
+    if (insertError) {
+      return res.status(500).json({ success: false, error: insertError.message, code: insertError.code, details: insertError.details, hint: insertError.hint });
+    }
+
+    await logAdminActivity(adminUser, 'create_banner', { banner_id: inserted.id });
+    return res.json({ success: true, data: inserted });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
 // Rotas da API
 // Endpoint para obter chaves de integrações
 app.get('/api/integrations', async (req, res) => {

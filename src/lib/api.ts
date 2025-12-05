@@ -1,4 +1,4 @@
-export const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+export const apiBase = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? 'http://localhost:3001' : '');
 
 let csrfTokenCache: string | null = null;
 
