@@ -69,44 +69,47 @@ export const useProducts = () => {
           throw new Error(`Falha ao carregar produtos: ${productsError.message}`);
         }
         
-        // Buscar categorias separadamente para mapeamento
+        // Buscar categorias (inclui parent_id para mapear relação pai → subcategoria)
         const { data: categoriesData } = await supabase
           .from('categories')
-          .select('id, name, slug')
+          .select('id, name, slug, parent_id, active')
           .eq('active', true);
 
         // Criar mapa de categorias para lookup rápido
-        const categoryMap = new Map();
+        const categoryMap = new Map<number, any>();
         categoriesData?.forEach((cat: any) => {
           categoryMap.set(cat.id, cat);
         });
 
         // Transformar os dados para manter compatibilidade com a interface existente
-      const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description || undefined,
-        category_id: product.category_id,
-        subcategory_id: product.subcategory_id,
-        slug: product.slug || generateSlug(product.name),
-        featured: product.featured || false,
-        featured_in_dropdown: product.featured_in_dropdown || false,
-        is_disabled: product.is_disabled || false,
-        featured_on_homepage: product.featured_on_homepage || false,
-        active: product.active !== undefined ? product.active : true,
-        created_at: product.created_at || new Date().toISOString(),
-        updated_at: product.updated_at || new Date().toISOString(),
-        category: categoryMap.get(product.category_id),
-        debug_category_id: product.category_id,
-        debug_category_found: !!categoryMap.get(product.category_id),
-        product_images: product.image ? [{ 
-            id: '1', 
-            product_id: product.id, 
-            image_url: product.image, 
-            sort_order: 1, 
-            created_at: new Date().toISOString() 
-          }] : []
-        }));
+      const transformedProducts: ProductWithCategory[] = (productsData || []).map((product: any) => {
+        const subcategory = product.subcategory_id ? categoryMap.get(product.subcategory_id) : undefined;
+        const directCategory = product.category_id ? categoryMap.get(product.category_id) : undefined;
+        const parentCategory = subcategory?.parent_id ? categoryMap.get(subcategory.parent_id) : directCategory;
+
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description || undefined,
+          category_id: product.category_id,
+          subcategory_id: product.subcategory_id,
+          slug: product.slug || generateSlug(product.name),
+          featured: product.featured || false,
+          featured_in_dropdown: product.featured_in_dropdown || false,
+          is_disabled: product.is_disabled || false,
+          featured_on_homepage: product.featured_on_homepage || false,
+          active: product.active !== undefined ? product.active : true,
+          created_at: product.created_at || new Date().toISOString(),
+          updated_at: product.updated_at || new Date().toISOString(),
+          category: parentCategory,
+          subcategory: subcategory,
+          product_images: product.image ? [{
+              id: '1',
+              image_url: product.image,
+              sort_order: 1
+            }] : []
+        } as ProductWithCategory
+      });
         
         // Atualizar cache
         productsCache = transformedProducts
