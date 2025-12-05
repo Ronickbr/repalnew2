@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { apiFetch } from '../../lib/api';
 import { table } from '../../lib/schema';
 import { 
   Plus, 
@@ -24,6 +25,7 @@ import { useAccessibility, useLoadingState } from '../../hooks/useAccessibility'
 import { LoadingSpinner, LoadingButton, LoadingOverlay } from './LoadingSpinner';
 import { NotificationContainer } from './Notification';
 import { useNotifications } from '../../hooks/useNotifications';
+import { validateImageFile } from '../../utils/imageValidation';
 
 interface Brand {
   id: string;
@@ -228,10 +230,10 @@ export default function BrandManager() {
         }
 
         const result = await handleAsync(
-          supabase
-            .from(table('brands'))
-            .update(brandData)
-            .eq('id', editingBrand.id),
+          apiFetch(`/api/admin/brands/${editingBrand.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ brand: brandData })
+          }, true),
           'atualizar marca'
         );
 
@@ -256,9 +258,10 @@ export default function BrandManager() {
         }
 
         const result = await handleAsync(
-          supabase
-            .from(table('brands'))
-            .insert(brandData),
+          apiFetch('/api/admin/brands', {
+            method: 'POST',
+            body: JSON.stringify({ brand: brandData })
+          }, true),
           'criar marca'
         );
 
@@ -295,10 +298,7 @@ export default function BrandManager() {
       startLoading('Excluindo marca...');
       
       const result = await handleAsync(
-        supabase
-          .from(table('brands'))
-          .delete()
-          .eq('id', id),
+        apiFetch(`/api/admin/brands/${id}`, { method: 'DELETE' }, true),
         'excluir marca'
       );
 
@@ -331,10 +331,10 @@ export default function BrandManager() {
       startLoading(`Excluindo ${selectedBrands.size} marcas...`);
       
       const result = await handleAsync(
-        supabase
-          .from(table('brands'))
-          .delete()
-          .in('id', Array.from(selectedBrands)),
+        apiFetch('/api/admin/brands/bulk-delete', {
+          method: 'POST',
+          body: JSON.stringify({ ids: Array.from(selectedBrands) })
+        }, true),
         'excluir marcas em massa'
       );
 
@@ -388,28 +388,15 @@ export default function BrandManager() {
   };
 
   // Funções para upload de logo
-  const validateImageFile = (file: File): { isValid: boolean; error?: string } => {
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+  // Mantido por compatibilidade; validação real usa validateImageFile
 
-    if (!validTypes.includes(file.type)) {
-      return { isValid: false, error: 'Tipo de arquivo inválido. Use: JPG, PNG, GIF, SVG ou WebP.' };
-    }
-
-    if (file.size > maxSize) {
-      return { isValid: false, error: 'Arquivo muito grande. Máximo: 5MB.' };
-    }
-
-    return { isValid: true };
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const validation = validateImageFile(file);
+    const validation = await validateImageFile(file);
     if (!validation.isValid) {
-      setFormErrors(prev => ({ ...prev, logo_file: validation.error! }));
+      setFormErrors(prev => ({ ...prev, logo_file: validation.errors.join('. ') }));
       setSelectedFile(null);
       return;
     }
@@ -425,14 +412,14 @@ export default function BrandManager() {
   const uploadLogoToStorage = async (file: File): Promise<string | null> => {
     try {
       setUploadingLogo(true);
-      
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
       const filePath = `logos/${fileName}`;
 
       const { error } = await supabase.storage
         .from('brand-logos')
-        .upload(filePath, file, { contentType: file.type, upsert: true });
+        .upload(filePath, file, { contentType: file.type, upsert: false, cacheControl: '3600' });
 
       if (error) {
         throw error;
@@ -443,9 +430,21 @@ export default function BrandManager() {
         .getPublicUrl(filePath);
 
       return publicUrl;
-    } catch (err) {
-      handleError(err, 'Erro ao fazer upload do logo');
-      addNotification('error', 'Erro ao fazer upload do logo', 'Tente novamente.');
+    } catch (e: any) {
+      const raw = String(e?.message || '').toLowerCase();
+      let friendly = 'Erro ao fazer upload do logo';
+      if (raw.includes('bucket') || raw.includes('not found')) {
+        friendly = 'Bucket "brand-logos" não encontrado';
+      } else if (raw.includes('row level security') || raw.includes('rls') || raw.includes('policy')) {
+        friendly = 'Permissão negada pelas políticas/RLS do Supabase';
+      } else if (raw.includes('unauthorized') || raw.includes('forbidden') || raw.includes('401') || raw.includes('403')) {
+        friendly = 'Acesso negado ao Storage. Verifique autenticação';
+      } else if (raw.includes('network') || raw.includes('fetch')) {
+        friendly = 'Erro de rede durante o upload';
+      }
+      handleError(new Error(friendly), 'uploadLogo');
+      setFormErrors(prev => ({ ...prev, logo_file: `${friendly}. Use URL direta como alternativa.` }));
+      addNotification('error', friendly, 'Verifique configuração do Storage e políticas.');
       return null;
     } finally {
       setUploadingLogo(false);
@@ -975,7 +974,11 @@ export default function BrandManager() {
                         Upload
                       </button>
                     </div>
-
+                    {logoMethod === 'upload' && !isSupabaseConfigured && (
+                      <div className="mt-2 p-3 bg-yellow-100 border border-yellow-300 text-yellow-800 rounded">
+                        Supabase não configurado. Uploads são simulados e podem não persistir. Prefira usar URL direta.
+                      </div>
+                    )}
                     {/* Campo URL */}
                     {logoMethod === 'url' && (
                       <div>

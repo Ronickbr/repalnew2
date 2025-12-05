@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useBanners, Banner } from '../../hooks/useBanners';
+import { isSupabaseConfigured } from '../../lib/supabase';
 import BannerManager from '../../components/admin/BannerManager';
 import { BannerModal } from '../../components/admin';
+import { apiFetch } from '../../lib/api';
 
 const BannersPage: React.FC = () => {
   const { 
@@ -30,6 +32,7 @@ const BannersPage: React.FC = () => {
   const [imageMethod, setImageMethod] = useState<'url' | 'upload'>('url');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [backendDevMode, setBackendDevMode] = useState(false);
 
   // Funções para upload de imagem
   const validateImageFile = (file: File): { isValid: boolean; error?: string } => {
@@ -46,6 +49,18 @@ const BannersPage: React.FC = () => {
 
     return { isValid: true };
   };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await apiFetch('/api/auth/me');
+        const dev = !!me?.data && String(me.data.id) === 'dev-admin';
+        setBackendDevMode(dev);
+      } catch {
+        setBackendDevMode(false);
+      }
+    })();
+  }, []);
 
   const handleFileSelect = (file: File) => {
     const validation = validateImageFile(file);
@@ -209,6 +224,16 @@ const BannersPage: React.FC = () => {
 
   return (
     <>
+      {!isSupabaseConfigured && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 text-yellow-800 rounded">
+          Supabase não configurado no frontend. Uploads podem falhar e banners podem não persistir.
+        </div>
+      )}
+      {backendDevMode && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 text-yellow-800 rounded">
+          Backend em modo dev/bypass. Registros podem ser fictícios e não persistir no banco.
+        </div>
+      )}
       <BannerManager
         banners={banners}
         loading={false}

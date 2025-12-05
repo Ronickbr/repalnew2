@@ -1,3 +1,4 @@
+import { supabase } from './supabase';
 export const apiBase = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? 'http://localhost:3001' : '');
 
 let csrfTokenCache: string | null = null;
@@ -43,6 +44,13 @@ export const apiFetchAny = async (paths: string[], init: RequestInit = {}, requi
       ...(init.headers || {})
     }
   };
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      (options.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    }
+  } catch { void 0; }
   if (requireCsrf) {
     const token = csrfTokenCache || (await ensureCsrf());
     (options.headers as Record<string, string>)['X-CSRF-Token'] = token;
@@ -80,6 +88,13 @@ export const apiFetch = async (path: string, init: RequestInit = {}, requireCsrf
       ...(init.headers || {})
     }
   };
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (token) {
+      (options.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    }
+  } catch { void 0; }
   if (requireCsrf) {
     const token = csrfTokenCache || (await ensureCsrf());
     (options.headers as Record<string, string>)['X-CSRF-Token'] = token;

@@ -40,8 +40,19 @@ app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token']
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization']
 }));
+// Preflight CORS para todas as rotas
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token, Authorization');
+    return res.sendStatus(204);
+  }
+  next();
+});
 app.use(cookieParser());
 app.use(express.json());
 
@@ -156,28 +167,50 @@ const authMiddleware = async (req, res, next) => {
     if (devAuthBypass || !isSupabaseConfigured) {
       req.admin = { id: 'dev-admin', email: 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
     } else {
-      const token = req.cookies[ADMIN_COOKIE_NAME];
-      if (!token) return res.status(401).json({ success: false, error: 'Não autorizado' });
-      const payload = verifyJwt(token);
-      if (!payload) return res.status(401).json({ success: false, error: 'Token inválido' });
+      const bearer = (req.headers['authorization'] || '').toString();
+      const hasBearer = bearer.startsWith('Bearer ');
+      const cookieToken = req.cookies[ADMIN_COOKIE_NAME];
       const supabase = getServiceClient();
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('id, email, name, role, active')
-        .eq('id', payload.sub)
-        .eq('active', true)
-        .maybeSingle();
-      if (error || !data) return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' });
-      req.admin = data;
+      if (hasBearer) {
+        const accessToken = bearer.replace('Bearer ', '').trim();
+        const { data: userData, error: userErr } = await supabase.auth.getUser(accessToken);
+        if (userErr || !userData || !userData.user) {
+          return res.status(401).json({ success: false, error: 'Não autorizado' });
+        }
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('id, email, name, role, active')
+          .eq('id', userData.user.id)
+          .eq('active', true)
+          .maybeSingle();
+        if (error || !data) return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' });
+        req.admin = data;
+      } else if (cookieToken) {
+        const payload = verifyJwt(cookieToken);
+        if (!payload) return res.status(401).json({ success: false, error: 'Token inválido' });
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('id, email, name, role, active')
+          .eq('id', payload.sub)
+          .eq('active', true)
+          .maybeSingle();
+        if (error || !data) return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' });
+        req.admin = data;
+      } else {
+        return res.status(401).json({ success: false, error: 'Não autorizado' });
+      }
     }
 
     // CSRF: validar em métodos que alteram estado
     const method = req.method.toUpperCase();
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-      const cookieToken = req.cookies[CSRF_COOKIE_NAME];
-      const headerToken = req.headers['x-csrf-token'];
-      if (!cookieToken || !headerToken || cookieToken !== headerToken) {
-        return res.status(403).json({ success: false, error: 'CSRF inválido' });
+      const usingBearer = (req.headers['authorization'] || '').toString().startsWith('Bearer ');
+      if (!usingBearer) {
+        const csrfCookie = req.cookies[CSRF_COOKIE_NAME];
+        const csrfHeader = req.headers['x-csrf-token'];
+        if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+          return res.status(403).json({ success: false, error: 'CSRF inválido' });
+        }
       }
     }
     next();
@@ -441,6 +474,199 @@ app.post('/api/admin/banners', authMiddleware, requireRole(['admin', 'super_admi
 
     await logAdminActivity(adminUser, 'create_banner', { banner_id: inserted.id });
     return res.json({ success: true, data: inserted });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+// Endpoints: atualizar/deletar banners (bypass RLS via service role)
+app.put('/api/admin/banners/:id', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const changes = req.body?.banner || {};
+    if (!id || isNaN(id)) return res.status(400).json({ success: false, error: 'ID inválido' });
+    if (!isSupabaseConfigured) {
+      return res.json({ success: true, data: { id, ...changes } });
+    }
+    const supabase = getServiceClient();
+    const { data, error } = await supabase
+      .from('banners')
+      .update(changes)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'update_banner', { banner_id: id });
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.delete('/api/admin/banners/:id', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!id || isNaN(id)) return res.status(400).json({ success: false, error: 'ID inválido' });
+    if (!isSupabaseConfigured) {
+      await logAdminActivity(req.admin, 'delete_banner_dev', { banner_id: id });
+      return res.json({ success: true });
+    }
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('banners')
+      .delete()
+      .eq('id', id);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'delete_banner', { banner_id: id });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.patch('/api/admin/banners/:id/status', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const active = Boolean(req.body?.active);
+    if (!id || isNaN(id)) return res.status(400).json({ success: false, error: 'ID inválido' });
+    if (!isSupabaseConfigured) return res.json({ success: true });
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('banners')
+      .update({ active })
+      .eq('id', id);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'toggle_banner_status', { banner_id: id, active });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.patch('/api/admin/banners/:id/order', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const sort_order = Number(req.body?.sort_order);
+    if (!id || isNaN(id)) return res.status(400).json({ success: false, error: 'ID inválido' });
+    if (isNaN(sort_order)) return res.status(400).json({ success: false, error: 'Ordem inválida' });
+    if (!isSupabaseConfigured) return res.json({ success: true });
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('banners')
+      .update({ sort_order })
+      .eq('id', id);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'update_banner_order', { banner_id: id, sort_order });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+// Endpoints: marcas (CRUD + bulk delete) via service role
+app.post('/api/admin/brands', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const { brand } = req.body || {};
+    if (!brand || !brand.name || !brand.slug) {
+      return res.status(400).json({ success: false, error: 'Dados da marca inválidos' });
+    }
+    if (!isSupabaseConfigured) {
+      const fake = { id: Math.floor(Math.random() * 1000000).toString(), ...brand, created_at: new Date().toISOString() };
+      await logAdminActivity(req.admin, 'create_brand_dev', { brand_id: fake.id });
+      return res.json({ success: true, data: fake });
+    }
+    const supabase = getServiceClient();
+    const payload = {
+      name: String(brand.name).trim(),
+      slug: String(brand.slug).trim().toLowerCase(),
+      logo_url: brand.logo_url ? String(brand.logo_url).trim() : null
+    };
+    // Garantir slug único
+    const { data: existing } = await supabase
+      .from('brands')
+      .select('id')
+      .eq('slug', payload.slug)
+      .maybeSingle();
+    if (existing) return res.status(409).json({ success: false, error: 'Slug já em uso' });
+    const { data, error } = await supabase
+      .from('brands')
+      .insert([payload])
+      .select('*')
+      .single();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'create_brand', { brand_id: data.id });
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.put('/api/admin/brands/:id', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    const changes = req.body?.brand || {};
+    if (!id) return res.status(400).json({ success: false, error: 'ID inválido' });
+    if (!isSupabaseConfigured) return res.json({ success: true, data: { id, ...changes } });
+    const supabase = getServiceClient();
+    // Se alterar slug, garantir unicidade
+    if (typeof changes.slug === 'string') {
+      const slug = String(changes.slug).trim().toLowerCase();
+      const { data: existing } = await supabase
+        .from('brands')
+        .select('id')
+        .eq('slug', slug)
+        .neq('id', id)
+        .maybeSingle();
+      if (existing) return res.status(409).json({ success: false, error: 'Slug já em uso' });
+    }
+    const { data, error } = await supabase
+      .from('brands')
+      .update(changes)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'update_brand', { brand_id: id });
+    return res.json({ success: true, data });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.delete('/api/admin/brands/:id', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const id = String(req.params.id);
+    if (!id) return res.status(400).json({ success: false, error: 'ID inválido' });
+    if (!isSupabaseConfigured) {
+      await logAdminActivity(req.admin, 'delete_brand_dev', { brand_id: id });
+      return res.json({ success: true });
+    }
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('brands')
+      .delete()
+      .eq('id', id);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'delete_brand', { brand_id: id });
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+app.post('/api/admin/brands/bulk-delete', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    if (!ids.length) return res.status(400).json({ success: false, error: 'IDs obrigatórios' });
+    if (!isSupabaseConfigured) return res.json({ success: true, deleted: ids.length });
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('brands')
+      .delete()
+      .in('id', ids);
+    if (error) return res.status(500).json({ success: false, error: error.message });
+    await logAdminActivity(req.admin, 'bulk_delete_brands', { count: ids.length });
+    return res.json({ success: true, deleted: ids.length });
   } catch (err) {
     return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
   }
