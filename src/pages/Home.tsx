@@ -145,7 +145,7 @@ const Home: React.FC = () => {
       <Helmet>
         <title>{metaTitle || 'Os Melhores Equipamentos e Peças para o seu Negócio gastronômico'}</title>
         <meta name="description" content={metaDescription || 'A Repal oferece equipamentos gastronômicos profissionais e peças originais para cozinhas industriais, restaurantes, padarias e bares. Soluções completas com atendimento especializado e entrega rápida.'} />
-        <meta name="keywords" content={metaKeywords || 'equipamentos gastronômicos, peças para cozinha industrial, equipamentos profissionais, restaurante, padaria, bar, manutenção, assistência técnica'} />
+        <meta name="keywords" content={metaKeywords || 'equipamentos gastronômicos, Fogão Industrial, Fritadeira Elétrica, Geladeira Industrial, equipamentos profissionais, restaurante, padaria, bar, Refrigeração Comercial'} />
         {canonicalBaseUrl && (
           <link rel="canonical" href={`${(canonicalBaseUrl || '').trim().replace(/\/+$/, '')}/`} />
         )}
@@ -153,7 +153,7 @@ const Home: React.FC = () => {
           {JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Organization',
-            name: siteName || 'Repal Equipamentos',
+            name: siteName || 'Repal Equipamentos Gastronômicos',
             url: (canonicalBaseUrl || '').trim() || undefined,
             logo: (canonicalBaseUrl || '').trim() ? `${(canonicalBaseUrl || '').trim().replace(/\/+$/, '')}/logo.png` : undefined,
             sameAs: [],
@@ -163,7 +163,7 @@ const Home: React.FC = () => {
           {JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'WebSite',
-            name: siteName || 'Repal Equipamentos',
+            name: siteName || 'Repal Equipamentos Gastronômicos',
             url: (canonicalBaseUrl || '').trim() || undefined,
             potentialAction: {
               '@type': 'SearchAction',
@@ -283,7 +283,7 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             {/* Restaurantes */}
             <Link
-              to="/categorias/bares-restaurantes"
+              to="/categorias/bar-restaurante"
               className="group relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-48 sm:h-56 lg:h-64"
             >
               <div className="absolute inset-0">
