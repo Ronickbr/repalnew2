@@ -34,9 +34,9 @@ export const useSubcategories = () => {
           name,
           slug,
           parent_id,
-          is_active
+          active
         `)
-        .eq('is_active', true)
+        .eq('active', true)
         .order('name', { ascending: true })
 
       if (categoriesError) {
@@ -89,7 +89,7 @@ export const useSubcategoriesByCategory = (categoryId: number) => {
         .from('categories')
         .select('*')
         .eq('parent_id', categoryId)
-        .eq('is_active', true)
+        .eq('active', true)
         .order('name', { ascending: true })
 
       if (error) {
