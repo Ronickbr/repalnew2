@@ -115,7 +115,7 @@ const MegaDropdown: React.FC<{
               {category.children?.map((sub) => (
                 <li key={sub.id}>
                   <Link
-                    to={`/categorias/${category.slug}/${sub.slug}?sub=${sub.id}`}
+                    to={`/categorias/${category.slug}?sub=${sub.id}`}
                     onClick={onClose}
                     className="block px-3 py-2 rounded text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                   >
