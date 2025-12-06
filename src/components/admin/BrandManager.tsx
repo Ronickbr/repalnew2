@@ -166,7 +166,11 @@ export default function BrandManager() {
     }
 
     // Validação do logo depende do método escolhido
-    if (logoMethod === 'url' && data.logo_url && !/^https?:\/\/.+/.test(data.logo_url)) {
+    if (
+      logoMethod === 'url' &&
+      data.logo_url &&
+      !(/^https?:\/\/.+/.test(data.logo_url) || data.logo_url.startsWith('data:'))
+    ) {
       errors.logo_url = 'URL do logo deve ser válida';
     }
 
@@ -190,14 +194,21 @@ export default function BrandManager() {
       return;
     }
 
-    // Se estiver usando upload de arquivo, fazer upload primeiro
     let finalLogoUrl = formData.logo_url;
     if (logoMethod === 'upload' && selectedFile) {
       const uploadedUrl = await uploadLogoToStorage(selectedFile);
       if (!uploadedUrl) {
-        return; // Erro já foi tratado na função de upload
+        return;
       }
       finalLogoUrl = uploadedUrl;
+    } else if (logoMethod === 'url' && formData.logo_url) {
+      const processed = await processLogoUrl(formData.logo_url);
+      if (!processed) {
+        setFormErrors(prev => ({ ...prev, logo_url: 'Não foi possível processar a imagem do logo' }));
+        announceToScreenReader('Erro ao processar a imagem do logo');
+        return;
+      }
+      finalLogoUrl = processed;
     }
 
     try {
@@ -435,7 +446,30 @@ export default function BrandManager() {
         .upload(filePath, file, { contentType: file.type, upsert: true });
 
       if (error) {
-        throw error;
+        const msg = String(error.message || '');
+        if (msg.includes('bucket') || msg.includes('not found')) {
+          try {
+            const { error: createError } = await supabase.rpc('create_bucket_if_not_exists', {
+              bucket_name: 'brand-logos',
+              is_public: true,
+              file_size_limit: 5242880,
+              allowed_mime_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
+            });
+            if (createError) {
+              throw createError;
+            }
+            const { error: retryError } = await supabase.storage
+              .from('brand-logos')
+              .upload(filePath, file, { contentType: file.type, upsert: true });
+            if (retryError) {
+              throw retryError;
+            }
+          } catch (e) {
+            throw e instanceof Error ? e : new Error('Falha ao criar bucket brand-logos');
+          }
+        } else {
+          throw error;
+        }
       }
 
       const { data: { publicUrl } } = supabase.storage
@@ -450,6 +484,94 @@ export default function BrandManager() {
     } finally {
       setUploadingLogo(false);
     }
+  };
+
+  const uploadBase64Logo = async (base64Url: string): Promise<string> => {
+    const matches = base64Url.match(/^data:(.+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      throw new Error('Imagem base64 inválida');
+    }
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    const fileExt = mimeType.split('/')[1] || 'jpg';
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
+    const filePath = `logos/${fileName}`;
+    const { error } = await supabase.storage
+      .from('brand-logos')
+      .upload(filePath, blob);
+    if (error) {
+      const msg = String(error.message || '');
+      if (msg.includes('row-level security') || msg.includes('RLS')) {
+        throw new Error('Sem permissão para upload');
+      }
+      if (msg.includes('bucket') || msg.includes('not found')) {
+        try {
+          const { error: createError } = await supabase.rpc('create_bucket_if_not_exists', {
+            bucket_name: 'brand-logos',
+            is_public: true,
+            file_size_limit: 5242880,
+            allowed_mime_types: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
+          });
+          if (createError) {
+            throw createError;
+          }
+          const { error: retryError } = await supabase.storage
+            .from('brand-logos')
+            .upload(filePath, blob);
+          if (retryError) {
+            throw retryError;
+          }
+        } catch (e) {
+          throw e instanceof Error ? e : new Error('Falha ao criar bucket brand-logos');
+        }
+      } else {
+        throw error;
+      }
+    }
+    const { data: { publicUrl } } = supabase.storage
+      .from('brand-logos')
+      .getPublicUrl(filePath);
+    return publicUrl;
+  };
+
+  const processLogoUrl = async (url: string): Promise<string> => {
+    const MAX_URL_LENGTH = 1024;
+    if (!url) return '';
+    if (url.startsWith('data:')) {
+      try {
+        const uploadedUrl = await uploadBase64Logo(url);
+        return uploadedUrl;
+      } catch {
+        return '';
+      }
+    }
+    if (url.length > MAX_URL_LENGTH) {
+      try {
+        const urlObj = new URL(url);
+        const essentialParams = ['w', 'h', 'width', 'height', 'size', 'quality', 'format'];
+        const newUrl = new URL(urlObj.origin + urlObj.pathname);
+        essentialParams.forEach(param => {
+          if (urlObj.searchParams.has(param)) {
+            newUrl.searchParams.set(param, urlObj.searchParams.get(param)!);
+          }
+        });
+        const processedUrl = newUrl.toString();
+        if (processedUrl.length > MAX_URL_LENGTH) {
+          return urlObj.origin + urlObj.pathname;
+        }
+        return processedUrl;
+      } catch {
+        return url.substring(0, MAX_URL_LENGTH);
+      }
+    }
+    return url;
   };
 
   const generateSlug = (name: string) => {
