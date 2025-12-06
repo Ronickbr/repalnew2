@@ -37,6 +37,18 @@ export function useBanners() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001';
+
+  const getCsrf = async (): Promise<string | null> => {
+    try {
+      const r = await fetch(`${apiBase}/api/auth/csrf-token`, { credentials: 'include' });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return j?.csrfToken || null;
+    } catch {
+      return null;
+    }
+  };
 
   // Fetch all banners
   const fetchBanners = useCallback(async () => {
@@ -118,21 +130,44 @@ export function useBanners() {
       
       
       
-      const { data, error } = await supabase
-        .from(table('banners'))
-        .insert({
-          title: bannerData.title.trim(),
-          image_url: bannerData.image_url.trim(),
-          link_url: bannerData.link_url?.trim() || null,
-          active: bannerData.active ?? true,
-          sort_order: bannerData.sort_order ?? 0
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erro ao criar banner:', error);
-        throw new Error(`Erro ao criar banner: ${error.message}`);
+      const csrf = await getCsrf();
+      let created: Banner | null = null;
+      if (csrf) {
+        try {
+          const resp = await fetch(`${apiBase}/api/admin/banners`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            credentials: 'include',
+            body: JSON.stringify({ banner: {
+              title: bannerData.title.trim(),
+              image_url: bannerData.image_url.trim(),
+              link_url: bannerData.link_url?.trim() || null,
+              active: bannerData.active ?? true,
+              sort_order: bannerData.sort_order ?? 0
+            } })
+          });
+          if (resp.ok) {
+            const j = await resp.json();
+            created = j?.data || null;
+          }
+        } catch {}
+      }
+      if (!created) {
+        const { data, error } = await supabase
+          .from(table('banners'))
+          .insert({
+            title: bannerData.title.trim(),
+            image_url: bannerData.image_url.trim(),
+            link_url: bannerData.link_url?.trim() || null,
+            active: bannerData.active ?? true,
+            sort_order: bannerData.sort_order ?? 0
+          })
+          .select()
+          .single();
+        if (error) {
+          throw new Error(`Erro ao criar banner: ${error.message}`);
+        }
+        created = data as Banner;
       }
       
       
@@ -140,7 +175,7 @@ export function useBanners() {
       // Refresh banners list
       await fetchBanners();
       
-      return data;
+      return created;
     } catch (err) {
       console.error('Error creating banner:', err);
       setError(err instanceof Error ? err.message : 'Erro ao criar banner');
@@ -167,21 +202,38 @@ export function useBanners() {
         throw new Error('URL da imagem inválida');
       }
 
-      const { data, error } = await supabase
-        .from(table('banners'))
-        .update(bannerData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        
-        throw new Error('Erro ao atualizar banner. Verifique os dados e tente novamente.');
+      const csrf = await getCsrf();
+      let updated: Banner | null = null;
+      if (csrf) {
+        try {
+          const resp = await fetch(`${apiBase}/api/admin/banners/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            credentials: 'include',
+            body: JSON.stringify({ banner: bannerData })
+          });
+          if (resp.ok) {
+            const j = await resp.json();
+            updated = j?.data || null;
+          }
+        } catch {}
+      }
+      if (!updated) {
+        const { data, error } = await supabase
+          .from(table('banners'))
+          .update(bannerData)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) {
+          throw new Error('Erro ao atualizar banner. Verifique os dados e tente novamente.');
+        }
+        updated = data as Banner;
       }
       
       // Refresh banners list
       await fetchBanners();
-      return data;
+      return updated;
     } catch (err) {
       
       setError(err instanceof Error ? err.message : 'Erro ao atualizar banner');
@@ -193,13 +245,25 @@ export function useBanners() {
   const deleteBanner = async (id: number): Promise<boolean> => {
     try {
       setError(null);
-      
-      const { error } = await supabase
-        .from(table('banners'))
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      const csrf = await getCsrf();
+      let ok = false;
+      if (csrf) {
+        try {
+          const resp = await fetch(`${apiBase}/api/admin/banners/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-Token': csrf },
+            credentials: 'include'
+          });
+          ok = resp.ok;
+        } catch {}
+      }
+      if (!ok) {
+        const { error } = await supabase
+          .from(table('banners'))
+          .delete()
+          .eq('id', id);
+        if (error) throw error;
+      }
       
       // Refresh banners list
       await fetchBanners();
@@ -216,13 +280,26 @@ export function useBanners() {
   const toggleBannerStatus = async (id: number, active: boolean): Promise<boolean> => {
     try {
       setError(null);
-      
-      const { error } = await supabase
-        .from(table('banners'))
-        .update({ active })
-        .eq('id', id);
-
-      if (error) throw error;
+      const csrf = await getCsrf();
+      let ok = false;
+      if (csrf) {
+        try {
+          const resp = await fetch(`${apiBase}/api/admin/banners/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            credentials: 'include',
+            body: JSON.stringify({ banner: { active } })
+          });
+          ok = resp.ok;
+        } catch {}
+      }
+      if (!ok) {
+        const { error } = await supabase
+          .from(table('banners'))
+          .update({ active })
+          .eq('id', id);
+        if (error) throw error;
+      }
       
       // Refresh banners list
       await fetchBanners();
@@ -239,13 +316,26 @@ export function useBanners() {
   const updateBannerOrder = async (id: number, sort_order: number): Promise<boolean> => {
     try {
       setError(null);
-      
-      const { error } = await supabase
-        .from(table('banners'))
-        .update({ sort_order })
-        .eq('id', id);
-
-      if (error) throw error;
+      const csrf = await getCsrf();
+      let ok = false;
+      if (csrf) {
+        try {
+          const resp = await fetch(`${apiBase}/api/admin/banners/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+            credentials: 'include',
+            body: JSON.stringify({ banner: { sort_order } })
+          });
+          ok = resp.ok;
+        } catch {}
+      }
+      if (!ok) {
+        const { error } = await supabase
+          .from(table('banners'))
+          .update({ sort_order })
+          .eq('id', id);
+        if (error) throw error;
+      }
       
       // Refresh banners list
       await fetchBanners();
