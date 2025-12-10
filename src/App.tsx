@@ -22,6 +22,7 @@ import { BudgetProvider } from './contexts/BudgetContext';
 import { queryClient } from './lib/react-query';
 import TagManager from './components/TagManager';
 import { useSiteSettings } from './hooks/useSiteSettings';
+import NotFound from './pages/NotFound';
 
 
 
@@ -59,6 +60,7 @@ function AppContent() {
               <Route path="categorias/:categorySlug/:subcategorySlug" element={<CategoryProducts />} />
               <Route path="CategoryProducts" element={<CategoryProducts />} />
               <Route path="produto/:slug" element={<ProductDetail />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="/login" element={<Login />} />
             
@@ -87,7 +89,9 @@ function AppContent() {
               <Route path="users" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><UsersPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><SettingsPage /></Suspense>} />
               <Route path="sidebar-test" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><SidebarTest /></Suspense>} />
+              <Route path="*" element={<NotFound />} />
             </Route>
+            <Route path="*" element={<NotFound />} />
           </Routes>
               </Router>
               <Toaster
