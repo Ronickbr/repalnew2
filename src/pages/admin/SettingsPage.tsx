@@ -92,7 +92,7 @@ interface SiteSettings {
 }
 
 interface SettingsSection {
-  key: keyof Omit<SiteSettings, 'id' | 'created_at' | 'updated_at'> | 'security';
+  key: keyof Omit<SiteSettings, 'id' | 'created_at' | 'updated_at'>;
   title: string;
   icon: React.ReactNode;
   description: string;
@@ -156,12 +156,6 @@ const SettingsPage: React.FC = () => {
       title: 'Manutenção',
       icon: <Shield className="w-5 h-5" />,
       description: 'Modo de manutenção'
-    },
-    {
-      key: 'security',
-      title: 'Segurança',
-      icon: <Shield className="w-5 h-5" />,
-      description: 'Autenticação e 2FA'
     },
 
   ];
@@ -954,14 +948,6 @@ const SettingsPage: React.FC = () => {
                 </div>
               </>
             )}
-          </div>
-        );
-      
-      case 'security':
-        const Section = require('./Security2FASection').default;
-        return (
-          <div className="space-y-6">
-            <Section />
           </div>
         );
       
