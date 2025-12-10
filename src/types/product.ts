@@ -50,6 +50,8 @@ export interface ProductWithCategory {
   specifications?: string;
   additional_images?: string[];
   brand?: string;
+  model?: string;
+  sku_code?: string;
   seo_title?: string;
   seo_description?: string;
   seo_keywords?: string;
