@@ -815,6 +815,91 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API funcionando!' });
 });
 
+// Sitemap e Robots dinâmicos
+const getAnonClient = () => {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) return null;
+  return createClient(supabaseUrl, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+};
+
+const getCanonicalBaseUrl = async () => {
+  try {
+    const anon = getAnonClient();
+    if (!anon) return 'http://localhost:5173';
+    const { data } = await anon
+      .from('site_settings')
+      .select('seo')
+      .limit(1)
+      .single();
+    const url = data?.seo?.canonical_url || '';
+    const trimmed = (url || '').trim().replace(/\/+$/, '');
+    return trimmed || 'http://localhost:5173';
+  } catch {
+    return 'http://localhost:5173';
+  }
+};
+
+const generateSitemap = async () => {
+  const origin = await getCanonicalBaseUrl();
+  const now = new Date().toISOString();
+  const anon = getAnonClient();
+  let urls = [
+    { loc: `${origin}/`, changefreq: 'weekly', priority: '1.0', lastmod: now },
+    { loc: `${origin}/categorias`, changefreq: 'weekly', priority: '0.8', lastmod: now },
+  ];
+  try {
+    if (anon) {
+      const { data: categories } = await anon
+        .from('categories')
+        .select('slug, updated_at, active')
+        .eq('active', true);
+      const { data: products } = await anon
+        .from('products')
+        .select('slug, updated_at, active')
+        .eq('active', true);
+      for (const c of categories || []) {
+        const lastmod = c.updated_at || now;
+        urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+      }
+      for (const p of products || []) {
+        const lastmod = p.updated_at || now;
+        urls.push({ loc: `${origin}/produto/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod });
+      }
+    }
+  } catch {}
+  const urlsXml = urls
+    .map(u => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`)
+    .join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</urlset>`;
+  return xml;
+};
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const xml = await generateSitemap();
+    res.type('application/xml');
+    res.send(xml);
+  } catch {
+    res.status(500).type('text/plain').send('Erro ao gerar sitemap');
+  }
+});
+
+app.get('/robots.txt', async (req, res) => {
+  try {
+    const origin = await getCanonicalBaseUrl();
+    const robotsPath = path.join(__dirname, 'public', 'robots.txt');
+    if (fs.existsSync(robotsPath)) {
+      const content = fs.readFileSync(robotsPath, 'utf-8');
+      res.type('text/plain').send(content);
+    } else {
+      res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml`);
+    }
+  } catch {
+    res.type('text/plain').send('User-agent: *\nAllow: /');
+  }
+});
+
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor de upload iniciado em http://localhost:${PORT}`);
