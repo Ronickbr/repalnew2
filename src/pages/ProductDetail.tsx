@@ -144,6 +144,20 @@ const ProductDetail: React.FC = () => {
   const metaKeywords = normalizeKeywords(product?.seo_keywords || (product?.tags || []).join(', '))
   const origin = (canonicalBaseUrl || '').trim().replace(/\/+$/, '')
   const canonicalHref = origin ? `${origin}/produto/${product.slug}` : undefined
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: sanitizeMetaDescription(product.description || ''),
+    sku: product.sku_code || undefined,
+    brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+    image: (product.product_images || [])
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(img => img.image_url)
+      .filter(Boolean),
+    category: product.category && typeof product.category === 'object' ? product.category.name : undefined,
+    url: canonicalHref,
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -155,6 +169,9 @@ const ProductDetail: React.FC = () => {
         <meta property="og:title" content={metaTitle} />
         <meta property="og:description" content={metaDescription} />
         <meta property="og:type" content="product" />
+        <script type="application/ld+json">
+          {JSON.stringify(productJsonLd)}
+        </script>
       </Helmet>
       {/* Hidden SEO Tags */}
       {product?.tags && product.tags.length > 0 && (
@@ -323,6 +340,7 @@ const ProductDetail: React.FC = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-3 sm:mb-4 leading-tight">
                 {product.name}
               </h1>
+              <h2 className="sr-only">Descrição do Produto</h2>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                 <div className="flex items-center space-x-1">
                   <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#8B0000]" />
@@ -337,11 +355,11 @@ const ProductDetail: React.FC = () => {
 
             {/* Features */}
             <div className="hidden relative bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-xl border border-white/40 hover:shadow-2xl transition-all duration-300 hover:scale-[1.01] overflow-hidden">
-              <h3 className="text-xl md:text-2xl font-bold text-[#333333] mb-6 md:mb-8 flex items-center space-x-3">
+              <h2 className="text-xl md:text-2xl font-bold text-[#333333] mb-6 md:mb-8 flex items-center space-x-3">
                 <div className="w-2 h-6 md:h-8 bg-gradient-to-b from-[#8B0000] via-[#B22222] to-[#000080] rounded-full shadow-lg flex-shrink-0"></div>
                 <span className="bg-gradient-to-r from-[#333333] to-[#555555] bg-clip-text text-transparent">Diferenciais do Produto</span>
                 <div className="flex-1 h-px bg-gradient-to-r from-[#8B0000]/30 to-transparent"></div>
-              </h3>
+              </h2>
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 {/* Card 1 - Garantia */}

@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { table } from '../lib/schema';
 import type { Product, ProductImage } from '../lib/supabase';
 import WhatsAppButton from '../components/WhatsAppButton';
+import { Helmet } from 'react-helmet-async';
+import { sanitizeMetaDescription } from '../lib/seo';
 
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -119,6 +121,22 @@ const ProductPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Helmet>
+        <title>{product.name}</title>
+        <meta name="description" content={sanitizeMetaDescription(product.description || '')} />
+        <meta property="og:type" content="product" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            description: sanitizeMetaDescription(product.description || ''),
+            image: images.map(i => i.image_url).filter(Boolean),
+            category: product.category ? product.category.name : undefined,
+            brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+          })}
+        </script>
+      </Helmet>
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -212,6 +230,7 @@ const ProductPage: React.FC = () => {
                   dangerouslySetInnerHTML={{ __html: product.description || '' }}
                 />
             </div>
+            <h2 className="sr-only">Descrição do Produto</h2>
 
             {/* Features */}
             <div className="mb-8">
