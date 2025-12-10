@@ -1,3 +1,12 @@
+## 2025-12-10 - v0.2.0
+
+- Adicionada página 404 amigável com SEO `noindex` e CTAs
+  - Arquivo: `src/pages/NotFound.tsx`
+- Incluídas rotas coringa (`path="*"`) para capturar URLs inexistentes
+  - App principal: `src/App.tsx`
+  - Área administrativa: `src/App.tsx`
+- Melhoria de UX: navegação robusta em rotas inválidas sem quebra de layout
+
 ## 2025-12-03
 
 - Corrigido roteamento Vercel para preservar `/api/*` e evitar 405 durante login
