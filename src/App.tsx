@@ -24,7 +24,7 @@ import TagManager from './components/TagManager';
 import { useSiteSettings } from './hooks/useSiteSettings';
 import NotFound from './pages/NotFound';
 
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 // Lazy load admin pages
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
