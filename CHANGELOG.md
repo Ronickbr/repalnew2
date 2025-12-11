@@ -1,3 +1,8 @@
+## 2025-12-11 - v0.2.2
+
+- Analytics: ajuste para `@vercel/analytics/react` em `src/App.tsx`
+- Performance: integrado `@vercel/speed-insights` com `<SpeedInsights />` em `src/App.tsx`
+
 ## 2025-12-11 - v0.2.1
 
 - Admin: criação de usuários com modal e validações básicas
