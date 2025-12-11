@@ -25,6 +25,7 @@ import { useSiteSettings } from './hooks/useSiteSettings';
 import NotFound from './pages/NotFound';
 
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 // Lazy load admin pages
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
@@ -95,6 +96,7 @@ function AppContent() {
           </Routes>
               </Router>
               <Analytics />
+              <SpeedInsights />
               <Toaster
                 position="top-right"
                 toastOptions={{
