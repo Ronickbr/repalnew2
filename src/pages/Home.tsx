@@ -27,6 +27,7 @@ const Home: React.FC = () => {
 
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('sobre');
   const { addItem } = useBudget();
   const { data: latestProducts, isLoading: loadingLatest } = useLatestProducts(6);
   const { siteName, canonicalBaseUrl, metaTitle, metaDescription, metaKeywords } = useSiteSettings();
@@ -443,19 +444,34 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Seção Final - Potência e Eficiência */}
-      <section className="py-12 sm:py-16 bg-gray-800 text-white">
+      <section className="py-12 sm:py-16 bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white" aria-labelledby="heading-refrigeracao-comercial">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4 sm:mb-6">Potência e Eficiência na Sua Cozinha</h2>
-              <p className="text-lg sm:text-xl text-gray-300 mb-4 sm:mb-8">
-                Equipamentos projetados para atender grandes demandas
+              <h1 id="heading-refrigeracao-comercial" className="text-3xl sm:text-5xl font-extrabold mb-3 sm:mb-4">Refrigeração Comercial</h1>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-200 mb-4">Potência e eficiência na sua cozinha</h2>
+              <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
+                Soluções de refrigeração comercial para restaurantes, padarias, açougues e cozinhas industriais. 
+                Equipamentos projetados para alta demanda com controle de temperatura preciso, eficiência energética e durabilidade.
               </p>
-              <p className="text-gray-400 mb-6 sm:mb-8 text-sm sm:text-base">
-                Nossa linha de equipamentos comerciais oferece a combinação perfeita entre potência, 
-                eficiência energética e durabilidade, garantindo o melhor desempenho para seu negócio.
-              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="bg-gray-800/60 rounded-lg p-3 border border-white/10">
+                  <div className="text-sm sm:text-base font-semibold">Eficiência energética</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Reduza custos mantendo performance e segurança alimentar.</div>
+                </div>
+                <div className="bg-gray-800/60 rounded-lg p-3 border border-white/10">
+                  <div className="text-sm sm:text-base font-semibold">Controle de temperatura</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Estabilidade térmica para diferentes tipos de alimentos.</div>
+                </div>
+                <div className="bg-gray-800/60 rounded-lg p-3 border border-white/10">
+                  <div className="text-sm sm:text-base font-semibold">Construção robusta</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Materiais resistentes para uso contínuo e fácil higienização.</div>
+                </div>
+                <div className="bg-gray-800/60 rounded-lg p-3 border border-white/10">
+                  <div className="text-sm sm:text-base font-semibold">Pós-venda e peças</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Peças originais e suporte técnico especializado.</div>
+                </div>
+              </div>
               <Link
                 to="/contato"
                 className="bg-yellow-500 text-black px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg hover:bg-yellow-400 transition-colors inline-block"
@@ -465,26 +481,143 @@ const Home: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="bg-gray-700 rounded-xl p-4 sm:p-6 text-center">
-                <img
-                  src="/images/h-fritadeira.png"
-                  alt="Fritadeira"
-                  className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
-                />
-                <h4 className="font-bold text-sm sm:text-base">Fritadeiras</h4>
-              </div>
+              <figure className="group relative">
+                <Link to="/categorias/acougue?sort=name&view=grid&sub=62" aria-label="Ver Balcões Refrigerados na categoria Refrigeração Comercial" className="block">
+                  <img
+                    src="https://i.imgur.com/DUOAYqg.png"
+                    alt="Balcões Refrigerados"
+                    className="mx-auto max-h-36 sm:max-h-44 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <figcaption className="mt-3 text-center font-bold text-sm sm:text-base text-white">Balcões Refrigerados</figcaption>
+                </Link>
+              </figure>
               
-              <div className="bg-gray-700 rounded-xl p-4 sm:p-6 text-center">
-                <img
-                  src="/images/chapa-bifeteira.jpg"
-                  alt="Chapas"
-                  className="w-full h-24 sm:h-32 object-cover rounded-lg mb-3 sm:mb-4"
-                />
-                <h4 className="font-bold text-sm sm:text-base">Chapas</h4>
-              </div>
+              <figure className="group relative">
+                <Link to="/categorias/refrigeracao-comercial?sort=name&view=grid&sub=16" aria-label="Ver Câmaras Frias na categoria Refrigeração Comercial" className="block">
+                  <img
+                    src="https://i.imgur.com/p9Q5GIT.png"
+                    alt="Câmaras Frias"
+                    className="mx-auto max-h-36 sm:max-h-44 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <figcaption className="mt-3 text-center font-bold text-sm sm:text-base text-white">Câmaras Frias</figcaption>
+                </Link>
+              </figure>
+
+              <figure className="group relative">
+                <Link to="/categorias/refrigeracao-comercial?sort=name&view=grid&sub=18" aria-label="Ver Expositores Refrigerados na categoria Refrigeração Comercial" className="block">
+                  <img
+                    src="https://i.imgur.com/EvjHmLJ.png"
+                    alt="Expositores Refrigerados"
+                    className="mx-auto max-h-36 sm:max-h-44 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <figcaption className="mt-3 text-center font-bold text-sm sm:text-base text-white">Expositores Refrigerados</figcaption>
+                </Link>
+              </figure>
+
+              <figure className="group relative">
+                <Link to="/categorias/refrigeracao-comercial?sort=name&view=grid&sub=19" aria-label="Ver Freezers Comerciais na categoria Refrigeração Comercial" className="block">
+                  <img
+                    src="https://i.imgur.com/TQmaGUI.png"
+                    alt="Freezers Comerciais"
+                    className="mx-auto max-h-36 sm:max-h-44 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <figcaption className="mt-3 text-center font-bold text-sm sm:text-base text-white">Freezers Comerciais</figcaption>
+                </Link>
+              </figure>
             </div>
           </div>
         </div>
+      {/* Information Tabs Section */}
+      <section className="mt-[10px] py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Tab Navigation */}
+          <div className="flex flex-wrap justify-center mb-8 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('sobre')}
+              className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base transition-colors border-b-2 ${
+                activeTab === 'sobre'
+                  ? 'text-red-600 border-red-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              Sobre a Repal
+            </button>
+            <button
+              onClick={() => setActiveTab('atuacao')}
+              className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base transition-colors border-b-2 ${
+                activeTab === 'atuacao'
+                  ? 'text-red-600 border-red-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              Área de Atuação
+            </button>
+            <button
+              onClick={() => setActiveTab('diferenciais')}
+              className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base transition-colors border-b-2 ${
+                activeTab === 'diferenciais'
+                  ? 'text-red-600 border-red-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              Diferenciais
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+            {activeTab === 'sobre' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl font-bold text-gray-900">Sobre a Repal</h2>
+                <div className="space-y-4 text-gray-700">
+                  <p>
+                    A Repal nasceu com a missão de simplificar a operação de negócios gastronômicos por meio de equipamentos profissionais confiáveis e peças originais que asseguram alto desempenho. Valorizamos ética, transparência e compromisso com resultados. Nosso histórico é marcado por parcerias duradouras com restaurantes, padarias, açougues, bares, hotéis e cozinhas industriais que exigem produtividade, segurança e qualidade de acabamento em cada preparo.
+                  </p>
+                  <p>
+                    Investimos continuamente em curadoria de marcas reconhecidas, em suporte técnico especializado e em uma experiência de compra consultiva. Assim, entregamos soluções adequadas ao porte da operação, ao fluxo de clientes e ao perfil dos cardápios. Do dimensionamento de frota térmica ao detalhamento de instalação, cada projeto considera eficiência energética, durabilidade e conformidade com normas sanitárias e de segurança.
+                  </p>
+                  <p>
+                    Atuamos com foco regional e nacional, oferecendo atendimento ágil, logística otimizada e acompanhamento pós-venda. Nossa equipe orienta a escolha de equipamentos, organiza cronogramas de implantação e indica práticas de manutenção preventiva, reduzindo paradas e custos operacionais.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'atuacao' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl font-bold text-gray-900">Área de atuação e localização</h2>
+                <div className="space-y-4 text-gray-700">
+                  <p>
+                    Atendemos operações gastronômicas em todo o Brasil com ênfase no Sul e Sudeste, mantendo estoques estratégicos para entregas rápidas. Nossa base operacional facilita coletas e envios, e o suporte remoto orienta instalação, configuração e cuidados diários.
+                  </p>
+                  <p>
+                    Em projetos maiores, alinhamos visitas técnicas e integração com fornecedores para garantir que a cozinha opere dentro dos requisitos de fluxo, ergonomia e segurança, respeitando as particularidades de cada nicho, como produção de panificação, corte e processamento de carnes, confeitaria e serviço à la carte.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'diferenciais' && (
+              <div className="space-y-6">
+                <h2 className="text-3xl font-bold text-gray-900">Diferenciais competitivos</h2>
+                <div className="space-y-4 text-gray-700">
+                  <p>
+                    Seleção de equipamentos gastronômicos com garantia de procedência, peças originais e orientação técnica dedicada. Priorizamos eficiência energética, facilidade de higienização, ergonomia e segurança operacional. A consultoria ajuda a prever capacidade instalada e expansão, evitando gargalos.
+                  </p>
+                  <p>
+                    Oferecemos peças e acessórios compatíveis para manutenção ágil e redução de downtime, incluindo componentes de refrigeração, elementos de aquecimento, conjuntos de corte e itens de reposição. O catálogo é atualizado conforme demanda e novas tecnologias.
+                  </p>
+                  <p>
+                    Nosso atendimento integra comunicação clara, prazos realistas e acompanhamento pós-venda, criando uma relação confiável e duradoura.
+                  </p>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </section>
+
       </section>
 
       {/* Stats Section - Redesigned */}
@@ -671,101 +804,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-16 bg-white" aria-labelledby="heading-sobre-repal" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 id="heading-sobre-repal" className="text-3xl font-bold text-gray-900 mb-4">Sobre a Repal</h2>
-          <div className="space-y-4 text-gray-700">
-            <p>
-              A Repal nasceu com a missão de simplificar a operação de negócios gastronômicos por meio de equipamentos profissionais confiáveis e peças originais que asseguram alto desempenho. Valorizamos ética, transparência e compromisso com resultados. Nosso histórico é marcado por parcerias duradouras com restaurantes, padarias, açougues, bares, hotéis e cozinhas industriais que exigem produtividade, segurança e qualidade de acabamento em cada preparo.
-            </p>
-            <p>
-              Investimos continuamente em curadoria de marcas reconhecidas, em suporte técnico especializado e em uma experiência de compra consultiva. Assim, entregamos soluções adequadas ao porte da operação, ao fluxo de clientes e ao perfil dos cardápios. Do dimensionamento de frota térmica ao detalhamento de instalação, cada projeto considera eficiência energética, durabilidade e conformidade com normas sanitárias e de segurança.
-            </p>
-            <p>
-              Atuamos com foco regional e nacional, oferecendo atendimento ágil, logística otimizada e acompanhamento pós-venda. Nossa equipe orienta a escolha de equipamentos, organiza cronogramas de implantação e indica práticas de manutenção preventiva, reduzindo paradas e custos operacionais.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gray-50" aria-labelledby="heading-atuacao-localizacao" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 id="heading-atuacao-localizacao" className="text-3xl font-bold text-gray-900 mb-4">Área de atuação e localização</h2>
-          <div className="space-y-4 text-gray-700">
-            <p>
-              Atendemos operações gastronômicas em todo o Brasil com ênfase no Sul e Sudeste, mantendo estoques estratégicos para entregas rápidas. Nossa base operacional facilita coletas e envios, e o suporte remoto orienta instalação, configuração e cuidados diários.
-            </p>
-            <p>
-              Em projetos maiores, alinhamos visitas técnicas e integração com fornecedores para garantir que a cozinha opere dentro dos requisitos de fluxo, ergonomia e segurança, respeitando as particularidades de cada nicho, como produção de panificação, corte e processamento de carnes, confeitaria e serviço à la carte.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-white" aria-labelledby="heading-diferenciais" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 id="heading-diferenciais" className="text-3xl font-bold text-gray-900 mb-4">Diferenciais competitivos</h2>
-          <div className="space-y-4 text-gray-700">
-            <p>
-              Seleção de equipamentos gastronômicos com garantia de procedência, peças originais e orientação técnica dedicada. Priorizamos eficiência energética, facilidade de higienização, ergonomia e segurança operacional. A consultoria ajuda a prever capacidade instalada e expansão, evitando gargalos.
-            </p>
-            <p>
-              Oferecemos peças e acessórios compatíveis para manutenção ágil e redução de downtime, incluindo componentes de refrigeração, elementos de aquecimento, conjuntos de corte e itens de reposição. O catálogo é atualizado conforme demanda e novas tecnologias.
-            </p>
-            <p>
-              Nosso atendimento integra comunicação clara, prazos realistas e acompanhamento pós-venda, criando uma relação confiável e duradoura.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gray-50" aria-labelledby="heading-fale-conosco" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 id="heading-fale-conosco" className="text-3xl font-bold text-gray-900 mb-4">Fale Conosco</h2>
-          <div className="space-y-4 text-gray-700">
-            <p>
-              Precisa dimensionar sua cozinha industrial, comparar equipamentos ou encontrar peças originais? Fale com nossa equipe para receber uma proposta personalizada.
-            </p>
-            <p>
-              Use o botão de WhatsApp, acesse a página de contato ou ligue para nossa central. Responderemos com agilidade, indicando modelos, prazos e condições.
-            </p>
-            <div className="mt-6">
-              <Link to="/contato" className="inline-block bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">Solicitar orçamento</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section aria-label="Conteúdo SEO oculto" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', overflow: 'hidden' }}>
-        <h2>Apresentação da empresa</h2>
-        <p>
-          A Repal é referência em equipamentos gastronômicos e peças para cozinha industrial, oferecendo soluções que reúnem desempenho, confiabilidade e suporte técnico. Nossa missão é ajudar restaurantes, padarias, açougues, bares e operações de produção a obter produtividade com segurança e controle de custos. Com um portfólio criterioso e atendimento consultivo, orientamos a escolha de equipamentos, a configuração de ambientes e a implementação de rotinas de manutenção preventiva.
-        </p>
-        <p>
-          Valorizamos relações transparentes e resultados mensuráveis. Cada recomendação considera fluxo de clientes, cardápio, espaço físico, consumo energético e normas sanitárias. O objetivo é que a cozinha funcione com estabilidade, reduzindo paradas e garantindo a qualidade final dos preparos.
-        </p>
-        <h2>Descrição de produtos e serviços</h2>
-        <h3>Equipamentos Profissionais</h3>
-        <p>
-          Disponibilizamos fogões industriais, fornos combinados, chapas, fritadeiras, masseiras, câmaras frias, balcões refrigerados, expositores, seladoras, moedores, serras, liquidificadores profissionais e soluções de preparo, cocção e refrigeração. Os modelos oferecem robustez, eficiência energética, facilidade de limpeza e conformidade com requisitos de segurança, apoiando operações de alta demanda.
-        </p>
-        <h3>Peças e Acessórios</h3>
-        <p>
-          Mantemos estoque de peças originais e acessórios compatíveis, como resistências, termostatos, controladores, motores, facas, discos, correias, componentes de refrigeração e itens de reposição para linha de aquecimento e processamento. A disponibilidade reduz o tempo de parada e garante que a produtividade se mantenha estável.
-        </p>
-        <h2>Área de atuação e localização</h2>
-        <p>
-          Atendemos todo o Brasil, com foco operacional no Sul e Sudeste, realizando entregas rápidas e suporte remoto. Em projetos complexos, alinhamos visitas técnicas e integração com fornecedores para garantir que as instalações atendam fluxo, ergonomia e padrões de segurança exigidos.
-        </p>
-        <h2>Diferenciais competitivos</h2>
-        <p>
-          Curadoria de marcas e catálogo atualizado, orientação técnica especializada, peças originais, logística eficiente e pós-venda atento compõem nossos diferenciais. Buscamos reduzir custos operacionais e melhorar o desempenho por meio de escolhas inteligentes e manutenção planejada.
-        </p>
-        <h2>Chamadas para ação</h2>
-        <p>
-          Entre em contato para receber uma recomendação personalizada de equipamentos gastronômicos e peças para sua cozinha industrial. Solicite orçamento, tire dúvidas sobre instalação e escolha acessórios de reposição para manutenção preventiva.
-        </p>
-      </section>
+ 
     </div>
   );
 };
