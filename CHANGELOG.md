@@ -1,4 +1,4 @@
-## 2025-12-11 - v0.3.0
+## 2025-12-11 - v0.2.1
 
 - Admin: criação de usuários com modal e validações básicas
   - Página: `src/pages/admin/UsersPage.tsx`
