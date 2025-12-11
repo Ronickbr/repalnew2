@@ -68,15 +68,7 @@ const CategoryProducts: React.FC = () => {
     setCurrentPage(1)
   }, [searchParams])
 
-  useEffect(() => {
-    if (!selectedCategorySlug) return
-    const hasSub = searchParams.get('sub')
-    if (hasSub) {
-      setSelectedSubcategories([])
-      setSearchParams({})
-      setCurrentPage(1)
-    }
-  }, [selectedCategorySlug])
+  
 
   const subcategoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -91,8 +83,12 @@ const CategoryProducts: React.FC = () => {
   const filteredProducts: ProductWithCategory[] = useMemo(() => {
     let base = categoryProducts
     if (selectedSubcategories.length > 0) {
-      const setIds = new Set(selectedSubcategories.map(String))
-      base = base.filter(p => setIds.has(String(p.subcategory?.id || p.subcategory_id || '')))
+      const setVals = new Set(selectedSubcategories.map(s => String(s).trim()))
+      base = base.filter(p => {
+        const sid = String(p.subcategory?.id || p.subcategory_id || '')
+        const sslug = String(p.subcategory?.slug || '')
+        return (sid && setVals.has(sid)) || (sslug && setVals.has(sslug))
+      })
     }
     if (searchTerm) {
       const q = searchTerm.toLowerCase()
@@ -129,9 +125,21 @@ const CategoryProducts: React.FC = () => {
 
   const handleSubcategoryToggle = (id: string) => {
     setSelectedSubcategories(prev => {
+      const sub = subcategories.find(s => String(s.id) === String(id))
+      const slug = sub?.slug ? String(sub.slug) : ''
       const set = new Set(prev)
-      if (set.has(id)) set.delete(id)
-      else set.add(id)
+      const isChecked = set.has(id) || (slug ? set.has(slug) : false)
+      if (isChecked) {
+        set.delete(id)
+        if (slug) set.delete(slug)
+      } else {
+        if (slug) {
+          set.add(slug)
+          set.delete(id)
+        } else {
+          set.add(id)
+        }
+      }
       return Array.from(set)
     })
   }
