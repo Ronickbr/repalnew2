@@ -24,7 +24,7 @@ import TagManager from './components/TagManager';
 import { useSiteSettings } from './hooks/useSiteSettings';
 import NotFound from './pages/NotFound';
 
-
+import { Analytics } from "@vercel/analytics/next"
 
 // Lazy load admin pages
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
@@ -94,6 +94,7 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
               </Router>
+              <Analytics />
               <Toaster
                 position="top-right"
                 toastOptions={{
