@@ -1,3 +1,11 @@
+## 2025-12-11 - v0.3.0
+
+- Admin: criação de usuários com modal e validações básicas
+  - Página: `src/pages/admin/UsersPage.tsx`
+- Analytics: integração do Vercel Analytics
+  - App principal: `src/App.tsx`
+- Dependências: adicionado pacote `@vercel/analytics`
+
 ## 2025-12-10 - v0.2.0
 
 - Adicionada página 404 amigável com SEO `noindex` e CTAs
