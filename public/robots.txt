@@ -1,34 +1,10 @@
 User-agent: *
-# Bloquear áreas administrativas e de sistema
 Disallow: /admin/
-Disallow: /system/
-Disallow: /catalog/
-Disallow: /bin/
-Disallow: /cache/
-Disallow: /download/
-Disallow: /logs/
-
-# Bloquear áreas de cliente e checkout (não públicas)
-Disallow: /*route=account
-Disallow: /*route=affiliate
-Disallow: /*route=checkout
-Disallow: /*route=error
-Disallow: /*route=extension
-Disallow: /*route=tool
-Disallow: /index.php?route=account/
-Disallow: /index.php?route=checkout/
-Disallow: /login/
-Disallow: /register/
-
-# Bloquear buscas internas (evita conteúdo duplicado/inútil)
-Disallow: /*route=product/search
-Disallow: /*filter_name=
-Disallow: /*sort=
-Disallow: /*order=
-Disallow: /*limit=
-Disallow: /*page=
-
-# Permitir acesso a imagens e temas (importante para o Google ver o layout)
-Allow: /catalog/view/javascript/
-Allow: /catalog/view/theme/
-Allow: /image/
+Disallow: /login
+Disallow: /perfil
+Disallow: /api/
+Disallow: /*?*utm_
+Disallow: /*?*gclid=
+Disallow: /*?*fbclid=
+Disallow: /*?*ref=
+Sitemap: https://www.repalmarechal.com.br/sitemap.xml
