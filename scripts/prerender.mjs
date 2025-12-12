@@ -170,11 +170,16 @@ const main = async () => {
     for (const route of routes) {
       const url = `${BASE_URL}${route}`
       console.log('→', url)
-      await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 })
-      const html = await page.evaluate(() => document.documentElement.outerHTML)
-      const filePath = routeToFilePath(route)
-      ensureDir(path.dirname(filePath))
-      fs.writeFileSync(filePath, html, 'utf-8')
+      try {
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+        await page.waitForTimeout(500)
+        const html = await page.evaluate(() => document.documentElement.outerHTML)
+        const filePath = routeToFilePath(route)
+        ensureDir(path.dirname(filePath))
+        fs.writeFileSync(filePath, html, 'utf-8')
+      } catch (e) {
+        console.warn('Falha ao prerender rota:', route, e?.message || e)
+      }
     }
     const origin = await getCanonicalBaseUrl()
     const xml = await generateSitemapXml(origin)
