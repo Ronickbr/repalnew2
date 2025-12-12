@@ -81,6 +81,73 @@ const waitForServer = async (proc) => {
   })
 }
 
+const getCanonicalBaseUrl = async () => {
+  try {
+    if (!supabase) return BASE_URL
+    const { data } = await supabase
+      .from('site_settings')
+      .select('seo')
+      .limit(1)
+      .single()
+    const url = data?.seo?.canonical_url || ''
+    const trimmed = (url || '').trim().replace(/\/+$/, '')
+    return trimmed || BASE_URL
+  } catch {
+    return BASE_URL
+  }
+}
+
+const generateSitemapXml = async (originOverride) => {
+  const origin = (typeof originOverride === 'string' && originOverride.trim())
+    ? originOverride.trim().replace(/\/+$/, '')
+    : await getCanonicalBaseUrl()
+  const now = new Date().toISOString()
+  let urls = [
+    { loc: `${origin}/`, changefreq: 'weekly', priority: '1.0', lastmod: now },
+    { loc: `${origin}/categorias`, changefreq: 'weekly', priority: '0.8', lastmod: now },
+  ]
+  try {
+    if (supabase) {
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('id, slug, parent_id, updated_at, active')
+        .eq('active', true)
+        .limit(50000)
+      const { data: products } = await supabase
+        .from('products')
+        .select('slug, updated_at, active')
+        .eq('active', true)
+        .limit(50000)
+      const byId = new Map()
+      for (const c of categories || []) {
+        byId.set(c.id, c)
+      }
+      for (const c of categories || []) {
+        const lastmod = c.updated_at || now
+        if (!c.parent_id) {
+          urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod })
+        } else {
+          const parent = c.parent_id ? byId.get(c.parent_id) : null
+          if (parent?.slug) {
+            urls.push({ loc: `${origin}/categorias/${parent.slug}/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod })
+          } else {
+            urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod })
+          }
+        }
+      }
+      for (const p of products || []) {
+        const lastmod = p.updated_at || now
+        urls.push({ loc: `${origin}/produto/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod })
+      }
+    }
+  } catch {}
+  const urlsXml = urls
+    .map(u => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`)
+    .join('\n')
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</urlset>`
+  return xml
+}
+
 const main = async () => {
   if (!fs.existsSync(DIST_DIR)) {
     console.error('dist/ não encontrado. Execute "npm run build" antes.')
@@ -109,6 +176,10 @@ const main = async () => {
       ensureDir(path.dirname(filePath))
       fs.writeFileSync(filePath, html, 'utf-8')
     }
+    const origin = await getCanonicalBaseUrl()
+    const xml = await generateSitemapXml(origin)
+    const sitemapPath = path.join(DIST_DIR, 'sitemap.xml')
+    fs.writeFileSync(sitemapPath, xml, 'utf-8')
     await browser.close()
   } catch (e) {
     console.error('Falha no prerender:', e)
