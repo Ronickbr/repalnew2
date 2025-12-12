@@ -762,7 +762,7 @@ app.post('/api/seo/robots', authMiddleware, requireRole(['admin', 'super_admin']
 
 app.post('/api/seo/sitemap', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
-    const { enabled, baseUrl } = req.body || {};
+    const { enabled, baseUrl, content } = req.body || {};
     const publicDir = path.join(__dirname, 'public');
     ensureDirectoryExists(publicDir);
     const filePath = path.join(publicDir, 'sitemap.xml');
@@ -775,9 +775,14 @@ app.post('/api/seo/sitemap', authMiddleware, requireRole(['admin', 'super_admin'
       return res.json({ success: true, enabled: false });
     }
 
-    const xml = await generateSitemap(baseUrl);
-    fs.writeFileSync(filePath, xml);
-    await logAdminActivity(req.admin, 'generate_sitemap', { baseUrl: (baseUrl || '').trim() });
+    if (typeof content === 'string' && content.trim() !== '') {
+      fs.writeFileSync(filePath, content);
+      await logAdminActivity(req.admin, 'update_sitemap_custom', { size: content.length });
+    } else {
+      const xml = await generateSitemap(baseUrl);
+      fs.writeFileSync(filePath, xml);
+      await logAdminActivity(req.admin, 'generate_sitemap', { baseUrl: (baseUrl || '').trim() });
+    }
     res.json({ success: true, enabled: true, path: '/sitemap.xml' });
   } catch (err) {
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
@@ -884,9 +889,14 @@ const generateSitemap = async (originOverride) => {
 
 app.get('/sitemap.xml', async (req, res) => {
   try {
-    const xml = await generateSitemap();
-    res.type('application/xml');
-    res.send(xml);
+    const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
+    if (fs.existsSync(sitemapPath)) {
+      const content = fs.readFileSync(sitemapPath, 'utf-8');
+      res.type('application/xml').send(content);
+    } else {
+      const xml = await generateSitemap();
+      res.type('application/xml').send(xml);
+    }
   } catch {
     res.status(500).type('text/plain').send('Erro ao gerar sitemap');
   }

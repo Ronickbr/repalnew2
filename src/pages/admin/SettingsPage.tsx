@@ -64,6 +64,7 @@ interface SEO {
   robots_txt?: string;
   sitemap_enabled?: boolean;
   canonical_url?: string;
+  sitemap_xml?: string;
 }
 
 interface Store {
@@ -212,7 +213,8 @@ const SettingsPage: React.FC = () => {
       meta_keywords: '',
       robots_txt: '',
       sitemap_enabled: true,
-      canonical_url: ''
+      canonical_url: '',
+      sitemap_xml: ''
     }
   };
 
@@ -425,7 +427,7 @@ const SettingsPage: React.FC = () => {
 
         await apiFetch('/api/seo/sitemap', {
           method: 'POST',
-          body: JSON.stringify({ enabled: sitemapEnabled, baseUrl })
+          body: JSON.stringify({ enabled: sitemapEnabled, baseUrl, content: settingsToSave.seo?.sitemap_xml || '' })
         }, true);
       } catch (e) {
         console.error(e);
@@ -904,6 +906,12 @@ const SettingsPage: React.FC = () => {
                 Sitemap
               </label>
               {renderInputField('seo', 'sitemap_enabled', sectionData.sitemap_enabled, 'checkbox', '', { label: 'Ativar sitemap XML' })}
+            </div>
+            <div>
+              <label htmlFor="seo-sitemap_xml" className="block text-sm font-medium text-gray-700 mb-1">
+                Sitemap XML (opcional)
+              </label>
+              {renderInputField('seo', 'sitemap_xml', sectionData.sitemap_xml, 'textarea', 'Cole aqui o conteúdo do sitemap.xml para usar manualmente', { rows: 8 })}
             </div>
             <div>
               <label htmlFor="seo-robots_txt" className="block text-sm font-medium text-gray-700 mb-1">
