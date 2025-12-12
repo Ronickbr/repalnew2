@@ -775,19 +775,9 @@ app.post('/api/seo/sitemap', authMiddleware, requireRole(['admin', 'super_admin'
       return res.json({ success: true, enabled: false });
     }
 
-    const origin = typeof baseUrl === 'string' && baseUrl.trim() ? baseUrl.trim().replace(/\/+$/, '') : 'http://localhost:5173';
-    const now = new Date().toISOString();
-    const paths = ['/', '/login'];
-    const urlsXml = paths
-      .map(p => {
-        const loc = `${origin}${p}`;
-        return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${p === '/' ? '1.0' : '0.8'}</priority>\n  </url>`;
-      })
-      .join('\n');
-
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</urlset>`;
+    const xml = await generateSitemap(baseUrl);
     fs.writeFileSync(filePath, xml);
-    await logAdminActivity(req.admin, 'generate_sitemap', { baseUrl: origin });
+    await logAdminActivity(req.admin, 'generate_sitemap', { baseUrl: (baseUrl || '').trim() });
     res.json({ success: true, enabled: true, path: '/sitemap.xml' });
   } catch (err) {
     res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
@@ -840,8 +830,10 @@ const getCanonicalBaseUrl = async () => {
   }
 };
 
-const generateSitemap = async () => {
-  const origin = await getCanonicalBaseUrl();
+const generateSitemap = async (originOverride) => {
+  const origin = (typeof originOverride === 'string' && originOverride.trim())
+    ? originOverride.trim().replace(/\/+$/, '')
+    : await getCanonicalBaseUrl();
   const now = new Date().toISOString();
   const anon = getAnonClient();
   let urls = [
@@ -852,15 +844,30 @@ const generateSitemap = async () => {
     if (anon) {
       const { data: categories } = await anon
         .from('categories')
-        .select('slug, updated_at, active')
-        .eq('active', true);
+        .select('id, slug, parent_id, updated_at, active')
+        .eq('active', true)
+        .limit(50000);
       const { data: products } = await anon
         .from('products')
         .select('slug, updated_at, active')
-        .eq('active', true);
+        .eq('active', true)
+        .limit(50000);
+      const byId = new Map();
+      for (const c of categories || []) {
+        byId.set(c.id, c);
+      }
       for (const c of categories || []) {
         const lastmod = c.updated_at || now;
-        urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+        if (!c.parent_id) {
+          urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+        } else {
+          const parent = c.parent_id ? byId.get(c.parent_id) : null;
+          if (parent?.slug) {
+            urls.push({ loc: `${origin}/categorias/${parent.slug}/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+          } else {
+            urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+          }
+        }
       }
       for (const p of products || []) {
         const lastmod = p.updated_at || now;
