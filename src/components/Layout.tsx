@@ -48,6 +48,7 @@ const Layout: React.FC = () => {
         {canonicalHref && <link rel="canonical" href={canonicalHref} />}
         <meta name="author" content={siteName || 'Repal Equipamentos'} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta httpEquiv="content-language" content="pt-BR" />
         <meta property="og:title" content={metaTitle || `${siteName || 'Repal Equipamentos'} - Equipamentos Gastronômicos`} />
         <meta property="og:description" content={metaDescription || 'Equipamentos gastronômicos profissionais de alta qualidade para sua cozinha industrial.'} />
         <meta property="og:type" content="website" />
