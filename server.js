@@ -766,10 +766,14 @@ app.post('/api/seo/sitemap', authMiddleware, requireRole(['admin', 'super_admin'
     const publicDir = path.join(__dirname, 'public');
     ensureDirectoryExists(publicDir);
     const filePath = path.join(publicDir, 'sitemap.xml');
+    const distPath = path.join(__dirname, 'dist', 'sitemap.xml');
 
     if (!enabled) {
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
+      }
+      if (fs.existsSync(distPath)) {
+        fs.unlinkSync(distPath);
       }
       await logAdminActivity(req.admin, 'disable_sitemap', {});
       return res.json({ success: true, enabled: false });
@@ -777,10 +781,16 @@ app.post('/api/seo/sitemap', authMiddleware, requireRole(['admin', 'super_admin'
 
     if (typeof content === 'string' && content.trim() !== '') {
       fs.writeFileSync(filePath, content);
+      if (fs.existsSync(path.join(__dirname, 'dist'))) {
+        fs.writeFileSync(distPath, content);
+      }
       await logAdminActivity(req.admin, 'update_sitemap_custom', { size: content.length });
     } else {
       const xml = await generateSitemap(baseUrl);
       fs.writeFileSync(filePath, xml);
+      if (fs.existsSync(path.join(__dirname, 'dist'))) {
+        fs.writeFileSync(distPath, xml);
+      }
       await logAdminActivity(req.admin, 'generate_sitemap', { baseUrl: (baseUrl || '').trim() });
     }
     res.json({ success: true, enabled: true, path: '/sitemap.xml' });
@@ -890,8 +900,12 @@ const generateSitemap = async (originOverride) => {
 app.get('/sitemap.xml', async (req, res) => {
   try {
     const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
+    const distSitemapPath = path.join(__dirname, 'dist', 'sitemap.xml');
     if (fs.existsSync(sitemapPath)) {
       const content = fs.readFileSync(sitemapPath, 'utf-8');
+      res.type('application/xml').send(content);
+    } else if (fs.existsSync(distSitemapPath)) {
+      const content = fs.readFileSync(distSitemapPath, 'utf-8');
       res.type('application/xml').send(content);
     } else {
       const xml = await generateSitemap();
