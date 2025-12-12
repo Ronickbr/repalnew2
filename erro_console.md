@@ -1,63 +1,44 @@
-- A página d:\Sites\repalnew2\src\components\admin\ProductManager.tsx salva dados do produto diretamente nas tabelas products e product_images e lida com upload de imagens para o bucket products do Supabase Storage.
-- O fluxo separa claramente: validação e preparo dos dados de formulário, processamento/validação de URLs de imagens (incluindo base64), persistência de produto (create/update), e persistência das imagens adicionais em tabela própria.
-- A autorização de ação na UI usa hasPermission('manage_content') para gatear create/update, mas a efetiva permissão depende das políticas RLS do Supabase (detalhadas abaixo).
-Fluxo de Dados (Salvar Produto)
+# Relatório de Erros e Correções Sugeridas - repalmarechal.com.br
 
-- Submissão do formulário:
-  - handleSubmit valida URLs de imagem já processadas e o resto do formulário, anuncia acessibilidade e decide entre createProduct e updateProduct conforme está editando: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:560–606 .
-- Criação:
-  - Checa permissão manage_content : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:608–613 .
-  - Gera slug único com laço de verificação e fallback por timestamp: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:616–669 .
-  - Monta productData sanitizado (tipos e trims), injeta image principal e metas de SEO: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:673–685 .
-  - Insere em products e retorna o registro: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:687–696 .
-  - Insere imagens adicionais em product_images com product_id , url e sort_order : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:699–707 .
-- Atualização:
-  - Monta productData (similar à criação), atualiza products por id com retorno expandindo categories(name) : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:720–747 .
-  - Remove todas as imagens antigas ( delete where product_id = ... ): d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:759–765 .
-  - Insere a nova lista de imagens adicionais, com tratamento de erro detalhado: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:774–801 .
-- Exclusão:
-  - Única: confirmDelete deleta por id : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:821–839 .
-  - Em massa: confirmBulkDelete usa in('id', selectedProducts) : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:855–876 .
-Fluxo de Imagens (Upload e Associação)
+Este documento lista os erros e pontos de melhoria identificados no relatório de análise do site, categorizados por área e impacto.
 
-- Upload de múltiplos arquivos (input file):
-  - Gera nome único, faz upload para storage.from('products').upload('product-images/...') , obtém URL pública via getPublicUrl , retorna a lista: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:151–181 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:172–176 .
-  - Ao selecionar arquivos, chama handleFileUpload e adiciona ao estado unifiedImages : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:191–217 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:203–213 .
-- Upload de base64 (quando URL excede o limite ou veio colada como data URI):
-  - uploadBase64Image extrai MIME, converte para Blob , salva em product-images/ , lida com erros de RLS/bucket, e obtém URL pública: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:382–435 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:425–428 .
-- Processamento de URL de imagem:
-  - processImageUrl corta URLs muito longas; se base64, faz upload e retorna URL curta; senão remove query params não essenciais: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:437–487 .
-- Sincronização com o form:
-  - syncUnifiedImagesToFormData define a principal ( image ) como a primeira da lista e processa/valida adicionais, aplicando validateImageUrl : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:489–558 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:372–380 .
-Validações e Sanitações
+## 1. Conteúdo e SEO On-Page
 
-- Validação de URL de imagem com tamanho máximo (1024 chars) e mensagens específicas: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:372–380 .
-- Normalizações de SEO e specifications antes de persistir: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:681–684 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:733–736 .
-- Validações de formulário com feedback ARIA e notificações: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:582–591 .
-Listagem e Conversão de Imagens
+| Item | Impacto | Problema Identificado | Correção Sugerida |
+| :--- | :--- | :--- | :--- |
+| **Declaração de Idioma** | **Erro (Alto)** | O idioma declarado no HTML é **Inglês**, mas o conteúdo detectado é **Português**. | Corrigir o atributo `lang` na tag `<html>` para `pt` ou `pt-BR` para que os mecanismos de busca entendam o idioma correto do conteúdo. |
+| **Tags H1** | Melhoria | A página possui **2 tags `<H1>`**. Embora seja permitido no HTML5 sob certas condições (dentro de `<section>` ou `<article>` distintos), o ideal para SEO tradicional é ter apenas uma tag `<H1>` por página. | Revisar a estrutura de cabeçalhos para garantir que apenas o título principal da página esteja em `<H1>`. Usar `<H2>` a `<H6>` para subtítulos e seções. |
+| **Title Tag** | Melhoria | O título tem 55 caracteres, o que está abaixo do limite ideal de 65 caracteres. | Otimizar o título para usar mais dos 65 caracteres disponíveis, incluindo palavras-chave importantes para aumentar a relevância e o CTR. |
+| **Web Feeds** | Melhoria | Não foram encontrados URLs de web feed (RSS/ATOM). | Adicionar um web feed para permitir que os visitantes se inscrevam em atualizações de conteúdo (notícias, blog, produtos), aumentando o engajamento. |
 
-- Carrega produtos com product_images(url, sort_order) e mapeia para additional_images ordenadas para uso na UI: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:224–235 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:263–275 .
-Políticas RLS (Row Level Security)
+## 2. Indexação e Rastreamento
 
-- Tabelas de produtos e imagens:
-  - A UI utiliza supabase.auth e hasPermission('manage_content') para restringir uso, mas a efetiva execução depende das políticas RLS no Supabase. Recomendações típicas:
-    - SELECT : aberto para anon / authenticated em products e product_images para catálogo público.
-    - INSERT / UPDATE / DELETE : permitido apenas para authenticated com jwt contendo role IN ('admin','super_admin','editor') . Essas claims são lidas de user_metadata.role configurado no login: d:\Sites\repalnew2\src\hooks\useAuth.tsx:52–63 e d:\Sites\repalnew2\src\hooks\useAuth.tsx:90–97,109–137 .
-  - Erros de RLS são detectados explicitamente no upload de imagens (mensagens com “row-level security”/“RLS”) e tratados com mensagens claras: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:415–418 e d:\Sites\repalnew2\src\services\productImageUpload.ts:130–133,299–301 .
-- Storage (bucket products ):
-  - Recomenda-se: leitura pública (objetos public ), escrita apenas para usuários authenticated com papel administrativo. A página faz upload em products/product-images/... e obtém publicUrl : d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:163–176 e d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:409–428 .
-  - Erro de bucket ausente é tratado com mensagem “Bucket não encontrado”: d:\Sites\repalnew2\src\components\admin\ProductManager.tsx:419–422 . Há lógica semelhante e discussões de criação de bucket em banners: d:\Sites\repalnew2\src\hooks\useBanners.ts:292–334,357–379 .
-- Bypass via Service Role (Server):
-  - O backend tem endpoints administrativos que usam SUPABASE_SERVICE_ROLE_KEY para contornar RLS ao criar produtos (adequado para operações sensíveis): d:\Sites\repalnew2\server.js:347–396 e cliente de serviço: d:\Sites\repalnew2\server.js:51–61 .
-  - A página ProductManager.tsx atualmente persiste direto via cliente web; se suas políticas RLS estiverem estritas, considere migrar create/update para esse endpoint /api/admin/products para maior confiabilidade.
-Resumo Operacional
+| Item | Impacto | Problema Identificado | Correção Sugerida |
+| :--- | :--- | :--- | :--- |
+| **Validade dos Sitemaps** | **Erro (Alto)** | Os sitemaps `sitemap_index.xml` e `sitemap.xml.gz` possuem uma estrutura inválida. A tag de abertura não é `urlset` ou `sitemapindex`. | Corrigir a sintaxe dos arquivos sitemap para garantir que estejam em conformidade com o padrão XML Sitemap. Sitemaps inválidos não são utilizados pelos mecanismos de busca. |
+| **Canonical Tags** | **Erro (Alto)** | A tag Canonical URL foi encontrada no DOM renderizado, mas **não está presente no HTML de origem**. | Garantir que a tag `<link rel="canonical" href="...">` esteja presente no `<head>` do HTML de origem para evitar problemas de conteúdo duplicado e consolidar sinais de classificação. |
+| **Sitemap no Robots.txt** | Melhoria | O sitemap foi encontrado, mas **não está referenciado no arquivo `robots.txt`**. | Adicionar a linha `Sitemap: https://www.repalmarechal.com.br/sitemap.xml` (ou o caminho correto) ao arquivo `robots.txt` para facilitar a descoberta pelos rastreadores. |
+| **Parâmetros de URL** | Aviso (Médio) | Detecção de parâmetros em um número significativo de URLs, o que pode causar problemas de conteúdo duplicado. | Utilizar a ferramenta "URL Parameters" no Google Search Console para informar ao Google como tratar esses parâmetros. Alternativamente, usar a tag `rel="canonical"` de forma correta para apontar para a versão preferida da página. |
+| **Robots Meta Tags** | Melhoria | Não foram encontradas tags meta robots. | Adicionar a tag meta robots (ex: `<meta name="robots" content="index, follow">`) para ter controle explícito sobre como os mecanismos de busca devem indexar e seguir links na página. |
+| **Hreflang Tags** | Melhoria | Não foram encontradas tags hreflang. | Se o site tiver ou planeja ter versões em outros idiomas ou para regiões específicas, implementar tags `hreflang` para direcionar o usuário ao conteúdo correto. |
 
-- Dados:
-  - Criação/atualização usam supabase.from('products') com checks de permissão e sanitização.
-  - Imagens adicionais persistem em product_images após a gravação do produto.
-- Imagens:
-  - Upload de arquivo e base64 para bucket products ; URL pública é guardada no banco.
-  - URLs muito longas são encurtadas ou transformadas em uploads.
-- RLS:
-  - Necessário garantir políticas: leitura pública do catálogo, gravação restrita aos administradores autenticados; storage com escrita autenticada.
-  - Erros de RLS são capturados e comunicados ao usuário com mensagens específicas.
+## 3. Usabilidade e Mobile
+
+| Item | Impacto | Problema Identificado | Correção Sugerida |
+| :--- | :--- | :--- | :--- |
+| **Tamanho do Alvo de Toque (Tap Target Size)** | **Erro (Alto)** | Links e botões não estão otimizados para dispositivos móveis (muito pequenos e/ou muito próximos). O relatório indica alvos sobrepostos. | Aumentar o tamanho dos alvos de toque (botões e links) para um mínimo de 48x48 pixels e garantir um espaçamento de pelo menos 8 pixels entre eles para melhorar a usabilidade móvel. |
+| **Plugins** | Perfeito | Não foram detectados plugins como Flash, Silverlight ou Java. | Nenhuma ação necessária. |
+| **Tamanho da Fonte** | Perfeito | O texto da página é legível em dispositivos móveis. | Nenhuma ação necessária. |
+
+## 4. Tecnologias e Performance
+
+(A leitura do relatório foi truncada nesta seção, mas os problemas mais críticos de SEO e usabilidade foram extraídos das seções anteriores.)
+
+---
+
+**Resumo das Prioridades de Correção (Erros de Alto Impacto):**
+
+1.  **Corrigir a Declaração de Idioma** (Inglês para Português).
+2.  **Corrigir a Validade dos Sitemaps** (Sintaxe XML incorreta).
+3.  **Corrigir a Implementação da Canonical Tag** (Não está no HTML de origem).
+4.  **Corrigir o Tamanho e Espaçamento dos Alvos de Toque** (Usabilidade móvel).

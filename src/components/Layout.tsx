@@ -45,7 +45,11 @@ const Layout: React.FC = () => {
         <title>{metaTitle || `${siteName || 'Repal Equipamentos'} - Equipamentos Gastronômicos Profissionais`}</title>
         <meta name="description" content={metaDescription || 'Equipamentos gastronômicos profissionais de alta qualidade para restaurantes, padarias e cozinhas industriais. Fogões, fornos, geladeiras e muito mais.'} />
         <meta name="keywords" content={metaKeywords || 'equipamentos gastronômicos, cozinha industrial, fogões profissionais, fornos industriais, geladeiras comerciais, equipamentos para restaurante'} />
+        <meta name="robots" content="index, follow" />
         {canonicalHref && <link rel="canonical" href={canonicalHref} />}
+        {canonicalHref && <link rel="alternate" href={canonicalHref} hrefLang="pt-BR" />}
+        {canonicalHref && <link rel="alternate" href={canonicalHref} hrefLang="x-default" />}
+        <link rel="alternate" type="application/rss+xml" href="/feed.xml" />
         <meta name="author" content={siteName || 'Repal Equipamentos'} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta httpEquiv="content-language" content="pt-BR" />

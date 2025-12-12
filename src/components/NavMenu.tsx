@@ -286,7 +286,7 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
         >
           <header className="flex items-center justify-between p-4 border-b">
             <h2 className="font-semibold text-gray-800">Menu</h2>
-            <button onClick={() => setMobileOpen(false)}>
+            <button onClick={() => setMobileOpen(false)} className="p-2 tap-target">
               <X />
             </button>
           </header>

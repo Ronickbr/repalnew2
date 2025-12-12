@@ -916,6 +916,49 @@ app.get('/sitemap.xml', async (req, res) => {
   }
 });
 
+// Sitemap index para conformidade com crawlers
+app.get('/sitemap_index.xml', async (req, res) => {
+  try {
+    const origin = await getCanonicalBaseUrl();
+    const now = new Date().toISOString();
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${origin}/sitemap.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>
+</sitemapindex>`;
+    res.type('application/xml').send(xml);
+  } catch {
+    res.status(500).type('text/plain').send('Erro ao gerar sitemap index');
+  }
+});
+
+// Versão gzip do sitemap
+app.get('/sitemap.xml.gz', async (req, res) => {
+  try {
+    const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
+    const distSitemapPath = path.join(__dirname, 'dist', 'sitemap.xml');
+    let content = '';
+    if (fs.existsSync(sitemapPath)) {
+      content = fs.readFileSync(sitemapPath, 'utf-8');
+    } else if (fs.existsSync(distSitemapPath)) {
+      content = fs.readFileSync(distSitemapPath, 'utf-8');
+    } else {
+      content = await generateSitemap();
+    }
+    const zlib = await import('zlib');
+    zlib.gzip(content, (err, buffer) => {
+      if (err) return res.status(500).type('text/plain').send('Erro ao comprimir sitemap');
+      res.setHeader('Content-Type', 'application/x-gzip');
+      res.setHeader('Content-Encoding', 'gzip');
+      res.send(buffer);
+    });
+  } catch {
+    res.status(500).type('text/plain').send('Erro ao gerar sitemap.gz');
+  }
+});
+
 app.get('/robots.txt', async (req, res) => {
   try {
     const origin = await getCanonicalBaseUrl();
@@ -928,6 +971,49 @@ app.get('/robots.txt', async (req, res) => {
     }
   } catch {
     res.type('text/plain').send('User-agent: *\nAllow: /');
+  }
+});
+
+// Feed XML (Atom simples) com últimos produtos
+app.get('/feed.xml', async (req, res) => {
+  try {
+    const origin = await getCanonicalBaseUrl();
+    const anon = getAnonClient();
+    const now = new Date().toISOString();
+    let entries = [];
+    if (anon) {
+      const { data: products } = await anon
+        .from('products')
+        .select('slug, name, description, updated_at, created_at, active')
+        .eq('active', true)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      entries = (products || []).map(p => ({
+        id: `${origin}/produto/${p.slug}`,
+        title: p.name,
+        updated: p.updated_at || p.created_at || now,
+        summary: p.description || ''
+      }));
+    }
+    const feedEntries = entries.map(e => 
+      `  <entry>
+    <id>${e.id}</id>
+    <title>${e.title}</title>
+    <updated>${e.updated}</updated>
+    <link href="${e.id}" />
+    <summary>${e.summary}</summary>
+  </entry>`).join('\n');
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>${origin}/</id>
+  <title>Repal Equipamentos - Novidades</title>
+  <updated>${now}</updated>
+  <link href="${origin}/feed.xml" rel="self" />
+  ${feedEntries}
+</feed>`;
+    res.type('application/atom+xml').send(xml);
+  } catch {
+    res.status(500).type('text/plain').send('Erro ao gerar feed');
   }
 });
 

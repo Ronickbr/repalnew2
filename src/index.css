@@ -13,6 +13,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Tap target accessibility for touch devices */
+@media (pointer: coarse) {
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* Carousel Animation */
 @keyframes scroll {
   0% {
