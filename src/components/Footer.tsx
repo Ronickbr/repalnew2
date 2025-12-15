@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
 
           {/* Loja Curitiba */}
           <div className="space-y-3 sm:space-y-4">
-            <h4 className="text-base sm:text-lg font-semibold text-white">LOJA - CURITIBA</h4>
+            <h3 className="text-base sm:text-lg font-semibold text-white">LOJA - CURITIBA</h3>
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center space-x-2 sm:space-x-3">
                 <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-white flex-shrink-0" />
@@ -64,7 +64,7 @@ const Footer: React.FC = () => {
 
           {/* Loja Londrina */}
           <div className="space-y-3 sm:space-y-4">
-            <h4 className="text-base sm:text-lg font-semibold text-white">LOJA - LONDRINA</h4>
+            <h3 className="text-base sm:text-lg font-semibold text-white">LOJA - LONDRINA</h3>
             <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center space-x-2 sm:space-x-3">
                 <Phone className="h-3 w-3 sm:h-4 sm:w-4 text-white flex-shrink-0" />
@@ -90,7 +90,7 @@ const Footer: React.FC = () => {
 
           {/* Formas de Pagamento */}
           <div className="space-y-3 sm:space-y-4">
-            <h4 className="text-base sm:text-lg font-semibold text-white">FORMAS DE PAGAMENTOS</h4>
+            <h3 className="text-base sm:text-lg font-semibold text-white">FORMAS DE PAGAMENTOS</h3>
             <img 
               src="https://urucuna.com/wp-content/uploads/2021/02/bandeiras-cartoes-credito-300x99.png" 
               alt="Formas de Pagamento Aceitas" 

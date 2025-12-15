@@ -25,8 +25,9 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
     <button
       onClick={handleClick}
       className={`
-        inline-flex items-center gap-2 rounded-lg font-medium transition-all duration-200
-        bg-green-600 hover:bg-green-700 text-white px-4 py-2
+        inline-flex items-center gap-2 rounded-lg font-semibold transition-all duration-200
+        bg-gradient-to-r from-green-700 to-green-600 hover:from-green-800 hover:to-green-700 text-white px-4 py-2
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 focus-visible:ring-offset-2
         ${className}
       `}
     >

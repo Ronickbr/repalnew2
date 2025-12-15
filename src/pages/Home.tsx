@@ -794,7 +794,7 @@ const Home: React.FC = () => {
           </p>
           <div className="flex justify-center">
             <WhatsAppButton
-              className="bg-green-500 hover:bg-green-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center space-x-1 sm:space-x-2"
+              className="text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center justify-center space-x-1 sm:space-x-2"
               message="Olá! Gostaria de saber mais sobre os equipamentos da Repal."
             >
               <span>Falar no WhatsApp</span>

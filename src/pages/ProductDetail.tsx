@@ -418,7 +418,7 @@ const ProductDetail: React.FC = () => {
               </h3>
               
               <WhatsAppButton
-                className="w-full bg-gradient-to-r from-[#25D366] to-[#20B858] text-white py-4 px-6 rounded-xl font-bold hover:from-[#20B858] hover:to-[#1DA851] transition-all duration-300 flex items-center justify-center space-x-3 text-lg shadow-lg hover:shadow-xl hover:scale-105 transform"
+                className="w-full bg-gradient-to-r from-green-700 to-green-600 text-white py-4 px-6 rounded-xl font-bold hover:from-green-800 hover:to-green-700 transition-all duration-300 flex items-center justify-center space-x-3 text-lg shadow-lg hover:shadow-xl hover:scale-105 transform"
                 message={whatsappMessage}
               >
                 

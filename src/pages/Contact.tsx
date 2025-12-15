@@ -268,7 +268,7 @@ const Contact: React.FC = () => {
                 </h3>
                 
                 <WhatsAppButton
-                  className="w-full bg-green-500 hover:bg-green-600 text-white px-6 py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
+                  className="w-full text-white px-6 py-4 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
                   message="Olá! Gostaria de solicitar um orçamento."
                 >
                   
@@ -528,7 +528,7 @@ const Contact: React.FC = () => {
           </p>
           <WhatsAppButton
             message="Olá! Quero transformar minha cozinha em uma potência gastronômica."
-            className="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2"
+            className="text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 transform hover:scale-105 inline-flex items-center space-x-2"
           >
             
             <span>Falar no WhatsApp Agora</span>
