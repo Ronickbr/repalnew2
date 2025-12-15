@@ -45,17 +45,10 @@ async function loadIntegrations() {
     if (error) return
     const cfg = (data && (data as { integrations?: Record<string, string> }).integrations) || {}
 
-    const gaId = String(cfg.google_analytics_id || '').trim()
     const gtmId = String(cfg.google_tag_manager_id || '').trim()
     const pixelId = String(cfg.facebook_pixel_id || '').trim()
 
-    if (gaId) {
-      createExternalScript(`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`, 'ga4-loader')
-      createInlineScript(
-        `window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config','${gaId}');`,
-        'ga4-init'
-      )
-    }
+    
 
     if (gtmId) {
       createInlineScript(

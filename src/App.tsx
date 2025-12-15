@@ -20,8 +20,6 @@ import { AuthProvider } from './hooks/useAuth';
 import { WhatsAppProvider } from './contexts/WhatsAppContext';
 import { BudgetProvider } from './contexts/BudgetContext';
 import { queryClient } from './lib/react-query';
-import TagManager from './components/TagManager';
-import { useSiteSettings } from './hooks/useSiteSettings';
 import NotFound from './pages/NotFound';
 
 import { Analytics } from "@vercel/analytics/react"
@@ -43,7 +41,6 @@ function App() {
 }
 
 function AppContent() {
-  const { gtmId } = useSiteSettings();
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -52,7 +49,6 @@ function AppContent() {
           <BudgetProvider>
             <WhatsAppProvider>
               <Router>
-          <TagManager gtmId={gtmId} />
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />
