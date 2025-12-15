@@ -692,7 +692,7 @@ const Home: React.FC = () => {
               {/* First set of logos */}
               <div className="flex-shrink-0 w-32 h-20 flex items-center justify-center bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <img
-                  src="https://gelopar.com.br/storage/logo/k9Cu7sKBfsqPP1ralzQrPDPxKFA5JcCeZhZWMZad.png"
+                  src="https://gelopar.vtexassets.com/arquivos/logo.png"
                   alt="GELOPAR"
                   className="max-w-full max-h-full object-contain filter grayscale hover:grayscale-0 transition-all"
                 />
