@@ -85,6 +85,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
             return (
               <Link
                 key={result.id}
+                id={`search-option-${result.id}`}
                 ref={isSelected ? selectedItemRef : null}
                 to={`/produto/${result.slug || result.id}`}
                 onClick={() => {

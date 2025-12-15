@@ -147,7 +147,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
     <div ref={containerRef} className="relative w-full z-[1001]">
         <input
           ref={inputRef}
-          type="text"
+          type="search"
           value={query}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -159,9 +159,16 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
           style={style}
           autoComplete="off"
           aria-label="Buscar produtos"
+          role="combobox"
           aria-haspopup="listbox"
           aria-controls="search-dropdown"
           aria-expanded={isDropdownOpen}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            selectedIndex >= 0 && searchResults[selectedIndex]
+              ? `search-option-${searchResults[selectedIndex].id}`
+              : undefined
+          }
           aria-busy={isSearching}
         />
         {isSearching && (
