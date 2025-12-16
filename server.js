@@ -213,6 +213,31 @@ const requireRole = (roles) => (req, res, next) => {
   next();
 };
 
+// Middleware: autenticar sem exigir CSRF (exceção para rotas específicas)
+const authNoCsrfMiddleware = async (req, res, next) => {
+  try {
+    if (devAuthBypass || !isSupabaseConfigured) {
+      req.admin = { id: 'dev-admin', email: 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
+    } else {
+      const token = req.cookies[ADMIN_COOKIE_NAME];
+      if (!token) return res.status(401).json({ success: false, error: 'Não autorizado' });
+      const payload = verifyJwt(token);
+      if (!payload) return res.status(401).json({ success: false, error: 'Token inválido' });
+      const supabase = getServiceClient();
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('id, email, name, role, active')
+        .eq('id', payload.sub)
+        .eq('active', true)
+        .maybeSingle();
+      if (error || !data) return res.status(401).json({ success: false, error: 'Usuário inválido/inativo' });
+      req.admin = data;
+    }
+    next();
+  } catch {
+    return res.status(401).json({ success: false, error: 'Não autorizado' });
+  }
+};
 // Logging de atividades administrativas
 const logAdminActivity = async (admin, action, details = {}) => {
   try {
@@ -677,8 +702,8 @@ app.get('/api/integrations', async (req, res) => {
   }
 });
 
-// Proxy seguro para geração de conteúdo via Google Gemini
-app.post('/api/ai/generate-content', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+// Proxy seguro para geração de conteúdo via Google Gemini (sem exigir CSRF)
+app.post('/api/ai/generate-content', authNoCsrfMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
   try {
     const { prompt, generationConfig } = req.body || {};
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
@@ -699,20 +724,29 @@ app.post('/api/ai/generate-content', authMiddleware, requireRole(['admin', 'supe
       }
     };
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const json = await resp.json().catch(() => ({}));
-    if (resp.status === 429) {
-      return res.status(429).json({ success: false, error: 'Limite de requisições excedido. Tente novamente mais tarde', details: json });
+    // Retry com backoff simples para 429
+    const maxRetries = 2;
+    const baseDelayMs = 1000;
+    let lastJson = {};
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await resp.json().catch(() => ({}));
+      lastJson = json;
+      if (resp.status === 429 && attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, baseDelayMs * (attempt + 1)));
+        continue;
+      }
+      if (!resp.ok) {
+        const message = json?.error?.message || `Erro na API do Gemini (HTTP ${resp.status})`;
+        return res.status(resp.status).json({ success: false, error: message, details: json });
+      }
+      return res.json(json);
     }
-    if (!resp.ok) {
-      const message = json?.error?.message || `Erro na API do Gemini (HTTP ${resp.status})`;
-      return res.status(resp.status).json({ success: false, error: message, details: json });
-    }
-    return res.json(json);
+    return res.status(429).json({ success: false, error: 'Limite de requisições excedido após tentativas', details: lastJson });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'Erro interno ao gerar conteúdo com IA' });
   }
