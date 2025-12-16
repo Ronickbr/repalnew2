@@ -69,6 +69,25 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
 const CSRF_COOKIE_NAME = 'csrf_token';
 const ADMIN_COOKIE_NAME = 'admin_token';
 
+// Obter chave do Gemini de forma segura (env ou Supabase)
+const getGeminiApiKey = async () => {
+  const fromEnv = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  if (fromEnv && String(fromEnv).trim()) return String(fromEnv).trim();
+  try {
+    if (!isSupabaseConfigured) return null;
+    const supabase = getServiceClient();
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('integrations')
+      .single();
+    if (error) return null;
+    const key = data?.integrations?.gemini_api_key;
+    return key && String(key).trim() ? String(key).trim() : null;
+  } catch {
+    return null;
+  }
+};
+
 const setAuthCookie = (res, token) => {
   res.cookie(ADMIN_COOKIE_NAME, token, {
     httpOnly: true,
@@ -655,6 +674,47 @@ app.get('/api/integrations', async (req, res) => {
     return res.json({ success: true, data: response });
   } catch (err) {
     return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+  }
+});
+
+// Proxy seguro para geração de conteúdo via Google Gemini
+app.post('/api/ai/generate-content', authMiddleware, requireRole(['admin', 'super_admin']), async (req, res) => {
+  try {
+    const { prompt, generationConfig } = req.body || {};
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+      return res.status(400).json({ success: false, error: 'Prompt obrigatório' });
+    }
+    const apiKey = await getGeminiApiKey();
+    if (!apiKey) {
+      return res.status(400).json({ success: false, error: 'Chave de API do Gemini não configurada' });
+    }
+    const payload = {
+      contents: [{ parts: [{ text: String(prompt) }]}],
+      generationConfig: {
+        temperature: 0.8,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4000,
+        ...(generationConfig || {})
+      }
+    };
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await resp.json().catch(() => ({}));
+    if (resp.status === 429) {
+      return res.status(429).json({ success: false, error: 'Limite de requisições excedido. Tente novamente mais tarde', details: json });
+    }
+    if (!resp.ok) {
+      const message = json?.error?.message || `Erro na API do Gemini (HTTP ${resp.status})`;
+      return res.status(resp.status).json({ success: false, error: message, details: json });
+    }
+    return res.json(json);
+  } catch (err) {
+    return res.status(500).json({ success: false, error: 'Erro interno ao gerar conteúdo com IA' });
   }
 });
 

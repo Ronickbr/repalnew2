@@ -25,7 +25,6 @@ import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useAccessibility } from '../../hooks/useAccessibility';
 import { useLoadingState } from '../../hooks/useLoadingState';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { useAuth } from '../../hooks/useAuth';
 import UnifiedImageUpload, { ImageItem } from '../UnifiedImageUpload';
 
@@ -123,7 +122,6 @@ const ProductManager: React.FC = () => {
   const { notifications, addNotification, removeNotification } = useNotifications();
   const { announceToScreenReader } = useAccessibility();
   const { isLoading: isGlobalLoading, startLoading, stopLoading } = useLoadingState();
-  const { geminiApiKey } = useSiteSettings();
   const { hasPermission } = useAuth();
 
   // Load initial data
@@ -1002,13 +1000,6 @@ const ProductManager: React.FC = () => {
       return;
     }
 
-    // Verificar se a API key está configurada (usa a do hook ou a do .env como fallback)
-    const apiKey = geminiApiKey || import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey || apiKey === '') {
-      addNotification('error', 'Chave de API do Gemini não configurada. Vá em Configurações > Integrações e adicione sua Gemini API Key');
-      return;
-    }
-
     setIsGeneratingAI(true);
     setAiGenerationMessage('Gerando conteúdo com IA...');
     
@@ -1063,38 +1054,20 @@ DESCRIÇÃO SEO:
 PALAVRAS-CHAVE:
 [palavras-chave separadas por vírgula]`;
 
-      // Usar Gemini API com modelo gemini-2.5-pro
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+      // Chamar backend para geração via Gemini com chave segura
+      const { apiFetch } = await import('../../lib/api');
+      const data = await apiFetch('/api/ai/generate-content', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
+          prompt,
           generationConfig: {
-          temperature: 0.8,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 4000,
-        }
+            temperature: 0.8,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 4000,
+          }
         })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: { message: 'Erro desconhecido' } }));
-        console.error('Erro na API do Gemini:', errorData);
-        if (response.status === 400 && errorData.error?.message?.includes('API key')) {
-          throw new Error('Chave de API do Gemini inválida ou não configurada');
-        } else if (response.status === 429) {
-          throw new Error('Limite de requisições excedido. Tente novamente mais tarde');
-        } else {
-          throw new Error(`Erro na API do Gemini: ${errorData.error?.message || 'Erro desconhecido'}`);
-        }
-      }
-
-      const data = await response.json();
+      }, true);
       
       // Verificar se a resposta tem o formato esperado
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {

@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseEnabled = import.meta.env.VITE_SUPABASE_ENABLED !== 'false'
 
 // Criar um stub seguro para desenvolvimento quando variáveis de ambiente faltarem,
 // evitando quebra da UI enquanto validações visuais são realizadas.
@@ -78,7 +79,7 @@ function createSupabaseStub() {
   return stubClient
 }
 
-const isEnvConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+const isEnvConfigured = Boolean(supabaseUrl && supabaseAnonKey && supabaseEnabled)
 export const isSupabaseConfigured = isEnvConfigured
 export const supabase = isEnvConfigured ? createClient(supabaseUrl!, supabaseAnonKey!) : createSupabaseStub()
 export const isActivityLogsEnabled = import.meta.env.VITE_ACTIVITY_LOGS !== 'false'

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface SiteSettings {
   id?: number;
@@ -89,20 +90,24 @@ export const useSiteSettings = () => {
     fetchSettings();
     
     // Adicionar listener para mudanças em tempo real
-    const subscription = supabase
-      .channel('site_settings_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'site_settings' },
-        (payload: { new?: SiteSettings }) => {
-          if (payload.new) {
-            setSettings(payload.new);
+    let subscription: RealtimeChannel | undefined;
+    if (isSupabaseConfigured) {
+      subscription = supabase
+        .channel('site_settings_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'site_settings' },
+          (payload: { new?: SiteSettings }) => {
+            if (payload.new) {
+              setSettings(payload.new);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
