@@ -84,7 +84,15 @@ export const apiFetch = async (path: string, init: RequestInit = {}, requireCsrf
     const token = csrfTokenCache || (await ensureCsrf());
     (options.headers as Record<string, string>)['X-CSRF-Token'] = token;
   }
-  const resp = await fetch(url, options);
+  
+  let resp = await fetch(url, options);
+  
+  // Retry once on 429 Too Many Requests
+  if (resp.status === 429) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    resp = await fetch(url, options);
+  }
+
   const json = await resp.json().catch(() => ({}));
   if (!resp.ok || json.success === false) {
     const msg = json.error || `Erro HTTP ${resp.status}`;

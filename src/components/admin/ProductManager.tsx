@@ -1121,9 +1121,9 @@ PALAVRAS-CHAVE:
       
       // Tratamento específico para diferentes tipos de erros da API
       if (error instanceof Error) {
-        if (error.message.includes('overloaded') || error.message.includes('429')) {
-          addNotification('warning', 'API do Gemini sobrecarregada. Por favor, tente novamente em alguns minutos.');
-        } else if (error.message.includes('API key')) {
+        if (error.message.includes('overloaded') || error.message.includes('429') || error.message.includes('Limite de requisições')) {
+          addNotification('warning', 'Limite de requisições da IA atingido. Aguarde alguns instantes e tente novamente.');
+        } else if (error.message.includes('API key') || error.message.includes('Chave de API')) {
           addNotification('error', 'Erro na chave de API do Gemini. Verifique as configurações.');
         } else if (error.message.includes('network')) {
           addNotification('error', 'Erro de conexão. Verifique sua internet e tente novamente.');
