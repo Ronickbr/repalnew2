@@ -163,10 +163,11 @@ const Header: React.FC = () => {
             <div className="relative" ref={userMenuRef}>
               <button 
                 onClick={handleUserClick}
-                className="p-4 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
+                className="flex flex-col items-center p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
                 title={isAuthenticated ? `Olá, ${user?.name}` : "Minha Conta"}
               >
                 <User className="h-6 w-6 sm:h-7 lg:h-8" />
+                <span className="text-[10px] sm:text-xs font-medium mt-0.5">Minha conta</span>
               </button>
               
               {/* Dropdown Menu */}
@@ -209,17 +210,20 @@ const Header: React.FC = () => {
             </div>
             
             <button 
-              className="p-4 text-white hover:text-gray-200 transition-colors duration-200 relative active:text-gray-300"
+              className="flex flex-col items-center p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
               title="Meu Orçamento"
               onClick={() => setShowSideQuoteList(prev => !prev)}
             >
-              <ShoppingCart className="h-6 w-6 sm:h-7 lg:h-8" />
-              {/* Badge para mostrar quantidade de itens no orçamento */}
-              {budgetState.totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-sm sm:text-base rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center font-bold">
-                  {budgetState.totalItems > 99 ? '99+' : budgetState.totalItems}
-                </span>
-              )}
+              <div className="relative">
+                <ShoppingCart className="h-6 w-6 sm:h-7 lg:h-8" />
+                {/* Badge para mostrar quantidade de itens no orçamento */}
+                {budgetState.totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-bold border border-white">
+                    {budgetState.totalItems > 99 ? '99+' : budgetState.totalItems}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] sm:text-xs font-medium mt-0.5">Minha Lista</span>
             </button>
           </div>
 
