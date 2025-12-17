@@ -723,10 +723,10 @@ app.post('/api/ai/generate-content', authNoCsrfMiddleware, requireRole(['admin',
         ...(generationConfig || {})
       }
     };
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-    // Retry com backoff simples para 429
-    const maxRetries = 2;
-    const baseDelayMs = 1000;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // Retry com backoff exponencial para 429
+    const maxRetries = 5;
+    const baseDelayMs = 2000;
     let lastJson = {};
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const resp = await fetch(url, {
@@ -737,10 +737,12 @@ app.post('/api/ai/generate-content', authNoCsrfMiddleware, requireRole(['admin',
       const json = await resp.json().catch(() => ({}));
       lastJson = json;
       if (resp.status === 429 && attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, baseDelayMs * (attempt + 1)));
+        console.warn(`Tentativa ${attempt + 1} falhou com 429. Aguardando...`);
+        await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(1.5, attempt)));
         continue;
       }
       if (!resp.ok) {
+        console.error('Erro na API do Gemini:', JSON.stringify(json, null, 2));
         const message = json?.error?.message || `Erro na API do Gemini (HTTP ${resp.status})`;
         return res.status(resp.status).json({ success: false, error: message, details: json });
       }
