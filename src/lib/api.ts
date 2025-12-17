@@ -85,13 +85,24 @@ export const apiFetch = async (path: string, init: RequestInit = {}, requireCsrf
     (options.headers as Record<string, string>)['X-CSRF-Token'] = token;
   }
   
-  let resp = await fetch(url, options);
-  
-  // Retry once on 429 Too Many Requests
-  if (resp.status === 429) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
+  // Retry logic with exponential backoff for 429 errors
+  let resp: Response | null = null;
+  const maxRetries = 3;
+  const baseDelay = 2000;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
     resp = await fetch(url, options);
+
+    if (resp.status === 429 && attempt < maxRetries) {
+      const delay = baseDelay * Math.pow(2, attempt); // 2000, 4000, 8000
+      await new Promise(resolve => setTimeout(resolve, delay));
+      continue;
+    }
+    
+    break; // If not 429 or max retries reached, break loop
   }
+
+  if (!resp) throw new Error('Falha na requisição');
 
   const json = await resp.json().catch(() => ({}));
   if (!resp.ok || json.success === false) {
