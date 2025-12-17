@@ -163,7 +163,32 @@ const main = async () => {
   })
   try {
     await waitForServer(preview)
-    const browser = await puppeteer.launch({ headless: 'new' })
+    
+    let browser
+    if (process.env.VERCEL) {
+      console.log('Ambiente Vercel detectado. Usando puppeteer-core + @sparticuz/chromium')
+      try {
+        const chromium = await import('@sparticuz/chromium').then(m => m.default)
+        const puppeteerCore = await import('puppeteer-core').then(m => m.default)
+        
+        browser = await puppeteerCore.launch({
+          args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: chromium.headless,
+        })
+      } catch (err) {
+        console.error('Erro ao carregar configuração Vercel:', err)
+        // Fallback
+        browser = await puppeteer.launch({ 
+          headless: 'new',
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        })
+      }
+    } else {
+      browser = await puppeteer.launch({ headless: 'new' })
+    }
+
     const page = await browser.newPage()
     const routes = await fetchRoutes()
     console.log(`Prerendering ${routes.length} rotas...`)
@@ -172,7 +197,7 @@ const main = async () => {
       console.log('→', url)
       try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
-        await page.waitForTimeout(500)
+        await new Promise(r => setTimeout(r, 500))
         const html = await page.evaluate(() => document.documentElement.outerHTML)
         const filePath = routeToFilePath(route)
         ensureDir(path.dirname(filePath))

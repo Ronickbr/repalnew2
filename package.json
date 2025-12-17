@@ -1,7 +1,7 @@
 {
   "name": "repalnew2",
   "private": true,
-  "version": "0.5.2",
+  "version": "0.5.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@sparticuz/chromium": "^143.0.0",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^22.18.1",
@@ -63,6 +64,7 @@
     "jsdom": "^24.0.0",
     "postcss": "^8.5.3",
     "puppeteer": "^24.32.0",
+    "puppeteer-core": "^24.33.0",
     "supertest": "^7.1.4",
     "tailwindcss": "^3.4.17",
     "terser": "^5.31.6",

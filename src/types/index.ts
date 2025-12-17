@@ -112,7 +112,7 @@ export interface ValidationResult {
 }
 
 export interface ExportOptions {
-  format: 'csv' | 'json' | 'xlsx';
+  format: 'csv' | 'json';
   filters?: Record<string, unknown>;
   columns?: string[];
   filename?: string;
