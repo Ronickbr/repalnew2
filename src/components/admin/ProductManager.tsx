@@ -44,6 +44,7 @@ interface ProductFormData {
   seo_title?: string;
   seo_description?: string;
   seo_keywords?: string;
+  price?: number;
 }
 
 interface ProductFormErrors {
@@ -91,6 +92,7 @@ const ProductManager: React.FC = () => {
     seo_title: undefined,
     seo_description: undefined,
     seo_keywords: undefined,
+    price: undefined,
   });
 
   // Unified image upload state
@@ -732,6 +734,7 @@ const ProductManager: React.FC = () => {
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: stripHtmlNormalize(formData.seo_description) || undefined,
         seo_keywords: normalizeKeywords(formData.seo_keywords) || undefined,
+        price: formData.price,
       };
 
       const { data, error: supabaseError } = await supabase
@@ -936,6 +939,7 @@ const ProductManager: React.FC = () => {
       seo_title: product.seo_title,
       seo_description: product.seo_description,
       seo_keywords: product.seo_keywords,
+      price: product.price,
     });
     
     // Sync images to unified format
@@ -974,6 +978,7 @@ const ProductManager: React.FC = () => {
       seo_title: undefined,
       seo_description: undefined,
       seo_keywords: undefined,
+      price: undefined,
     });
     setUnifiedImages([]);
     setFormErrors({});
@@ -1932,6 +1937,22 @@ PALAVRAS-CHAVE:
                   </button>
                 </div>
                 <div className="space-y-6">
+                  <div>
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                      Preço (R$)
+                    </label>
+                    <input
+                      type="number"
+                      id="price"
+                      step="0.01"
+                      min="0"
+                      value={formData.price || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || undefined }))}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
                   <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                       Descrição

@@ -26,6 +26,7 @@ export interface ProductFormData {
   key_features?: string;
   model?: string;
   sku_code?: string;
+  price?: number;
 }
 
 export interface ProductImageForm {
@@ -858,6 +859,27 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </div>
 
               
+
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="text-sm font-medium text-gray-900 mb-4">Preço e Estoque</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+                      Preço (R$)
+                    </label>
+                    <input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.price || ''}
+                      onChange={(e) => handleInputChange('price', parseFloat(e.target.value))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div className="bg-gray-50 rounded-lg p-6">
                 <h4 className="text-sm font-medium text-gray-900 mb-4">Status e Visibilidade</h4>

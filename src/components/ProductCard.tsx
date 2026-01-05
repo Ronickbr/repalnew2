@@ -2,6 +2,7 @@ import React, { memo, useState, useEffect } from 'react';
 import { Search, Plus, Check } from 'lucide-react';
 import { ProductWithCategory } from '../types/product';
 import { useBudget } from '../contexts/BudgetContext';
+import { useAuth } from '../hooks/useAuth';
 import OptimizedImage from './OptimizedImage';
 
 interface ProductCardProps {
@@ -21,6 +22,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
 }) => {
 
   const { state, addItem } = useBudget();
+  const { isAuthenticated } = useAuth();
   const [isAddedToBudget, setIsAddedToBudget] = useState(false);
 
   // Verifica se o produto já está na lista
@@ -97,6 +99,12 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
             <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 leading-tight text-base sm:text-lg md:text-xl">
               {product.name}
             </h3>
+
+            {isAuthenticated && product.price !== undefined && (
+              <div className="font-bold text-[#D0021B] mb-2 sm:mb-3 text-base sm:text-lg">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+              </div>
+            )}
 
             {/* Container dos botões com espaçamento responsivo */}
             <div className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-3 md:pt-4 border-t border-gray-100">
@@ -188,6 +196,12 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
         <h3 className="font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 leading-tight text-sm sm:text-base md:text-lg">
           {product.name}
         </h3>
+
+        {isAuthenticated && product.price !== undefined && (
+          <div className="font-bold text-[#D0021B] mb-2 sm:mb-3 text-base sm:text-lg">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+          </div>
+        )}
 
         {/* Container dos botões com espaçamento responsivo */}
         <div className="flex flex-col gap-2 sm:gap-3 pt-2 sm:pt-3 md:pt-4 border-t border-gray-100">

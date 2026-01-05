@@ -5,6 +5,7 @@ import { MessageCircle, ArrowLeft, ChevronLeft, ChevronRight, Star, Shield, Truc
 import { useProductBySlug, useSimilarProducts } from '../hooks/useProducts'
 import WhatsAppButton from '../components/WhatsAppButton'
 import { useBudget } from '../contexts/BudgetContext'
+import { useAuth } from '../hooks/useAuth'
 import ProductCard from '../components/ProductCard'
 import { useSiteSettings } from '../hooks/useSiteSettings'
 import { sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../lib/seo'
@@ -19,6 +20,7 @@ const ProductDetail: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalImageIndex, setModalImageIndex] = useState(0)
   const { state: budgetState, addItem } = useBudget()
+  const { isAuthenticated } = useAuth()
   const [isAddedToBudget, setIsAddedToBudget] = useState(false)
   
   // Close modal on escape key
@@ -339,6 +341,13 @@ const ProductDetail: React.FC = () => {
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-3 sm:mb-4 leading-tight">
                 {product.name}
+
+              {isAuthenticated && product.price !== undefined && (
+                <div className="text-2xl sm:text-3xl font-bold text-[#D0021B] mb-3 sm:mb-4">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                </div>
+              )}
+
               </h1>
               <h2 className="sr-only">Descrição do Produto</h2>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">

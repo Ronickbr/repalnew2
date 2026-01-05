@@ -49,7 +49,7 @@ export interface Product {
   slug: string;
   sku: string;
   barcode?: string;
-  price: number;
+  price?: number;
   promotional_price?: number;
   cost_price?: number;
   stock_quantity: number;
