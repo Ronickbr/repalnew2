@@ -41,7 +41,7 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (error) throw error;
 
       if (data) {
-        const formattedStores: Store[] = data.map(store => ({
+        const formattedStores: Store[] = data.map((store: any) => ({
           id: store.id,
           name: store.name,
           phone: store.whatsapp_number?.replace(/\D/g, '') || '',

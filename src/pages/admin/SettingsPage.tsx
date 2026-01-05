@@ -494,15 +494,6 @@ const SettingsPage: React.FC = () => {
         updated_at: new Date().toISOString()
       };
 
-      // Remove id e created_at do formulário antes de enviar
-      const { id, created_at, ...rest } = storeForm;
-      const storeData = {
-        ...rest,
-        name: storeForm.name?.trim(),
-        active: storeForm.active ?? true,
-        updated_at: new Date().toISOString()
-      };
-
       let error;
       if (editingStore?.id) {
         // Atualizar loja existente
