@@ -10,6 +10,7 @@ import CategoriesIndex from './pages/CategoriesIndex';
 import CategoryProducts from './pages/CategoryProducts';
 import ProductDetail from './pages/ProductDetail';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
  
 import AdminLayout from './layouts/AdminLayout';
@@ -57,18 +58,19 @@ function AppContent() {
               <Route path="categorias/:categorySlug/:subcategorySlug" element={<CategoryProducts />} />
               <Route path="CategoryProducts" element={<CategoryProducts />} />
               <Route path="produto/:slug" element={<ProductDetail />} />
+              <Route 
+                path="perfil" 
+                element={
+                  <ProtectedRoute requireAdmin={false}>
+                    <UserProfile />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Register />} />
             
-            <Route 
-              path="/perfil" 
-              element={
-                <ProtectedRoute requireAdmin={false}>
-                  <UserProfile />
-                </ProtectedRoute>
-              } 
-            />
             <Route 
               path="/admin" 
               element={

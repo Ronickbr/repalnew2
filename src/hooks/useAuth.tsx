@@ -15,7 +15,7 @@ interface AdminUser {
 interface AuthContextType {
   user: AdminUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; requires2fa?: boolean; tempToken?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -72,25 +72,46 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; requires2fa?: boolean; tempToken?: string }> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }> => {
     try {
       setLoading(true);
       if (devAuthBypass) {
         const devUser: AdminUser = { id: 'dev-admin', email: email || 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
         setUser(devUser);
-        return { success: true };
+        return { success: true, user: devUser };
       }
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
+          console.error('Supabase login error:', error);
+          
+          // Log failed login attempt (without user_id obviously)
+          await supabase.from('activity_logs').insert({
+             action: 'login_failed',
+             resource_type: 'auth',
+             details: { email, error: error.message },
+             status: 'error'
+          });
+          
           return { success: false, error: error.message || 'Credenciais inválidas' };
         }
         const u = data.user;
         if (!u) return { success: false, error: 'Falha ao obter usuário' };
         const metaRole = (u.user_metadata as any)?.role || 'editor';
         const adminUser: AdminUser = { id: u.id, email: u.email || '', name: (u.user_metadata as any)?.name || u.email || '', role: metaRole, active: true };
+        
         setUser(adminUser);
-        return { success: true };
+
+        // Log successful login
+        await supabase.from('activity_logs').insert({
+           user_id: u.id,
+           action: 'login',
+           resource_type: 'auth',
+           details: { email: u.email, role: metaRole },
+           status: 'success'
+        });
+
+        return { success: true, user: adminUser };
       } catch (e: any) {
         return { success: false, error: String(e?.message || 'Falha no login') };
       }

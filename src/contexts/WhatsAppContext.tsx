@@ -1,31 +1,17 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { logActivity } from '../lib/supabase';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { logActivity, supabase } from '../lib/supabase';
 
 export interface Store {
-  id: string;
+  id: string | number;
   name: string;
   phone: string;
   displayPhone: string;
 }
 
-const stores: Store[] = [
-  {
-    id: 'curitiba',
-    name: 'Loja Curitiba',
-    phone: '5541999412928',
-    displayPhone: '(41) 99941-2928'
-  },
-  {
-    id: 'londrina',
-    name: 'Loja Londrina',
-    phone: '5543984446097',
-    displayPhone: '(43) 98444-6097'
-  }
-];
-
 interface WhatsAppContextType {
   isModalOpen: boolean;
   stores: Store[];
+  loading: boolean;
   currentMessage?: string;
   openStoreSelector: (message?: string) => void;
   closeStoreSelector: () => void;
@@ -37,6 +23,53 @@ const WhatsAppContext = createContext<WhatsAppContextType | undefined>(undefined
 export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentMessage, setCurrentMessage] = useState<string>();
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStores();
+  }, []);
+
+  const fetchStores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .eq('active', true)
+        .order('name');
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedStores: Store[] = data.map(store => ({
+          id: store.id,
+          name: store.name,
+          phone: store.whatsapp_number?.replace(/\D/g, '') || '',
+          displayPhone: store.whatsapp_number || store.phone || ''
+        }));
+        setStores(formattedStores);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar lojas:', error);
+      // Fallback para lojas padrão em caso de erro
+      setStores([
+        {
+          id: 'curitiba',
+          name: 'Loja Curitiba',
+          phone: '5541999412928',
+          displayPhone: '(41) 99941-2928'
+        },
+        {
+          id: 'londrina',
+          name: 'Loja Londrina',
+          phone: '5543984446097',
+          displayPhone: '(43) 98444-6097'
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openStoreSelector = (message?: string) => {
     setCurrentMessage(message);
@@ -59,7 +92,7 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
     logActivity({
       action: 'whatsapp_click',
       resource_type: 'store',
-      resource_id: store.id,
+      resource_id: String(store.id),
       details: JSON.stringify(details),
       user_agent: navigator.userAgent,
       status: 'success',
@@ -71,6 +104,7 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
   const value = {
     isModalOpen,
     stores,
+    loading,
     currentMessage,
     openStoreSelector,
     closeStoreSelector,

@@ -1,81 +1,91 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Mail, Lock, User, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
- 
 
-const Login: React.FC = () => {
+const Register: React.FC = () => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [requires2fa] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   
-  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Função auxiliar para determinar o redirecionamento
-  const getRedirectPath = (role?: string) => {
-    // Se houver uma origem específica no state, priorize-a
-    const from = (location.state as { from?: { pathname?: string } })?.from?.pathname;
-    if (from) return from;
+  const { isAuthenticated } = useAuth();
 
-    // Se for admin ou super_admin, vá para o dashboard
-    if (role === 'admin' || role === 'super_admin') {
-      return '/admin';
-    }
-
-    // Caso contrário, vá para o perfil do usuário
-    return '/perfil';
-  };
-
-  // Redirecionar se já estiver autenticado
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const path = getRedirectPath(user.role);
-      navigate(path, { replace: true });
+    if (isAuthenticated) {
+      const from = (location.state as { from?: { pathname?: string } })?.from?.pathname || '/perfil';
+      navigate(from, { replace: true });
     }
-  }, [isAuthenticated, user, navigate, location]);
-  
+  }, [isAuthenticated, navigate, location]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (!email || !password) {
+    setSuccess('');
+
+    if (!name || !email || !password || !confirmPassword) {
       setError('Por favor, preencha todos os campos');
       return;
     }
-    
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError('Por favor, insira um email válido');
       return;
     }
-    
+    if (password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
+    }
+    if (!isSupabaseConfigured) {
+      setError('Registro indisponível: Supabase não está configurado.');
+      return;
+    }
+
     setLoading(true);
-    
     try {
-      const result = await login(email, password);
-      if (result.success && result.user) {
-        const path = getRedirectPath(result.user.role);
-        navigate(path, { replace: true });
-      } else {
-        setError(result.error || 'Erro ao fazer login');
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, role: 'user' }
+        }
+      } as any);
+
+      if (signUpError) {
+        setError(signUpError.message || 'Erro ao registrar');
+        return;
       }
-    } catch {
-      setError('Erro interno. Tente novamente.');
+
+      if (data?.user) {
+        if (data.session) {
+          navigate('/perfil', { replace: true });
+        } else {
+          setSuccess('Cadastro realizado! Verifique seu email para confirmar sua conta.');
+          setTimeout(() => navigate('/login', { replace: true }), 1500);
+        }
+      } else {
+        setError('Não foi possível concluir o cadastro. Tente novamente.');
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Erro interno. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
         <div className="text-center">
           <img 
             src="/favicon.png" 
@@ -83,17 +93,35 @@ const Login: React.FC = () => {
             className="mx-auto h-16 w-16 mb-4 rounded-full object-cover"
           />
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Acesse sua Conta
+            Criar Conta
           </h2>
           <p className="text-gray-600">
-            Entre com suas credenciais para continuar
+            Preencha seus dados para registrar-se
           </p>
         </div>
         
-        {/* Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Nome completo
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Seu nome completo"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email
@@ -108,13 +136,12 @@ const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="admin@repal.com.br"
+                  placeholder="voce@exemplo.com"
                   disabled={loading}
                 />
               </div>
             </div>
-            
-            {/* Password Field */}
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Senha
@@ -145,19 +172,42 @@ const Login: React.FC = () => {
                   )}
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">Mínimo de 6 caracteres.</p>
             </div>
 
-            
-            
-            {/* Error Message */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Confirmar senha
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="confirmPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  placeholder="Repita sua senha"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
             {error && (
               <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <span className="text-sm">{error}</span>
               </div>
             )}
-            
-            {/* Submit Button */}
+
+            {success && (
+              <div className="text-green-700 bg-green-50 p-3 rounded-lg text-sm">
+                {success}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -166,24 +216,24 @@ const Login: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                  {requires2fa ? 'Verificando...' : 'Entrando...'}
+                  Registrando...
                 </>
               ) : (
-                requires2fa ? 'Verificar 2FA' : 'Entrar'
+                'Criar conta'
               )}
             </button>
           </form>
-          
-
         </div>
-        
-        {/* Footer */}
+
         <div className="text-center text-sm text-gray-500">
-          <p>&copy; 2024 Repal Equipamentos. Todos os direitos reservados.</p>
+          <p>
+            Já possui uma conta?{' '}
+            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">Entrar</Link>
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default Register;

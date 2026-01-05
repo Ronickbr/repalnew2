@@ -32,13 +32,7 @@ const Header: React.FC = () => {
 
 
   // Funções de navegação e autenticação
-  const handleUserClick = () => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: window.location.pathname } });
-    } else {
-      setShowUserMenu(!showUserMenu);
-    }
-  };
+
 
   const handleLogout = async () => {
     if (window.confirm('Tem certeza que deseja sair?')) {
@@ -161,49 +155,73 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
             {/* User Menu with Dropdown */}
             <div className="relative" ref={userMenuRef}>
-              <button 
-                onClick={handleUserClick}
-                className="flex flex-col items-center p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
-                title={isAuthenticated ? `Olá, ${user?.name}` : "Minha Conta"}
-              >
-                <User className="h-6 w-6 sm:h-7 lg:h-8" />
-                <span className="text-[10px] sm:text-xs font-medium mt-0.5">Minha conta</span>
-              </button>
-              
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <div className="user-menu-dropdown">
-                  <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
-                    Olá, {user?.name || 'Usuário'}
-                  </div>
+              {isAuthenticated ? (
+                <>
+                  <button 
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex flex-col items-center p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
+                    title={`Olá, ${user?.name}`}
+                  >
+                    <User className="h-6 w-6 sm:h-7 lg:h-8" />
+                    <span className="text-[10px] sm:text-xs font-medium mt-0.5">Minha conta</span>
+                  </button>
                   
-                  {isAdmin ? (
-                    <>
-                      <button
-                        onClick={goToAdmin}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
-                      >
-                        Painel Administrativo
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={goToProfile}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
-                      >
-                        Meu Perfil
-                      </button>
-                    </>
+                  {/* Dropdown Menu */}
+                  {showUserMenu && (
+                    <div className="user-menu-dropdown">
+                      <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
+                        Olá, {user?.name || 'Usuário'}
+                      </div>
+                      
+                      {isAdmin ? (
+                        <>
+                          <button
+                            onClick={goToAdmin}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                          >
+                            Painel Administrativo
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={goToProfile}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                          >
+                            Meu Perfil
+                          </button>
+                        </>
+                      )}
+                      
+                      <div className="border-t border-gray-200">
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                        >
+                          Sair
+                        </button>
+                      </div>
+                    </div>
                   )}
-                  
-                  <div className="border-t border-gray-200">
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                </>
+              ) : (
+                <div className="flex flex-col items-center p-2 text-white">
+                  <User className="h-6 w-6 sm:h-7 lg:h-8" />
+                  <div className="flex items-center space-x-1 mt-0.5 text-[10px] sm:text-xs font-medium">
+                    <Link 
+                      to="/login"
+                      state={{ from: window.location.pathname }}
+                      className="hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
                     >
-                      Sair
-                    </button>
+                      Logar
+                    </Link>
+                    <span>ou</span>
+                    <Link 
+                      to="/cadastro"
+                      className="hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
+                    >
+                      Registrar-se
+                    </Link>
                   </div>
                 </div>
               )}
