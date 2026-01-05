@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 // Flags de ambiente para permitir bypass de autenticação em desenvolvimento
@@ -17,6 +18,8 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }>;
   logout: () => Promise<void>;
+  updateProfile: (data: { name?: string }) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (password: string) => Promise<{ success: boolean; error?: string }>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   hasPermission: (permission: string) => boolean;
@@ -69,7 +72,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setLoading(false);
       }
     };
+
     checkAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
+      if (session?.user) {
+        const metaRole = (session.user.user_metadata as any)?.role || 'editor';
+        const u: AdminUser = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: (session.user.user_metadata as any)?.name || session.user.email || '',
+          role: metaRole,
+          active: true
+        };
+        setUser(u);
+      } else if (!devAuthBypass) {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }> => {
@@ -112,8 +137,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         });
 
         return { success: true, user: adminUser };
-      } catch (e: any) {
-        return { success: false, error: String(e?.message || 'Falha no login') };
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Falha no login';
+        return { success: false, error: errorMessage };
       }
     } finally {
       setLoading(false);
@@ -125,6 +151,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await supabase.auth.signOut();
       setUser(null);
     } catch {}
+  };
+
+  const updateProfile = async (data: { name?: string }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      if (!user) return { success: false, error: 'Usuário não autenticado' };
+
+      const updates: { data: { name?: string } } = { data: {} };
+      if (data.name) updates.data.name = data.name;
+
+      const { error } = await supabase.auth.updateUser(updates);
+
+      if (error) throw error;
+
+      // Update local state
+      setUser(prev => prev ? { ...prev, name: data.name || prev.name } : null);
+
+      return { success: true };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar perfil';
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  const updatePassword = async (password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      return { success: true };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar senha';
+      return { success: false, error: errorMessage };
+    }
   };
   
   const isAuthenticated = !!user;
@@ -165,6 +223,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     login,
     logout,
+    updateProfile,
+    updatePassword,
     isAuthenticated,
     isAdmin,
     hasPermission

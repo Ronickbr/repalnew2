@@ -17,7 +17,7 @@ const Login: React.FC = () => {
   const location = useLocation();
   
   // Função auxiliar para determinar o redirecionamento
-  const getRedirectPath = (role?: string) => {
+  const getRedirectPath = React.useCallback((role?: string) => {
     // Se houver uma origem específica no state, priorize-a
     const from = (location.state as { from?: { pathname?: string } })?.from?.pathname;
     if (from) return from;
@@ -29,7 +29,7 @@ const Login: React.FC = () => {
 
     // Caso contrário, vá para o perfil do usuário
     return '/perfil';
-  };
+  }, [location.state]);
 
   // Redirecionar se já estiver autenticado
   useEffect(() => {
@@ -37,7 +37,7 @@ const Login: React.FC = () => {
       const path = getRedirectPath(user.role);
       navigate(path, { replace: true });
     }
-  }, [isAuthenticated, user, navigate, location]);
+  }, [isAuthenticated, user, navigate, getRedirectPath]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

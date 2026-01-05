@@ -1,11 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Settings, LogOut, Lock, FileText, Clock, Shield, CreditCard } from 'lucide-react';
+import { User, Settings, LogOut, Lock, FileText, Clock, Shield, CreditCard, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 const UserProfile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile, updatePassword } = useAuth();
   const navigate = useNavigate();
+
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [name, setName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { success, error } = await updateProfile({ name });
+      if (success) {
+        toast.success('Perfil atualizado com sucesso!');
+        setShowEditProfile(false);
+      } else {
+        toast.error(error || 'Erro ao atualizar perfil');
+      }
+    } catch {
+      toast.error('Erro ao atualizar perfil');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+        toast.error('A senha deve ter pelo menos 6 caracteres');
+        return;
+    }
+
+    setLoading(true);
+    try {
+      const { success, error } = await updatePassword(newPassword);
+      if (success) {
+        toast.success('Senha atualizada com sucesso!');
+        setShowChangePassword(false);
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error(error || 'Erro ao atualizar senha');
+      }
+    } catch {
+      toast.error('Erro ao atualizar senha');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     if (window.confirm('Tem certeza que deseja sair?')) {
@@ -19,6 +81,9 @@ const UserProfile: React.FC = () => {
     return null;
   }
 
+  const isNameEmail = user.name === user.email;
+  const displayName = isNameEmail ? 'Cliente' : user.name;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Section - Consistent with Home Page aesthetics */}
@@ -31,7 +96,7 @@ const UserProfile: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-                  Olá, {user.name}
+                  Olá, {displayName}
                 </h1>
                 <p className="mt-2 text-lg text-gray-600">
                   Gerencie suas informações e acompanhe seus orçamentos.
@@ -66,7 +131,13 @@ const UserProfile: React.FC = () => {
               <div className="p-6 space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1">Nome Completo</label>
-                  <div className="text-gray-900 font-medium text-lg">{user.name}</div>
+                  <div className="text-gray-900 font-medium text-lg">
+                    {isNameEmail ? (
+                      <span className="text-gray-400 italic">Não informado</span>
+                    ) : (
+                      user.name
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
@@ -97,7 +168,10 @@ const UserProfile: React.FC = () => {
                 </h3>
               </div>
               <div className="p-6 space-y-3">
-                <button className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-red-200 transition-all duration-200 group">
+                <button 
+                  onClick={() => setShowEditProfile(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-red-200 transition-all duration-200 group"
+                >
                   <div className="flex items-center">
                     <div className="bg-gray-100 p-2 rounded-md group-hover:bg-red-50 transition-colors">
                       <User className="h-5 w-5 text-gray-600 group-hover:text-red-600" />
@@ -106,7 +180,10 @@ const UserProfile: React.FC = () => {
                   </div>
                   <div className="text-gray-400 group-hover:text-red-500">→</div>
                 </button>
-                <button className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-red-200 transition-all duration-200 group">
+                <button 
+                  onClick={() => setShowChangePassword(true)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-red-200 transition-all duration-200 group"
+                >
                   <div className="flex items-center">
                     <div className="bg-gray-100 p-2 rounded-md group-hover:bg-red-50 transition-colors">
                       <Lock className="h-5 w-5 text-gray-600 group-hover:text-red-600" />
@@ -183,6 +260,106 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Editar Perfil</h3>
+              <button onClick={() => setShowEditProfile(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateProfile}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditProfile(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                >
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Alterar Senha</h3>
+              <button onClick={() => setShowChangePassword(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdatePassword}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Senha</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                >
+                  {loading ? 'Salvando...' : 'Alterar Senha'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

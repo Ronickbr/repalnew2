@@ -59,7 +59,7 @@ const Register: React.FC = () => {
         options: {
           data: { name, role: 'user' }
         }
-      } as any);
+      });
 
       if (signUpError) {
         setError(signUpError.message || 'Erro ao registrar');
@@ -76,8 +76,9 @@ const Register: React.FC = () => {
       } else {
         setError('Não foi possível concluir o cadastro. Tente novamente.');
       }
-    } catch (err: any) {
-      setError(err?.message || 'Erro interno. Tente novamente.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro interno. Tente novamente.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
