@@ -283,6 +283,59 @@ export interface Database {
           updated_at?: string
         }
       }
+      promotions: {
+        Row: {
+          id: number
+          title: string
+          description: string | null
+          discount_percentage: number | null
+          image_url: string | null
+          link_url: string | null
+          start_date: string | null
+          end_date: string | null
+          active: boolean
+          trigger_type: 'exit_intent' | 'time' | 'scroll' | 'inactivity' | null
+          trigger_value: number | null
+          template_type: 'first_purchase' | 'abandoned_cart' | 'exit_intent' | 'special_date' | 'custom' | null
+          content_layout: any | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          title: string
+          description?: string | null
+          discount_percentage?: number | null
+          image_url?: string | null
+          link_url?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          active?: boolean
+          trigger_type?: 'exit_intent' | 'time' | 'scroll' | 'inactivity' | null
+          trigger_value?: number | null
+          template_type?: 'first_purchase' | 'abandoned_cart' | 'exit_intent' | 'special_date' | 'custom' | null
+          content_layout?: any | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          title?: string
+          description?: string | null
+          discount_percentage?: number | null
+          image_url?: string | null
+          link_url?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          active?: boolean
+          trigger_type?: 'exit_intent' | 'time' | 'scroll' | 'inactivity' | null
+          trigger_value?: number | null
+          template_type?: 'first_purchase' | 'abandoned_cart' | 'exit_intent' | 'special_date' | 'custom' | null
+          content_layout?: any | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -376,6 +429,24 @@ export interface Lead {
   updated_at: string;
 }
 
+export interface Promotion {
+  id: number;
+  title: string;
+  description?: string;
+  discount_percentage?: number;
+  image_url?: string;
+  link_url?: string;
+  start_date?: string;
+  end_date?: string;
+  active: boolean;
+  trigger_type?: 'exit_intent' | 'time' | 'scroll' | 'inactivity';
+  trigger_value?: number;
+  template_type?: 'first_purchase' | 'abandoned_cart' | 'exit_intent' | 'special_date' | 'custom';
+  content_layout?: any;
+  created_at: string;
+  updated_at: string;
+}
+
 // Product with images for queries that include images
 export interface ProductWithImages extends Product {
   product_images?: ProductImage[];
@@ -386,9 +457,11 @@ export type CategoryInsert = Omit<Category, 'id' | 'created_at' | 'updated_at'>;
 export type ProductInsert = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'category' | 'images'>;
 export type ProductImageInsert = Omit<ProductImage, 'id' | 'created_at'>;
 export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at'>;
+export type PromotionInsert = Omit<Promotion, 'id' | 'created_at' | 'updated_at'>;
 
 // Update Types
 export type CategoryUpdate = Partial<CategoryInsert>;
 export type ProductUpdate = Partial<ProductInsert>;
 export type ProductImageUpdate = Partial<ProductImageInsert>;
 export type LeadUpdate = Partial<LeadInsert>;
+export type PromotionUpdate = Partial<PromotionInsert>;
