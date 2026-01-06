@@ -98,7 +98,21 @@ const ProductDetail: React.FC = () => {
     return <Navigate to="/categorias" replace />
   }
 
-  const images = product.product_images?.sort((a, b) => a.sort_order - b.sort_order) || []
+  const productImages = product.product_images?.sort((a, b) => a.sort_order - b.sort_order) || []
+  const mainImageUrl = (product as { image?: string }).image || product.image_url
+  
+  const images = [...productImages]
+  
+  // Adiciona a imagem principal se ela existir e não estiver na lista de imagens adicionais
+  if (mainImageUrl && !images.some(img => img.image_url === mainImageUrl)) {
+    images.unshift({
+      id: `main-${product.id}`,
+      image_url: mainImageUrl,
+      alt_text: product.name,
+      sort_order: -1
+    })
+  }
+
   const currentImage = images[currentImageIndex]
 
   const whatsappMessage = `Olá! Tenho interesse no produto: ${product.name}. Gostaria de mais informações sobre especificações, preço e disponibilidade.`
@@ -135,7 +149,7 @@ const ProductDetail: React.FC = () => {
       addItem({
         id: product.id,
         name: product.name,
-        image: product.product_images?.[0]?.image_url || product.image_url
+        image: images[0]?.image_url || product.image_url
       })
       setIsAddedToBudget(true)
     }
@@ -153,10 +167,7 @@ const ProductDetail: React.FC = () => {
     description: sanitizeMetaDescription(product.description || ''),
     sku: product.sku_code || undefined,
     brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
-    image: (product.product_images || [])
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map(img => img.image_url)
-      .filter(Boolean),
+    image: images.map(img => img.image_url).filter(Boolean),
     category: product.category && typeof product.category === 'object' ? product.category.name : undefined,
     url: canonicalHref,
   }
@@ -222,13 +233,17 @@ const ProductDetail: React.FC = () => {
             <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden group">
               {currentImage ? (
                 <>
-                  <div className="relative cursor-pointer aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2] max-h-[400px] sm:max-h-[500px]" onClick={() => openModal(currentImageIndex)}>
+                  <div className="relative aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] lg:aspect-[3/2] max-h-[400px] sm:max-h-[500px]">
                     <img
                       src={currentImage.image_url}
                       alt={('alt_text' in currentImage ? currentImage.alt_text?.toString() : '') || product.name}
-                      className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-105 max-h-[400px] sm:max-h-[500px]"
+                      className="w-full h-full object-contain object-center transition-transform duration-500 group-hover:scale-105 max-h-[400px] sm:max-h-[500px] cursor-pointer"
+                      onClick={() => openModal(currentImageIndex)}
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center">
+                    <div 
+                      className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-center justify-center cursor-pointer"
+                      onClick={() => openModal(currentImageIndex)}
+                    >
                       <div className="bg-white/90 backdrop-blur-sm p-2 sm:p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-75 group-hover:scale-100">
                         <ZoomIn className="h-4 w-4 sm:h-6 sm:w-6 text-gray-800" />
                       </div>
@@ -616,7 +631,7 @@ const ProductDetail: React.FC = () => {
 
         {/* Image Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={closeModal}>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm" onClick={closeModal}>
             <div className="relative max-w-7xl max-h-[90vh] w-full mx-4" onClick={(e) => e.stopPropagation()}>
               {/* Close Button */}
               <button
