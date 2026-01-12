@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Settings, Globe, Code, BarChart3, Facebook, Eye, EyeOff, Copy, Check } from 'lucide-react';
 
-interface SiteSettings {
+export interface SiteSettings {
   // Informações Gerais
   site_name?: string;
   site_description?: string;

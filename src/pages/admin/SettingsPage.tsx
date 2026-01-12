@@ -4,7 +4,9 @@ import { isValidUrl as isValidUrlStrict, formatCanonicalUrl, sanitizeMetaDescrip
 import { table } from '../../lib/schema';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Globe, Mail, Phone, MapPin, Code, Palette, Settings, Shield, Store, Plus, Search, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Save, RefreshCw, Globe, Mail, Phone, MapPin, Store, Plus, Search, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import SettingsManager, { SiteSettings as FlatSiteSettings } from '../../components/admin/SettingsManager';
+import SettingsModal from '../../components/admin/SettingsModal';
 
 interface SiteInfo {
   name?: string;
@@ -114,51 +116,101 @@ const SettingsPage: React.FC = () => {
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [storeSearch, setStoreSearch] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const flattenSettings = (nested: SiteSettings): FlatSiteSettings => {
+    return {
+      site_name: nested.site_info?.name || '',
+      site_description: nested.site_info?.description || '',
+      site_url: nested.site_info?.url || '',
+      meta_title: nested.seo?.meta_title || '',
+      meta_description: nested.seo?.meta_description || '',
+      meta_keywords: nested.seo?.meta_keywords || '',
+      meta_robots: nested.seo?.robots_txt || '',
+      canonical_url: nested.seo?.canonical_url || '',
+      google_analytics_id: nested.integrations?.google_analytics_id || '',
+      google_tag_manager_id: nested.integrations?.google_tag_manager_id || '',
+      facebook_pixel_id: nested.integrations?.facebook_pixel_id || '',
+      recaptcha_site_key: nested.integrations?.recaptcha_site_key || '',
+      recaptcha_secret_key: nested.integrations?.recaptcha_secret_key || '',
+      contact_email: nested.contact?.email || '',
+      contact_phone: nested.contact?.phone || '',
+      address: nested.contact?.address || '',
+      business_hours: nested.contact?.working_hours || '',
+      maintenance_mode: nested.maintenance?.enabled || false,
+      primary_color: nested.theme?.primary_color || '#dc2626',
+      secondary_color: nested.theme?.secondary_color || '#7c2d12',
+      logo_url: nested.site_info?.logo || '',
+      favicon_url: nested.site_info?.favicon || '',
+      instagram_account: nested.social_media?.instagram || '',
+      whatsapp_number: nested.social_media?.whatsapp || '',
+      
+      // Default values for fields not yet in nested structure
+      cache_enabled: false,
+      compress_images: false,
+      lazy_loading: false,
+      allow_robots: true,
+    };
+  };
+
+  const nestSettings = (flat: FlatSiteSettings): SiteSettings => {
+    return {
+      ...formData,
+      site_info: {
+        ...formData.site_info,
+        name: flat.site_name,
+        description: flat.site_description,
+        url: flat.site_url,
+        logo: flat.logo_url,
+        favicon: flat.favicon_url,
+      },
+      seo: {
+        ...formData.seo,
+        meta_title: flat.meta_title,
+        meta_description: flat.meta_description,
+        meta_keywords: flat.meta_keywords,
+        robots_txt: flat.meta_robots,
+        canonical_url: flat.canonical_url,
+      },
+      integrations: {
+        ...formData.integrations,
+        google_analytics_id: flat.google_analytics_id,
+        google_tag_manager_id: flat.google_tag_manager_id,
+        facebook_pixel_id: flat.facebook_pixel_id,
+        recaptcha_site_key: flat.recaptcha_site_key,
+        recaptcha_secret_key: flat.recaptcha_secret_key,
+      },
+      contact: {
+        ...formData.contact,
+        email: flat.contact_email,
+        phone: flat.contact_phone,
+        address: flat.address,
+        working_hours: flat.business_hours,
+      },
+      maintenance: {
+        ...formData.maintenance,
+        enabled: flat.maintenance_mode,
+      },
+      theme: {
+        ...formData.theme,
+        primary_color: flat.primary_color,
+        secondary_color: flat.secondary_color,
+      },
+      social_media: {
+        ...formData.social_media,
+        instagram: flat.instagram_account,
+        whatsapp: flat.whatsapp_number,
+      },
+    };
+  };
 
   const sections: SettingsSection[] = [
     {
       key: 'site_info',
-      title: 'Informações do Site',
+      title: 'Configurações do Site',
       icon: <Globe className="w-5 h-5" />,
-      description: 'Configurações básicas do site'
+      description: 'Gerencie todas as configurações do site'
     },
-    {
-      key: 'contact',
-      title: 'Contato',
-      icon: <Mail className="w-5 h-5" />,
-      description: 'Informações de contato'
-    },
-    {
-      key: 'social_media',
-      title: 'Redes Sociais',
-      icon: <Phone className="w-5 h-5" />,
-      description: 'Links de redes sociais'
-    },
-    {
-      key: 'integrations',
-      title: 'Integrações',
-      icon: <Code className="w-5 h-5" />,
-      description: 'Configurações de serviços externos'
-    },
-    {
-      key: 'theme',
-      title: 'Aparência',
-      icon: <Palette className="w-5 h-5" />,
-      description: 'Cores e estilos do site'
-    },
-    {
-      key: 'seo',
-      title: 'SEO',
-      icon: <Settings className="w-5 h-5" />,
-      description: 'Configurações de otimização'
-    },
-    {
-      key: 'maintenance',
-      title: 'Manutenção',
-      icon: <Shield className="w-5 h-5" />,
-      description: 'Modo de manutenção'
-    },
-
   ];
 
   const defaultValues = {
@@ -331,38 +383,14 @@ const SettingsPage: React.FC = () => {
     return phoneRegex.test(phone);
   };
 
-  const handleInputChange = (section: string, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...((prev as any)[section] || {}),
-        [field]: value
-      }
-    }));
-
-    // Limpar erro ao digitar
-    if (errors[section]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[section];
-        return newErrors;
-      });
-    }
-  };
-
-  const handleArrayInputChange = (section: string, field: string, value: string) => {
-    const arrayValue = value.split(',').map(item => item.trim()).filter(Boolean);
-    handleInputChange(section, field, arrayValue);
-  };
-
-  const saveSettings = async () => {
+  const saveSettings = async (settingsOverride?: SiteSettings) => {
     try {
       if (!hasPermission('manage_settings')) {
         toast.error('Você não tem permissão para alterar configurações');
         return;
       }
 
-      if (!validateSection(activeSection)) {
+      if (!settingsOverride && !validateSection(activeSection)) {
         toast.error('Por favor, corrija os erros antes de salvar');
         return;
       }
@@ -373,12 +401,14 @@ const SettingsPage: React.FC = () => {
         throw new Error('Supabase não está configurado');
       }
 
+      const settingsToUse = settingsOverride || formData;
+
       const sanitizedSeo = {
-        ...formData.seo,
-        meta_title: sanitizeMetaTitle(formData.seo?.meta_title),
-        meta_description: sanitizeMetaDescription(formData.seo?.meta_description),
-        meta_keywords: normalizeKeywords(formData.seo?.meta_keywords),
-        canonical_url: formData.seo?.canonical_url ? formatCanonicalUrl(formData.seo.canonical_url) : ''
+        ...settingsToUse.seo,
+        meta_title: sanitizeMetaTitle(settingsToUse.seo?.meta_title),
+        meta_description: sanitizeMetaDescription(settingsToUse.seo?.meta_description),
+        meta_keywords: normalizeKeywords(settingsToUse.seo?.meta_keywords),
+        canonical_url: settingsToUse.seo?.canonical_url ? formatCanonicalUrl(settingsToUse.seo.canonical_url) : ''
       };
 
       if (sanitizedSeo.canonical_url && !isValidUrlStrict(sanitizedSeo.canonical_url)) {
@@ -386,7 +416,7 @@ const SettingsPage: React.FC = () => {
       }
 
       const settingsToSave = {
-        ...formData,
+        ...settingsToUse,
         seo: sanitizedSeo,
         updated_at: new Date().toISOString()
       };
@@ -564,400 +594,14 @@ const SettingsPage: React.FC = () => {
     store.address?.toLowerCase().includes(storeSearch.toLowerCase())
   );
 
-  const renderInputField = (section: string, field: string, value: any, type: string = 'text', placeholder: string = '', options?: any) => {
-    const inputId = `${section}-${field}`;
-    
-    const baseInputClass = "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-sm";
-    
-    switch (type) {
-      case 'textarea':
-        return (
-          <textarea
-            id={inputId}
-            value={value || ''}
-            onChange={(e) => handleInputChange(section, field, e.target.value)}
-            placeholder={placeholder}
-            rows={options?.rows || 3}
-            className={baseInputClass}
-          />
-        );
-      
-      case 'color':
-        return (
-          <div className="flex items-center space-x-2">
-            <input
-              id={inputId}
-              type="color"
-              value={value || '#000000'}
-              onChange={(e) => handleInputChange(section, field, e.target.value)}
-              className="h-10 w-10 border border-gray-300 rounded-md cursor-pointer"
-            />
-            <input
-              type="text"
-              value={value || ''}
-              onChange={(e) => handleInputChange(section, field, e.target.value)}
-              placeholder={placeholder}
-              className={baseInputClass}
-            />
-          </div>
-        );
-      
-      case 'checkbox':
-        return (
-          <label className="flex items-center space-x-2 cursor-pointer">
-            <input
-              id={inputId}
-              type="checkbox"
-              checked={value || false}
-              onChange={(e) => handleInputChange(section, field, e.target.checked)}
-              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-            />
-            <span className="text-sm text-gray-700">{options?.label || 'Ativar'}</span>
-          </label>
-        );
-      
-      case 'array':
-        return (
-          <textarea
-            id={inputId}
-            value={(value || []).join(', ')} 
-            onChange={(e) => handleArrayInputChange(section, field, e.target.value)}
-            placeholder={placeholder || 'Separe os valores por vírgula'}
-            rows={3}
-            className={baseInputClass}
-          />
-        );
-      
-      default:
-        return (
-          <input
-            id={inputId}
-            type={type}
-            value={value || ''}
-            onChange={(e) => handleInputChange(section, field, e.target.value)}
-            placeholder={placeholder}
-            className={baseInputClass}
-            {...options}
-          />
-        );
-    }
-  };
-
   const renderSectionContent = (sectionKey: string) => {
-    const sectionData = (formData as any)[sectionKey] || {};
-    
     switch (sectionKey) {
       case 'site_info':
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="site_info-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome do Site *
-                </label>
-                {renderInputField('site_info', 'name', sectionData.name, 'text', 'Nome do seu site')}
-              </div>
-              <div>
-                <label htmlFor="site_info-url" className="block text-sm font-medium text-gray-700 mb-1">
-                  URL do Site
-                </label>
-                {renderInputField('site_info', 'url', sectionData.url, 'url', 'https://seusite.com')}
-              </div>
-            </div>
-            <div>
-              <label htmlFor="site_info-description" className="block text-sm font-medium text-gray-700 mb-1">
-                Descrição do Site
-              </label>
-              {renderInputField('site_info', 'description', sectionData.description, 'textarea', 'Descrição breve do seu site', { rows: 3 })}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="site_info-logo" className="block text-sm font-medium text-gray-700 mb-1">
-                  URL do Logo
-                </label>
-                {renderInputField('site_info', 'logo', sectionData.logo, 'text', 'https://seusite.com/logo.png')}
-              </div>
-              <div>
-                <label htmlFor="site_info-favicon" className="block text-sm font-medium text-gray-700 mb-1">
-                  URL do Favicon
-                </label>
-                {renderInputField('site_info', 'favicon', sectionData.favicon, 'text', 'https://seusite.com/favicon.ico')}
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'contact':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email de Contato
-                </label>
-                {renderInputField('contact', 'email', sectionData.email, 'email', 'contato@seusite.com')}
-              </div>
-              <div>
-                <label htmlFor="contact-phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Telefone
-                </label>
-                {renderInputField('contact', 'phone', sectionData.phone, 'tel', '(00) 0000-0000')}
-              </div>
-            </div>
-            <div>
-              <label htmlFor="contact-address" className="block text-sm font-medium text-gray-700 mb-1">
-                Endereço
-              </label>
-              {renderInputField('contact', 'address', sectionData.address, 'textarea', 'Seu endereço completo', { rows: 2 })}
-            </div>
-            <div>
-              <label htmlFor="contact-working_hours" className="block text-sm font-medium text-gray-700 mb-1">
-                Horário de Funcionamento
-              </label>
-              {renderInputField('contact', 'working_hours', sectionData.working_hours, 'text', 'Seg-Sex: 9h-18h')}
-            </div>
-            <div>
-              <label htmlFor="contact-map_embed" className="block text-sm font-medium text-gray-700 mb-1">
-                Mapa Embutido (iframe)
-              </label>
-              {renderInputField('contact', 'map_embed', sectionData.map_embed, 'textarea', 'Código iframe do Google Maps', { rows: 3 })}
-            </div>
-          </div>
-        );
-      
-      case 'social_media':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="social_media-facebook" className="block text-sm font-medium text-gray-700 mb-1">
-                Facebook
-              </label>
-              {renderInputField('social_media', 'facebook', sectionData.facebook, 'url', 'https://facebook.com/seupage')}
-            </div>
-            <div>
-              <label htmlFor="social_media-instagram" className="block text-sm font-medium text-gray-700 mb-1">
-                Instagram
-              </label>
-              {renderInputField('social_media', 'instagram', sectionData.instagram, 'text', '@seuusuario')}
-            </div>
-            <div>
-              <label htmlFor="social_media-twitter" className="block text-sm font-medium text-gray-700 mb-1">
-                Twitter
-              </label>
-              {renderInputField('social_media', 'twitter', sectionData.twitter, 'text', '@seuusuario')}
-            </div>
-            <div>
-              <label htmlFor="social_media-linkedin" className="block text-sm font-medium text-gray-700 mb-1">
-                LinkedIn
-              </label>
-              {renderInputField('social_media', 'linkedin', sectionData.linkedin, 'url', 'https://linkedin.com/company/suaempresa')}
-            </div>
-            <div>
-              <label htmlFor="social_media-youtube" className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube
-              </label>
-              {renderInputField('social_media', 'youtube', sectionData.youtube, 'url', 'https://youtube.com/channel/seucanal')}
-            </div>
-            <div>
-              <label htmlFor="social_media-whatsapp" className="block text-sm font-medium text-gray-700 mb-1">
-                WhatsApp
-              </label>
-              {renderInputField('social_media', 'whatsapp', sectionData.whatsapp, 'tel', '+5500000000000')}
-            </div>
-          </div>
-        );
-      
-      case 'integrations':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="integrations-google_analytics_id" className="block text-sm font-medium text-gray-700 mb-1">
-                  Google Analytics ID
-                </label>
-                {renderInputField('integrations', 'google_analytics_id', sectionData.google_analytics_id, 'text', 'G-XXXXXXXXXX')}
-              </div>
-              <div>
-                <label htmlFor="integrations-google_tag_manager_id" className="block text-sm font-medium text-gray-700 mb-1">
-                  Google Tag Manager ID
-                </label>
-                {renderInputField('integrations', 'google_tag_manager_id', sectionData.google_tag_manager_id, 'text', 'GTM-XXXXXXX')}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="integrations-facebook_pixel_id" className="block text-sm font-medium text-gray-700 mb-1">
-                  Facebook Pixel ID
-                </label>
-                {renderInputField('integrations', 'facebook_pixel_id', sectionData.facebook_pixel_id, 'text', '123456789012345')}
-              </div>
-              <div>
-                <label htmlFor="integrations-gemini_api_key" className="block text-sm font-medium text-gray-700 mb-1">
-                  Gemini API Key
-                </label>
-                {renderInputField('integrations', 'gemini_api_key', sectionData.gemini_api_key, 'password', 'Sua chave API do Google Gemini')}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="integrations-recaptcha_site_key" className="block text-sm font-medium text-gray-700 mb-1">
-                  reCAPTCHA Site Key
-                </label>
-                {renderInputField('integrations', 'recaptcha_site_key', sectionData.recaptcha_site_key, 'text', '6Lc...')}
-              </div>
-              <div>
-                <label htmlFor="integrations-recaptcha_secret_key" className="block text-sm font-medium text-gray-700 mb-1">
-                  reCAPTCHA Secret Key
-                </label>
-                {renderInputField('integrations', 'recaptcha_secret_key', sectionData.recaptcha_secret_key, 'password', '6Lc...')}
-              </div>
-            </div>
-          </div>
-        );
-      
-      case 'theme':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="theme-primary_color" className="block text-sm font-medium text-gray-700 mb-1">
-                  Cor Primária
-                </label>
-                {renderInputField('theme', 'primary_color', sectionData.primary_color, 'color')}
-              </div>
-              <div>
-                <label htmlFor="theme-secondary_color" className="block text-sm font-medium text-gray-700 mb-1">
-                  Cor Secundária
-                </label>
-                {renderInputField('theme', 'secondary_color', sectionData.secondary_color, 'color')}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="theme-accent_color" className="block text-sm font-medium text-gray-700 mb-1">
-                  Cor de Destaque
-                </label>
-                {renderInputField('theme', 'accent_color', sectionData.accent_color, 'color')}
-              </div>
-              <div>
-                <label htmlFor="theme-background_color" className="block text-sm font-medium text-gray-700 mb-1">
-                  Cor de Fundo
-                </label>
-                {renderInputField('theme', 'background_color', sectionData.background_color, 'color')}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="theme-text_color" className="block text-sm font-medium text-gray-700 mb-1">
-                  Cor do Texto
-                </label>
-                {renderInputField('theme', 'text_color', sectionData.text_color, 'color')}
-              </div>
-              <div>
-                <label htmlFor="theme-font_family" className="block text-sm font-medium text-gray-700 mb-1">
-                  Família da Fonte
-                </label>
-                {renderInputField('theme', 'font_family', sectionData.font_family, 'text', 'Ex: Inter, Arial, sans-serif')}
-              </div>
-            </div>
-            <div>
-              <label htmlFor="theme-font_size" className="block text-sm font-medium text-gray-700 mb-1">
-                Tamanho da Fonte
-              </label>
-              {renderInputField('theme', 'font_size', sectionData.font_size, 'text', 'Ex: 16px, 1rem')}
-            </div>
-          </div>
-        );
-      
-      case 'seo':
-        return (
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="seo-meta_title" className="block text-sm font-medium text-gray-700 mb-1">
-                Meta Título
-              </label>
-              {renderInputField('seo', 'meta_title', sectionData.meta_title, 'text', 'Título do site (máx. 60 caracteres)')}
-              <p className="mt-1 text-xs text-gray-500">
-                {sectionData.meta_title?.length || 0}/60 caracteres
-              </p>
-            </div>
-            <div>
-              <label htmlFor="seo-meta_description" className="block text-sm font-medium text-gray-700 mb-1">
-                Meta Descrição
-              </label>
-              {renderInputField('seo', 'meta_description', sectionData.meta_description, 'textarea', 'Descrição do site (máx. 160 caracteres)', { rows: 3 })}
-              <p className="mt-1 text-xs text-gray-500">
-                {sectionData.meta_description?.length || 0}/160 caracteres
-              </p>
-            </div>
-            <div>
-              <label htmlFor="seo-meta_keywords" className="block text-sm font-medium text-gray-700 mb-1">
-                Palavras-chave
-              </label>
-              {renderInputField('seo', 'meta_keywords', sectionData.meta_keywords, 'text', 'seo, palavras-chave, separadas por vírgula')}
-            </div>
-            <div>
-              <label htmlFor="seo-canonical_url" className="block text-sm font-medium text-gray-700 mb-1">
-                URL Canônica
-              </label>
-              {renderInputField('seo', 'canonical_url', sectionData.canonical_url, 'url', 'https://seusite.com')}
-            </div>
-            <div>
-              <label htmlFor="seo-sitemap_enabled" className="block text-sm font-medium text-gray-700 mb-1">
-                Sitemap
-              </label>
-              {renderInputField('seo', 'sitemap_enabled', sectionData.sitemap_enabled, 'checkbox', '', { label: 'Ativar sitemap XML' })}
-            </div>
-            <div>
-              <label htmlFor="seo-sitemap_xml" className="block text-sm font-medium text-gray-700 mb-1">
-                Sitemap XML (opcional)
-              </label>
-              {renderInputField('seo', 'sitemap_xml', sectionData.sitemap_xml, 'textarea', 'Cole aqui o conteúdo do sitemap.xml para usar manualmente', { rows: 8 })}
-            </div>
-            <div>
-              <label htmlFor="seo-robots_txt" className="block text-sm font-medium text-gray-700 mb-1">
-                Robots.txt
-              </label>
-              {renderInputField('seo', 'robots_txt', sectionData.robots_txt, 'textarea', 'Conteúdo do arquivo robots.txt', { rows: 5 })}
-            </div>
-          </div>
-        );
-      
-      case 'maintenance':
-        return (
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="maintenance-enabled" className="block text-sm font-medium text-gray-700 mb-1">
-                Modo de Manutenção
-              </label>
-              {renderInputField('maintenance', 'enabled', sectionData.enabled, 'checkbox', '', { label: 'Ativar modo de manutenção' })}
-            </div>
-            {sectionData.enabled && (
-              <>
-                <div>
-                  <label htmlFor="maintenance-message" className="block text-sm font-medium text-gray-700 mb-1">
-                    Mensagem de Manutenção
-                  </label>
-                  {renderInputField('maintenance', 'message', sectionData.message, 'textarea', 'Mensagem exibida para os visitantes', { rows: 3 })}
-                </div>
-                <div>
-                  <label htmlFor="maintenance-allowed_ips" className="block text-sm font-medium text-gray-700 mb-1">
-                    IPs Permitidos
-                  </label>
-                  {renderInputField('maintenance', 'allowed_ips', sectionData.allowed_ips, 'array', 'Separe os IPs por vírgula')}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Estes IPs terão acesso normal ao site durante a manutenção
-                  </p>
-                </div>
-                <div>
-                  <label htmlFor="maintenance-scheduled_end" className="block text-sm font-medium text-gray-700 mb-1">
-                    Término Agendado
-                  </label>
-                  {renderInputField('maintenance', 'scheduled_end', sectionData.scheduled_end, 'datetime-local')}
-                </div>
-              </>
-            )}
-          </div>
+          <SettingsManager 
+            siteSettings={flattenSettings(formData)} 
+            onEditSettings={() => setShowModal(true)} 
+          />
         );
       
       case 'stores':
@@ -1392,7 +1036,7 @@ const SettingsPage: React.FC = () => {
                 Cancelar
               </button>
               <button
-                onClick={saveSettings}
+                onClick={() => saveSettings()}
                 disabled={saving || !hasPermission('manage_settings')}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -1403,6 +1047,22 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showModal && (
+        <SettingsModal
+          show={showModal}
+          onClose={() => setShowModal(false)}
+          settings={flattenSettings(formData)}
+          onSave={(updatedFlatSettings) => {
+            const nested = nestSettings(updatedFlatSettings);
+            setFormData(nested);
+            saveSettings(nested);
+            setShowModal(false);
+          }}
+          onChange={() => {}}
+          loading={saving}
+        />
+      )}
     </div>
   );
 };

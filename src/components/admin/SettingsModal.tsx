@@ -1,35 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-
-interface SiteSettings {
-  id?: number;
-  site_name: string;
-  site_description: string;
-  meta_title: string;
-  meta_description: string;
-  meta_keywords: string;
-  contact_email: string;
-  contact_phone: string;
-  address: string;
-  site_url: string;
-  google_analytics_id: string;
-  google_tag_manager_id: string;
-  facebook_pixel_id: string;
-  instagram_access_token: string;
-  cache_enabled: boolean;
-  image_compression: boolean;
-  lazy_loading: boolean;
-  maintenance_mode: boolean;
-  allow_robots: boolean;
-  primary_color: string;
-  secondary_color: string;
-}
+import { SiteSettings } from './SettingsManager';
 
 interface SettingsModalProps {
   show: boolean;
   onClose: () => void;
   settings: SiteSettings;
-  onSave: () => void;
+  onSave: (settings: SiteSettings) => void;
   onChange: (settings: SiteSettings) => void;
   loading: boolean;
 }
@@ -55,9 +32,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     google_analytics_id: '',
     google_tag_manager_id: '',
     facebook_pixel_id: '',
-    instagram_access_token: '',
+    instagram_account: '',
     cache_enabled: true,
-    image_compression: true,
+    compress_images: true,
     lazy_loading: true,
     maintenance_mode: false,
     allow_robots: true,
@@ -84,7 +61,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave();
+    onSave(formData);
   };
 
   if (!show) return null;
@@ -226,12 +203,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Instagram Access Token</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Conta do Instagram</label>
                   <input
                     type="text"
-                    value={formData.instagram_access_token}
-                    onChange={(e) => handleInputChange('instagram_access_token', e.target.value)}
+                    value={formData.instagram_account}
+                    onChange={(e) => handleInputChange('instagram_account', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="@usuario"
                   />
                 </div>
               </div>
@@ -253,8 +231,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <label className="flex items-center">
                   <input
                     type="checkbox"
-                    checked={formData.image_compression}
-                    onChange={(e) => handleInputChange('image_compression', e.target.checked)}
+                    checked={formData.compress_images}
+                    onChange={(e) => handleInputChange('compress_images', e.target.checked)}
                     className="mr-2 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                   />
                   <span className="text-sm font-medium text-gray-700">Compressão de Imagens</span>
