@@ -1009,17 +1009,64 @@ app.get('/sitemap.xml', async (req, res) => {
   try {
     const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
     const distSitemapPath = path.join(__dirname, 'dist', 'sitemap.xml');
+    
+    let content = '';
+    let needsRegeneration = true;
+
+    // Verificar se o sitemap existe e é recente (menos de 24 horas)
     if (fs.existsSync(sitemapPath)) {
-      const content = fs.readFileSync(sitemapPath, 'utf-8');
-      res.type('application/xml').send(content);
+      const stats = fs.statSync(sitemapPath);
+      const age = new Date().getTime() - new Date(stats.mtime).getTime();
+      if (age < 24 * 60 * 60 * 1000) { // 24 horas
+        needsRegeneration = false;
+        content = fs.readFileSync(sitemapPath, 'utf-8');
+      }
     } else if (fs.existsSync(distSitemapPath)) {
-      const content = fs.readFileSync(distSitemapPath, 'utf-8');
-      res.type('application/xml').send(content);
-    } else {
-      const xml = await generateSitemap();
-      res.type('application/xml').send(xml);
+      const stats = fs.statSync(distSitemapPath);
+      const age = new Date().getTime() - new Date(stats.mtime).getTime();
+      if (age < 24 * 60 * 60 * 1000) {
+        needsRegeneration = false;
+        content = fs.readFileSync(distSitemapPath, 'utf-8');
+      }
     }
-  } catch {
+
+    if (needsRegeneration) {
+      console.log('Sitemap desatualizado ou ausente. Gerando novo...');
+      try {
+        const xml = await generateSitemap();
+        
+        // Salvar em public (prioridade)
+        const publicDir = path.dirname(sitemapPath);
+        if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+        fs.writeFileSync(sitemapPath, xml, 'utf-8');
+        console.log(`Sitemap atualizado em: ${sitemapPath}`);
+
+        // Salvar em dist se o diretório existir
+        const distDir = path.dirname(distSitemapPath);
+        if (fs.existsSync(distDir)) {
+          fs.writeFileSync(distSitemapPath, xml, 'utf-8');
+          console.log(`Sitemap atualizado em: ${distSitemapPath}`);
+        }
+
+        content = xml;
+      } catch (err) {
+        console.error('Falha ao regenerar sitemap:', err);
+        // Tentar servir versão antiga se existir
+        if (fs.existsSync(sitemapPath)) {
+          console.log('Servindo sitemap antigo (public) devido a erro na regeneração.');
+          content = fs.readFileSync(sitemapPath, 'utf-8');
+        } else if (fs.existsSync(distSitemapPath)) {
+          console.log('Servindo sitemap antigo (dist) devido a erro na regeneração.');
+          content = fs.readFileSync(distSitemapPath, 'utf-8');
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    res.type('application/xml').send(content);
+  } catch (err) {
+    console.error('Erro fatal ao servir sitemap:', err);
     res.status(500).type('text/plain').send('Erro ao gerar sitemap');
   }
 });
