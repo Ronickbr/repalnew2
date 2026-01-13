@@ -97,11 +97,21 @@ const getCanonicalBaseUrl = async () => {
   }
 }
 
+const formatDate = (dateInput) => {
+  try {
+    const d = dateInput ? new Date(dateInput) : new Date()
+    if (isNaN(d.getTime())) return new Date().toISOString().split('T')[0]
+    return d.toISOString().split('T')[0]
+  } catch {
+    return new Date().toISOString().split('T')[0]
+  }
+}
+
 const generateSitemapXml = async (originOverride) => {
   const origin = (typeof originOverride === 'string' && originOverride.trim())
     ? originOverride.trim().replace(/\/+$/, '')
     : await getCanonicalBaseUrl()
-  const now = new Date().toISOString()
+  const now = formatDate(new Date())
   let urls = [
     { loc: `${origin}/`, changefreq: 'weekly', priority: '1.0', lastmod: now },
     { loc: `${origin}/categorias`, changefreq: 'weekly', priority: '0.8', lastmod: now },
@@ -123,7 +133,7 @@ const generateSitemapXml = async (originOverride) => {
         byId.set(c.id, c)
       }
       for (const c of categories || []) {
-        const lastmod = c.updated_at || now
+        const lastmod = formatDate(c.updated_at)
         if (!c.parent_id) {
           urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod })
         } else {
@@ -136,7 +146,7 @@ const generateSitemapXml = async (originOverride) => {
         }
       }
       for (const p of products || []) {
-        const lastmod = p.updated_at || now
+        const lastmod = formatDate(p.updated_at)
         urls.push({ loc: `${origin}/produto/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod })
       }
     }
