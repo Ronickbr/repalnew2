@@ -134,6 +134,13 @@ const ProductPage: React.FC = () => {
             image: images.map(i => i.image_url).filter(Boolean),
             category: product.category ? product.category.name : undefined,
             brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+            offers: {
+              '@type': 'Offer',
+              price: product.price || 0,
+              priceCurrency: 'BRL',
+              availability: 'https://schema.org/InStock',
+              url: window.location.href
+            }
           })}
         </script>
       </Helmet>

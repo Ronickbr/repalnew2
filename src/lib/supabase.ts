@@ -176,6 +176,7 @@ export interface Database {
           featured_on_homepage: boolean
           featured_in_dropdown: boolean
           is_disabled: boolean
+          price: number | null
           created_at: string
           updated_at: string
         }
@@ -197,6 +198,7 @@ export interface Database {
           featured_on_homepage?: boolean
           featured_in_dropdown?: boolean
           is_disabled?: boolean
+          price?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -218,6 +220,7 @@ export interface Database {
           featured_on_homepage?: boolean
           featured_in_dropdown?: boolean
           is_disabled?: boolean
+          price?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -387,6 +390,7 @@ export interface Product {
   is_disabled?: boolean;
   featured_on_homepage?: boolean;
   clearance_sale?: boolean;
+  price?: number;
   created_at: string;
   updated_at: string;
   category?: Category;
