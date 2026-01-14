@@ -11,8 +11,16 @@ import { logActivity } from '../lib/supabase';
 const Layout: React.FC = () => {
   const { siteName, metaTitle, metaDescription, metaKeywords, canonicalBaseUrl } = useSiteSettings();
   const location = useLocation();
-  const origin = (canonicalBaseUrl || '').trim().replace(/\/+$/, '');
-  const canonicalHref = origin ? `${origin}${location.pathname}` : undefined;
+  const rawOrigin = (canonicalBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '')).trim();
+  const origin = rawOrigin.replace(/\/+$/, '');
+  let canonicalPath = location.pathname || '/';
+  if (canonicalPath !== '/') {
+    canonicalPath = canonicalPath.replace(/\/+$/, '') || '/';
+  }
+  if (canonicalPath === '/CategoryProducts') {
+    canonicalPath = '/categorias';
+  }
+  const canonicalHref = origin ? `${origin}${canonicalPath}` : undefined;
 
   React.useEffect(() => {
     const vidKey = 'repal_visitor_id';

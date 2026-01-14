@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { Helmet } from 'react-helmet-async';
+import { useSiteSettings } from '../hooks/useSiteSettings';
  
 
 const Login: React.FC = () => {
@@ -15,6 +17,10 @@ const Login: React.FC = () => {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { canonicalBaseUrl, siteName } = useSiteSettings();
+  const rawOrigin = (canonicalBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '')).trim();
+  const origin = rawOrigin.replace(/\/+$/, '');
+  const canonicalHref = origin ? `${origin}/login` : undefined;
   
   // Função auxiliar para determinar o redirecionamento
   const getRedirectPath = React.useCallback((role?: string) => {
@@ -74,6 +80,12 @@ const Login: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Helmet>
+        <title>Login | {siteName || 'Repal Equipamentos'}</title>
+        <meta name="description" content="Acesse sua conta da Repal para gerenciar pedidos, perfil e área administrativa." />
+        <meta name="robots" content="noindex, nofollow" />
+        {canonicalHref && <link rel="canonical" href={canonicalHref} />}
+      </Helmet>
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">

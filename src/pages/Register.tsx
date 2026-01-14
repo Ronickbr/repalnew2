@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, User, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { Helmet } from 'react-helmet-async';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -17,6 +19,10 @@ const Register: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { canonicalBaseUrl, siteName } = useSiteSettings();
+  const rawOrigin = (canonicalBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '')).trim();
+  const origin = rawOrigin.replace(/\/+$/, '');
+  const canonicalHref = origin ? `${origin}/cadastro` : undefined;
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -86,6 +92,12 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Helmet>
+        <title>Criar conta | {siteName || 'Repal Equipamentos'}</title>
+        <meta name="description" content="Crie sua conta na Repal para acompanhar pedidos e solicitar orçamentos." />
+        <meta name="robots" content="noindex, nofollow" />
+        {canonicalHref && <link rel="canonical" href={canonicalHref} />}
+      </Helmet>
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <img 
