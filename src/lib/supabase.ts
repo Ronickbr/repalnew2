@@ -5,14 +5,14 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 const supabaseEnabled = import.meta.env.VITE_SUPABASE_ENABLED !== 'false'
 
 // Log de diagnóstico para ajudar a identificar problemas de configuração
-if (import.meta.env.DEV) {
-  console.log('[Supabase Config]', {
-    url: supabaseUrl,
-    hasKey: !!supabaseAnonKey,
-    keyLength: supabaseAnonKey?.length,
-    enabled: supabaseEnabled
-  })
-}
+// if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_SUPABASE === 'true') {
+//   console.log('[Supabase Config]', {
+//     url: supabaseUrl,
+//     hasKey: !!supabaseAnonKey,
+//     keyLength: supabaseAnonKey?.length,
+//     enabled: supabaseEnabled
+//   })
+// }
 
 // Criar um stub seguro para desenvolvimento quando variáveis de ambiente faltarem,
 // evitando quebra da UI enquanto validações visuais são realizadas.

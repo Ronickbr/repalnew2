@@ -1,16 +1,18 @@
 import jwt from 'jsonwebtoken'
 import { createClient } from '@supabase/supabase-js'
+import { ENV } from '../backend/config/env.js'
 
 export const getServiceClient = () => {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+  const supabaseUrl = ENV.SUPABASE_URL
+  const serviceKey = ENV.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceKey) return null
   return createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me'
-export const issueJwt = (user) => jwt.sign({ sub: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '2h' })
-export const verifyJwt = (token) => { try { return jwt.verify(token, JWT_SECRET) } catch { return null } }
+const SAFE_JWT_SECRET = ENV.JWT_SECRET;
+
+export const issueJwt = (user) => jwt.sign({ sub: user.id, email: user.email, role: user.role }, SAFE_JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '2h' })
+export const verifyJwt = (token) => { try { return jwt.verify(token, SAFE_JWT_SECRET) } catch { return null } }
 
 export const setCookie = (res, name, value, opts = {}) => {
   const parts = []
