@@ -1,3 +1,25 @@
+## 2026-01-25 - v0.5.7
+
+- **Infraestrutura & Banco de Dados**:
+  - **Correções de Performance (Supabase)**:
+    - Resolução de alertas de "Multiple Permissive Policies" na tabela `users`: Separação das políticas de escrita (INSERT/UPDATE/DELETE) para evitar sobreposição com políticas de leitura.
+    - Adicionado índice ausente em `activity_logs.user_id` para otimização de joins e integridade referencial.
+
+- **Segurança & Auditoria**:
+  - Implementação de **Auditoria Automatizada**: Novo script Python (`scripts/security_audit.py`) para análise estática de vulnerabilidades e configurações.
+  - Geração automática de relatórios de conformidade (`RELATORIO_SEGURANCA_ABRANGENTE.md`).
+
+## 2026-01-14 - v0.5.6
+
+- **SEO & Infraestrutura**:
+  - **Sitemap Automatizado**:
+    - Implementada regeneração automática no servidor (`server.js`) com cache de 24 horas.
+    - Centralização do arquivo em `public/sitemap.xml`.
+    - Correção do formato de datas (YYYY-MM-DD) no script de pré-renderização (`scripts/prerender.mjs`).
+  - **Otimização de URLs**:
+    - Normalização global de **URLs Canônicas** no `Layout.tsx` (tratamento de barras finais e duplicatas).
+    - Proteção de indexação (`noindex, nofollow`) explícita para páginas de autenticação (Login/Register).
+
 ## 2026-01-12 - v0.5.5
 
 - **Admin & Gestão**:
