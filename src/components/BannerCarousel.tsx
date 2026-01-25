@@ -408,7 +408,7 @@ export default function BannerCarousel({
 
       {/* Indicators */}
       {showIndicators && banners.length > 1 && (
-        <div className="absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-1.5 sm:space-x-2">
+        <div className="absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 hidden sm:flex space-x-1.5 sm:space-x-2">
           {banners.map((_, index) => (
             <button
               key={index}

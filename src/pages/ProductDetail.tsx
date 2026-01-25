@@ -10,6 +10,8 @@ import ProductCard from '../components/ProductCard'
 import { useSiteSettings } from '../hooks/useSiteSettings'
 import { sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../lib/seo'
 import { logActivity } from '../lib/supabase'
+import { SafeHTML } from '../components/SafeHTML'
+
 
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>()
@@ -298,7 +300,7 @@ const ProductDetail: React.FC = () => {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
                         index === currentImageIndex
-                          ? 'bg-[#8B0000] scale-125 shadow-lg'
+                          ? 'bg-primary scale-125 shadow-lg'
                           : 'bg-gray-300 hover:bg-gray-400 hover:scale-110'
                       }`}
                     />
@@ -313,8 +315,8 @@ const ProductDetail: React.FC = () => {
                       onClick={() => setCurrentImageIndex(index)}
                       className={`relative h-16 sm:h-20 lg:h-24 rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-300 hover:scale-105 group flex items-center justify-center ${
                         index === currentImageIndex
-                          ? 'border-[#8B0000] ring-2 ring-[#8B0000] ring-opacity-30 shadow-lg'
-                          : 'border-gray-200 hover:border-[#8B0000]/50 shadow-sm hover:shadow-md'
+                          ? 'border-primary ring-2 ring-primary ring-opacity-30 shadow-lg'
+                          : 'border-gray-200 hover:border-primary/50 shadow-sm hover:shadow-md'
                       }`}
                     >
                       <img
@@ -323,8 +325,8 @@ const ProductDetail: React.FC = () => {
                         className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110 max-h-16 sm:max-h-20 lg:max-h-24"
                       />
                       {index === currentImageIndex && (
-                        <div className="absolute inset-0 bg-[#8B0000]/10 flex items-center justify-center">
-                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-[#8B0000] rounded-full animate-pulse"></div>
+                        <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-primary rounded-full animate-pulse"></div>
                         </div>
                       )}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
@@ -348,7 +350,7 @@ const ProductDetail: React.FC = () => {
                   </span>
                 )}
                 {product.featured && (
-                  <span className="bg-gradient-to-r from-[#8B0000] to-[#660000] text-white text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-2 rounded-full flex items-center space-x-1 sm:space-x-2 font-medium shadow-md">
+                  <span className="bg-gradient-to-r from-primary to-[#660000] text-white text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-2 rounded-full flex items-center space-x-1 sm:space-x-2 font-medium shadow-md">
                     <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-current" />
                     <span>Produto em Destaque</span>
                   </span>
@@ -358,7 +360,7 @@ const ProductDetail: React.FC = () => {
                 {product.name}
 
               {isAuthenticated && product.price !== undefined && (
-                <div className="text-2xl sm:text-3xl font-bold text-[#D0021B] mb-3 sm:mb-4">
+                <div className="text-2xl sm:text-3xl font-bold text-primary mb-3 sm:mb-4">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                 </div>
               )}
@@ -367,7 +369,7 @@ const ProductDetail: React.FC = () => {
               <h2 className="sr-only">Descrição do Produto</h2>
               <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                 <div className="flex items-center space-x-1">
-                  <Award className="h-3 w-3 sm:h-4 sm:w-4 text-[#8B0000]" />
+                  <Award className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                   <span>Equipamento Profissional</span>
                 </div>
                 <div className="flex items-center space-x-1">
@@ -380,21 +382,21 @@ const ProductDetail: React.FC = () => {
             {/* Features */}
             <div className="hidden relative bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-sm rounded-3xl p-6 md:p-8 shadow-xl border border-white/40 hover:shadow-2xl transition-all duration-300 hover:scale-[1.01] overflow-hidden">
               <h2 className="text-xl md:text-2xl font-bold text-[#333333] mb-6 md:mb-8 flex items-center space-x-3">
-                <div className="w-2 h-6 md:h-8 bg-gradient-to-b from-[#8B0000] via-[#B22222] to-[#000080] rounded-full shadow-lg flex-shrink-0"></div>
+                <div className="w-2 h-6 md:h-8 bg-gradient-to-b from-primary via-[#B22222] to-[#000080] rounded-full shadow-lg flex-shrink-0"></div>
                 <span className="bg-gradient-to-r from-[#333333] to-[#555555] bg-clip-text text-transparent">Diferenciais do Produto</span>
-                <div className="flex-1 h-px bg-gradient-to-r from-[#8B0000]/30 to-transparent"></div>
+                <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent"></div>
               </h2>
               
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                 {/* Card 1 - Garantia */}
                 <div className="group relative text-center p-6 md:p-8 bg-gradient-to-br from-red-50/95 via-red-100/90 to-red-200/85 rounded-2xl shadow-lg border border-red-300/50 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-red-400/5 to-red-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#8B0000] to-[#DC143C] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-[#DC143C] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                   <div className="relative z-10">
-                    <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-[#8B0000] via-[#B22222] to-[#DC143C] rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-all duration-300 shadow-lg">
+                    <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-primary via-[#B22222] to-[#DC143C] rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-all duration-300 shadow-lg">
                       <Shield className="h-6 w-6 md:h-8 md:w-8 text-white" />
                     </div>
-                    <h4 className="font-bold text-base md:text-lg text-[#8B0000] mb-2 group-hover:text-[#B22222] transition-colors duration-300">Garantia Assegurada</h4>
+                    <h4 className="font-bold text-base md:text-lg text-primary mb-2 group-hover:text-[#B22222] transition-colors duration-300">Garantia Assegurada</h4>
                     <p className="text-xs md:text-sm text-gray-700 leading-relaxed group-hover:text-gray-800 transition-colors duration-300">Produto com garantia completa do fabricante e suporte técnico especializado</p>
                   </div>
                   <div className="absolute bottom-0 right-0 w-6 h-6 md:w-8 md:h-8 bg-gradient-to-tl from-red-200/30 to-transparent rounded-tl-full"></div>
@@ -498,9 +500,9 @@ const ProductDetail: React.FC = () => {
                 <div className="w-1 h-6 bg-gradient-to-b from-[#8B0000] to-[#000080] rounded-full"></div>
                 <span>Descrição do Produto</span>
               </h3>
-              <div 
+              <SafeHTML 
                 className="text-gray-700 leading-relaxed text-base prose prose-gray max-w-none"
-                dangerouslySetInnerHTML={{ __html: product.description }}
+                html={product.description}
               />
             </div>
           </div>
@@ -514,9 +516,9 @@ const ProductDetail: React.FC = () => {
                 <div className="w-1 h-6 bg-gradient-to-b from-[#000080] to-[#8B0000] rounded-full"></div>
                 <span>Especificações Técnicas</span>
               </h3>
-              <div 
+              <SafeHTML 
                 className="text-gray-700 leading-relaxed text-base prose prose-gray max-w-none"
-                dangerouslySetInnerHTML={{ __html: product.specifications }}
+                html={product.specifications}
               />
             </div>
           </div>

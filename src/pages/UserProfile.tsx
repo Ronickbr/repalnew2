@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Settings, LogOut, Lock, FileText, Clock, Shield, CreditCard, X } from 'lucide-react';
+import { User, Settings, LogOut, Lock, FileText, Clock, Shield, CreditCard, X, UserPlus, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const UserProfile: React.FC = () => {
   const { user, logout, updateProfile, updatePassword } = useAuth();
   const navigate = useNavigate();
+  const { siteName } = useSiteSettings();
 
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -77,8 +80,95 @@ const UserProfile: React.FC = () => {
   };
 
   if (!user) {
-    navigate('/login');
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Helmet>
+          <title>Minha Conta | {siteName || 'Repal Equipamentos'}</title>
+          <meta name="description" content="Acesse sua conta ou cadastre-se para acompanhar pedidos e orçamentos." />
+        </Helmet>
+
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Minha Conta</h1>
+            <p className="text-lg text-gray-600">
+              Acesse sua área exclusiva para gerenciar pedidos, orçamentos e dados pessoais.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Login Card */}
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <LogIn className="h-7 w-7 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-4">Já sou cliente</h2>
+              <p className="text-gray-600 text-center mb-8">
+                Se você já possui cadastro, faça login para acessar sua conta.
+              </p>
+              <Link 
+                to="/login"
+                className="block w-full bg-blue-600 text-white text-center py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200"
+              >
+                Fazer Login
+              </Link>
+            </div>
+
+            {/* Register Card */}
+            <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                <UserPlus className="h-7 w-7 text-red-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 text-center mb-4">Criar nova conta</h2>
+              <p className="text-gray-600 text-center mb-8">
+                Ainda não tem cadastro? Crie sua conta agora, é rápido e fácil.
+              </p>
+              <Link 
+                to="/cadastro"
+                className="block w-full bg-white text-red-600 border-2 border-red-600 text-center py-3 px-4 rounded-lg font-medium hover:bg-red-50 transition-colors duration-200"
+              >
+                Cadastrar-se
+              </Link>
+            </div>
+          </div>
+
+          {/* Benefits Section */}
+          <div className="mt-16">
+            <h3 className="text-xl font-semibold text-gray-900 text-center mb-8">
+              Vantagens de ter uma conta
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="text-center p-4">
+                <div className="mx-auto h-12 w-12 text-blue-500 mb-3">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
+                <h4 className="font-medium text-gray-900">Histórico de Pedidos</h4>
+                <p className="text-sm text-gray-500 mt-1">Acompanhe todos os seus orçamentos e pedidos em um só lugar.</p>
+              </div>
+              <div className="text-center p-4">
+                <div className="mx-auto h-12 w-12 text-blue-500 mb-3">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-medium text-gray-900">Agilidade</h4>
+                <p className="text-sm text-gray-500 mt-1">Realize novos orçamentos mais rapidamente com seus dados salvos.</p>
+              </div>
+              <div className="text-center p-4">
+                <div className="mx-auto h-12 w-12 text-blue-500 mb-3">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h4 className="font-medium text-gray-900">Ofertas Exclusivas</h4>
+                <p className="text-sm text-gray-500 mt-1">Receba novidades e ofertas especiais preparadas para você.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const isNameEmail = user.name === user.email;

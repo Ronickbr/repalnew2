@@ -7,6 +7,7 @@ import type { Product, ProductImage } from '../lib/supabase';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { Helmet } from 'react-helmet-async';
 import { sanitizeMetaDescription } from '../lib/seo';
+import { SafeHTML } from '../components/SafeHTML';
 
 const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -232,9 +233,9 @@ const ProductPage: React.FC = () => {
             </h1>
 
             <div className="prose prose-lg text-gray-600 mb-8">
-              <div 
+              <SafeHTML 
                   className="prose prose-gray max-w-none"
-                  dangerouslySetInnerHTML={{ __html: product.description || '' }}
+                  html={product.description || ''}
                 />
             </div>
             <h2 className="sr-only">Descrição do Produto</h2>

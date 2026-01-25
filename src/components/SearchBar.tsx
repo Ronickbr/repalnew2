@@ -62,7 +62,7 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
   // Busca geral quando não há resultados específicos
   const handleSearch = useCallback(() => {
     if (query.trim()) {
-      navigate(`/categorias?busca=${encodeURIComponent(query.trim())}`);
+      navigate(`/categorias?q=${encodeURIComponent(query.trim())}`);
       setIsDropdownOpen(false);
       setQuery('');
       inputRef.current?.blur();
@@ -153,8 +153,8 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
           onKeyDown={handleKeyDown}
           onFocus={handleInputFocus}
           placeholder={placeholder}
-          className={className || `w-full px-3 py-2 lg:px-4 lg:py-3 pr-10 lg:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm lg:text-base transition-all duration-300 ${
-            isMobile ? 'min-h-[44px]' : ''
+          className={className || `w-full px-3 py-2 lg:px-4 lg:py-3 pr-10 lg:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm lg:text-base transition-all duration-300 ${
+            isMobile ? 'min-h-[48px]' : ''
           }`}
           style={style}
           autoComplete="off"
@@ -172,8 +172,8 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
           aria-busy={isSearching}
         />
         {isSearching && (
-          <div className={`absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 ${isMobile ? 'min-h-[44px] min-w-[44px]' : ''}`} aria-hidden>
-            <Loader2 className={iconClassName || 'h-4 w-4 lg:h-5 lg:w-5 animate-spin text-red-600'} />
+          <div className={`absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 ${isMobile ? 'min-h-[48px] min-w-[48px] flex items-center justify-center' : ''}`} aria-hidden>
+            <Loader2 className={iconClassName || 'h-4 w-4 lg:h-5 lg:w-5 animate-spin text-primary'} />
           </div>
         )}
       

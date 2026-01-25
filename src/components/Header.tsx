@@ -4,12 +4,13 @@ import {
   Phone, 
   Mail,
   User,
-  ShoppingCart
+  ShoppingCart,
+  Menu
 } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useAuth } from '../hooks/useAuth';
 import SearchBar from './SearchBar';
-import NavMenu from './NavMenu';
+import NavMenu, { MobileMenuDrawer } from './NavMenu';
 import { useBudget } from '../contexts/BudgetContext';
 import SideQuoteList from './SideQuoteList';
 
@@ -20,7 +21,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSideQuoteList, setShowSideQuoteList] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const defaultLogo = "https://i.imgur.com/rVJiu8W.png";
   const [logoSrc, setLogoSrc] = useState<string>(defaultLogo);
@@ -69,37 +70,12 @@ const Header: React.FC = () => {
   // Fechar menu ao mudar de rota
   useEffect(() => {
     setShowUserMenu(false);
-    setShowMobileMenu(false);
+    setIsMobileMenuOpen(false);
   }, [navigate]);
 
   return (
     <>
-    <style dangerouslySetInnerHTML={{
-      __html: `
-        .header-dropdown-container {
-          overflow: visible;
-        }
-        .user-menu-dropdown {
-          z-index: 1001 !important;
-          position: absolute;
-          top: 100%;
-          right: 0;
-          margin-top: 0.5rem;
-          width: 12rem;
-          background: white;
-          border-radius: 0.375rem;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-          border: 1px solid #e5e7eb;
-        }
-        @media (max-width: 767px) {
-          .user-menu-dropdown {
-            width: 14rem;
-            right: -0.5rem;
-          }
-        }
-      `
-    }} />
-    <header className="shadow-lg sticky top-0 z-[1000] header-dropdown-container" style={{backgroundColor: '#8B0000'}}>
+    <header className="shadow-lg sticky top-0 z-[1000] overflow-visible bg-primary">
       {/* Top Bar - Hidden on mobile */}
       <div className="hidden md:block bg-white text-red-900 py-1 sm:py-2">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
@@ -128,21 +104,33 @@ const Header: React.FC = () => {
 
       {/* Main Header */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 main-container header-container">
-        <div className="flex justify-between items-center py-3 sm:py-3 lg:py-4 header-responsive">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 sm:space-x-3">
-            <img 
-              src={logoSrc} 
-              alt={siteName || "Repal Equipamentos"} 
-              className="h-8 w-auto sm:h-10 md:h-12 lg:h-14 xl:h-16 transition-all duration-300 logo-img logo-responsive"
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
-              onError={() => setLogoSrc(defaultLogo)}
-            />
-          </Link>
+        <div className="flex justify-between items-center h-[60px] sm:h-[72px] lg:h-auto header-responsive gap-2">
+          
+          <div className="flex items-center gap-1 sm:gap-4">
+            {/* Hamburger Menu - Mobile */}
+            <button
+              className="lg:hidden min-w-[48px] min-h-[48px] flex items-center justify-center -ml-3 text-white hover:text-gray-200 transition-colors active:bg-white/10 rounded-full"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Menu"
+            >
+              <Menu className="h-7 w-7" />
+            </button>
 
-          {/* Search Bar - Visible on all devices */}
-            <div className="flex-1 max-w-xs sm:max-w-sm lg:max-w-lg mx-2 sm:mx-3 lg:mx-6 xl:mx-8 search-responsive">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2 sm:space-x-3 ml-1">
+              <img 
+                src={logoSrc} 
+                alt={siteName || "Repal Equipamentos"} 
+                className="h-9 w-auto sm:h-10 md:h-12 lg:h-14 xl:h-16 transition-all duration-300 logo-img logo-responsive"
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={() => setLogoSrc(defaultLogo)}
+              />
+            </Link>
+          </div>
+
+          {/* Search Bar - Desktop */}
+            <div className="hidden lg:block flex-1 max-w-lg mx-6 xl:mx-8 search-responsive">
               <SearchBar 
                 placeholder="Digite aqui o que você busca"
                 className="w-full px-3 py-2 lg:px-4 lg:py-3 pr-10 lg:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm lg:text-base transition-all duration-300"
@@ -152,23 +140,23 @@ const Header: React.FC = () => {
             </div>
 
           {/* User and Budget Icons */}
-          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+          <div className="flex items-center space-x-0 sm:space-x-2 lg:space-x-4">
             {/* User Menu with Dropdown */}
             <div className="relative" ref={userMenuRef}>
               {isAuthenticated ? (
                 <>
                   <button 
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex flex-col items-center p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
+                    className="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] p-2 text-white hover:text-gray-200 transition-colors duration-200 active:bg-white/10 rounded-lg"
                     title={`Olá, ${user?.name}`}
                   >
                     <User className="h-6 w-6 sm:h-7 lg:h-8" />
-                    <span className="text-[10px] sm:text-xs font-medium mt-0.5">Minha conta</span>
+                    <span className="hidden lg:inline text-[10px] sm:text-xs font-medium mt-0.5">Minha conta</span>
                   </button>
                   
                   {/* Dropdown Menu */}
                   {showUserMenu && (
-                    <div className="user-menu-dropdown">
+                    <div className="absolute top-full -right-2 md:right-0 mt-2 w-56 md:w-48 bg-white rounded-md shadow-lg border border-gray-200 z-[1001]">
                       <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-200">
                         Olá, {user?.name || 'Usuário'}
                       </div>
@@ -191,12 +179,13 @@ const Header: React.FC = () => {
                             Meu Perfil
                           </button>
                         </>
-                      )}
+                      )
+                    }
                       
                       <div className="border-t border-gray-200">
                         <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150"
+                          className="block w-full text-left px-4 py-2 text-sm text-primary hover:bg-red-50 transition-colors duration-150"
                         >
                           Sair
                         </button>
@@ -205,30 +194,17 @@ const Header: React.FC = () => {
                   )}
                 </>
               ) : (
-                <div className="flex flex-col items-center p-2 text-white">
-                  <User className="h-6 w-6 sm:h-7 lg:h-8" />
-                  <div className="flex items-center space-x-1 mt-0.5 text-[10px] sm:text-xs font-medium">
-                    <Link 
-                      to="/login"
-                      state={{ from: window.location.pathname }}
-                      className="hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
-                    >
-                      Logar
-                    </Link>
-                    <span>ou</span>
-                    <Link 
-                      to="/cadastro"
-                      className="hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
-                    >
-                      Registrar-se
-                    </Link>
-                  </div>
+                <div className="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-white active:bg-white/10 rounded-lg">
+                  <Link to="/minha-conta" className="flex flex-col items-center justify-center w-full h-full p-2">
+                    <User className="h-6 w-6 sm:h-7 lg:h-8" />
+                    <span className="hidden lg:inline text-[10px] sm:text-xs font-medium mt-0.5">Minha Conta</span>
+                  </Link>
                 </div>
               )}
             </div>
             
             <button 
-              className="flex flex-col items-center p-2 text-white hover:text-gray-200 transition-colors duration-200 active:text-gray-300"
+              className="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] p-2 text-white hover:text-gray-200 transition-colors duration-200 active:bg-white/10 rounded-lg"
               title="Meu Orçamento"
               onClick={() => setShowSideQuoteList(prev => !prev)}
             >
@@ -236,20 +212,19 @@ const Header: React.FC = () => {
                 <ShoppingCart className="h-6 w-6 sm:h-7 lg:h-8" />
                 {/* Badge para mostrar quantidade de itens no orçamento */}
                 {budgetState.totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center font-bold border border-white">
+                  <span className="absolute -top-2 -right-2 bg-yellow-500 text-white text-[10px] sm:text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-primary">
                     {budgetState.totalItems > 99 ? '99+' : budgetState.totalItems}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] sm:text-xs font-medium mt-0.5">Minha Lista</span>
+              <span className="hidden lg:inline text-[10px] sm:text-xs font-medium mt-0.5">Minha Lista</span>
             </button>
           </div>
-
         </div>
       </div>
 
-      {/* Categories Section - Positioned above visual effects */}
-      <div className="bg-gray-50 border-b border-gray-200 relative z-50 overflow-visible category-nav-container">
+      {/* Categories Section - Desktop Only */}
+      <div className="hidden lg:block bg-gray-50 border-b border-gray-200 relative z-50 overflow-visible category-nav-container">
         <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4 xl:px-8">
           <div className="py-1 sm:py-1 lg:py-2 min-h-[60px] relative">
             <NavMenu />
@@ -257,61 +232,11 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {showMobileMenu && (
-        <div className="md:hidden bg-white border-b border-gray-200 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="space-y-4">
-              <div className="flex flex-col space-y-2">
-                <Link 
-                  to="/" 
-                  className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  Início
-                </Link>
-                <Link 
-                  to="/categorias" 
-                  className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  Categorias
-                </Link>
-                <Link 
-                  to="/contato" 
-                  className="text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
-                  onClick={() => setShowMobileMenu(false)}
-                >
-                  Contato
-                </Link>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-4">
-                <div className="flex flex-col space-y-2">
-                  {contactPhone && (
-                    <a 
-                      href={`tel:${contactPhone}`}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
-                    >
-                      <Phone className="h-4 w-4" />
-                      <span>{contactPhone}</span>
-                    </a>
-                  )}
-                  {contactEmail && (
-                    <a 
-                      href={`mailto:${contactEmail}`}
-                      className="flex items-center space-x-2 text-gray-700 hover:text-red-600 px-3 py-2 rounded-lg font-medium transition-colors"
-                    >
-                      <Mail className="h-4 w-4" />
-                      <span>{contactEmail}</span>
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MobileMenuDrawer 
+        isOpen={isMobileMenuOpen} 
+        onClose={() => setIsMobileMenuOpen(false)}
+        onOpenBudget={() => setShowSideQuoteList(true)}
+      />
     </header>
     
     {/* Side Quote List */}

@@ -11,6 +11,43 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Color Management & Calibration */
+  color-scheme: light;
+  
+  /* System Colors */
+  --color-primary: #8B0000;
+  --color-secondary: #1c243c;
+  --color-primary-hover: #6d0000;
+}
+
+/* Explicit Color Utilities to guarantee rendering */
+.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--color-secondary) !important;
+}
+
+.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.border-primary {
+  border-color: var(--color-primary) !important;
+}
+
+.ring-primary {
+  --tw-ring-color: var(--color-primary) !important;
+}
+
+/* Image Color Calibration */
+img, video {
+  /* Ensure images are rendered with sRGB intent */
+  color-interpolation-filters: sRGB;
+  /* Prevent color shifts in some browsers */
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* Tap target accessibility for touch devices */

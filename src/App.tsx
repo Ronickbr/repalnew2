@@ -68,6 +68,7 @@ function AppContent() {
                   </ProtectedRoute>
                 } 
               />
+              <Route path="minha-conta" element={<UserProfile />} />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="/login" element={<Login />} />

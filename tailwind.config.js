@@ -25,6 +25,11 @@ export default {
       '4xl': '2560px',
     },
     extend: {
+      colors: {
+        primary: '#8B0000',
+        'primary-hover': '#6d0000',
+        secondary: '#1c243c',
+      },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',

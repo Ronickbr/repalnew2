@@ -37,7 +37,9 @@ export function useBanners() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || 'http://localhost:3001';
+  
+  // Use secure fallback or relative path if possible, but for now just removing hardcoded http
+  const apiBase = (import.meta as any).env?.VITE_BACKEND_URL || '';
 
   const getCsrf = async (): Promise<string | null> => {
     try {

@@ -25,25 +25,11 @@ export const useProductSearch = (query: string) => {
     
     const searchTerm = debouncedQuery.toLowerCase().trim()
     
-    return products
-      .filter(product => {
-        // Verificar se o produto está ativo e não desabilitado
-        if (product.is_disabled) return false;
-        
-        const productName = product.name?.toLowerCase() || ''
-        const description = product.description?.toLowerCase() || ''
-        const benefits = product.benefits?.toLowerCase() || ''
-        
-        // Verificar categoria (suporta tanto 'category' quanto 'categories')
-        const categoryName = (product.category?.name || product.categories?.name || '').toLowerCase()
-        const subcategoryName = product.subcategory?.name?.toLowerCase() || ''
-        
-        return productName.includes(searchTerm) || 
-               description.includes(searchTerm) ||
-               benefits.includes(searchTerm) ||
-               categoryName.includes(searchTerm) ||
-               subcategoryName.includes(searchTerm)
-      })
+    return products.filter((product) => {
+      const productName = product.name?.toLowerCase() || '';
+
+      return productName.includes(searchTerm);
+    })
       .slice(0, 10) // Limitar a 10 resultados
       .map(product => {
         // Garantir que o produto tenha a estrutura correta para o SearchDropdown

@@ -160,11 +160,11 @@ const CategoryProducts: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6 bg-white/70 backdrop-blur-sm rounded-full px-5 py-3 shadow-sm border border-gray-200/50" aria-label="breadcrumb">
-          <Link to="/" className="hover:text-[#8B0000] transition-colors duration-200 font-medium">Início</Link>
+          <Link to="/" className="hover:text-primary transition-colors duration-200 font-medium">Início</Link>
           {currentCategory && (
             <>
               <span className="text-gray-400">/</span>
-              <Link to={`/categorias/${currentCategory.slug}`} className="hover:text-[#8B0000] transition-colors duration-200 font-medium">
+              <Link to={`/categorias/${currentCategory.slug}`} className="hover:text-primary transition-colors duration-200 font-medium">
                 {currentCategory.name}
               </Link>
             </>
@@ -193,7 +193,7 @@ const CategoryProducts: React.FC = () => {
               <div className="mt-4 space-y-4">
                 <div>
                   <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
-                  <select id="category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={selectedCategorySlug} onChange={e => handleCategoryChange(e.target.value)} aria-label="Selecionar categoria">
+                  <select id="category-select" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" value={selectedCategorySlug} onChange={e => handleCategoryChange(e.target.value)} aria-label="Selecionar categoria">
                     <option value="">Selecione</option>
                     {categories?.map(c => (
                       <option key={c.id} value={c.slug}>{c.name}</option>
@@ -252,15 +252,15 @@ const CategoryProducts: React.FC = () => {
                     <span>Filtros</span>
                   </button>
                   <div className="ml-3 flex items-center gap-1" role="group" aria-label="Alternar visualização">
-                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'grid'} aria-label="Visualização em grade">
+                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'grid'} aria-label="Visualização em grade">
                       <Grid2x2 className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'list'} aria-label="Visualização em lista">
+                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'list'} aria-label="Visualização em lista">
                       <List className="h-4 w-4" />
                     </button>
                   </div>
                   <label className="ml-3 text-sm text-gray-700">Itens por página</label>
-                  <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" aria-label="Itens por página">
+                  <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" aria-label="Itens por página">
                     <option value={12}>12</option>
                     <option value={24}>24</option>
                     <option value={36}>36</option>
