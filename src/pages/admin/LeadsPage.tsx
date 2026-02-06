@@ -104,6 +104,30 @@ const LeadsPage: React.FC = () => {
     }
   };
 
+  const deleteMockLeads = async () => {
+    if (!window.confirm('Tem certeza que deseja excluir todos os leads de teste?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { error, count } = await supabase
+        .from(table('leads'))
+        .delete({ count: 'exact' })
+        .eq('message', 'Lead gerado automaticamente para testes do sistema.');
+
+      if (error) throw error;
+
+      toast.success(`${count} leads de teste excluídos com sucesso!`);
+      fetchLeads();
+    } catch (err) {
+      console.error('Erro ao excluir leads de teste:', err);
+      toast.error('Erro ao excluir leads de teste');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter and Pagination Logic
   const filteredLeads = leads.filter(lead => 
     lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,7 +171,13 @@ const LeadsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={deleteMockLeads}
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors shadow-sm text-sm font-medium"
+        >
+          Excluir Leads de Teste
+        </button>
         <button
           onClick={generateMockLeads}
           className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors shadow-sm text-sm font-medium"

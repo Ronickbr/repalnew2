@@ -3,10 +3,11 @@
 - **Correções & Melhorias**:
   - **Gestão de Leads**:
     - Corrigido erro de permissão (RLS) ao gerar leads de teste (agora permitido para usuários autenticados).
+    - Adicionada opção para **Excluir Leads de Teste** (remove leads gerados automaticamente).
     - Badge do menu "Leads" agora exibe contagem dinâmica apenas de novos leads (status 'novo').
   - **Gestão de Preços**:
     - Implementada funcionalidade de **Reajuste de Preços em Massa** (`PriceAdjustmentsPage.tsx`).
-    - Permite reajuste percentual ou fixo por categoria ou marca.
+    - Permite reajuste percentual ou fixo por produto ou marca.
   - **Qualidade de Código**:
     - Removidos imports e props não utilizados em `LeadManager`.
     - Corrigida tipagem na captura de leads via Popup (`GlobalPopup.tsx`).
