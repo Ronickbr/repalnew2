@@ -31,13 +31,21 @@ const AdminLayout: React.FC = () => {
 
   React.useEffect(() => {
     const fetchNewLeadsCount = async () => {
-      const { count, error } = await supabase
-        .from(table('leads'))
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'novo');
+      // Use RPC to avoid 'leads' keyword in URL (AdBlock workaround)
+      const { data, error } = await supabase.rpc('get_new_contacts_count');
       
-      if (!error && count !== null) {
-        setNewLeadsCount(count);
+      if (!error && typeof data === 'number') {
+        setNewLeadsCount(data);
+      } else {
+        // Fallback to direct query if RPC fails (or for development)
+        const { count, error: countError } = await supabase
+          .from(table('leads'))
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'novo');
+          
+        if (!countError && count !== null) {
+          setNewLeadsCount(count);
+        }
       }
     };
 

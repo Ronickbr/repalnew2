@@ -1,6 +1,8 @@
-## 2026-02-06 - v0.5.8
+## 2026-02-06 - v0.5.9
 
 - **Correções & Melhorias**:
+  - **Infraestrutura**:
+    - Implementada função RPC `get_new_contacts_count` para contagem de leads, contornando bloqueios de AdBlockers que interceptavam requisições contendo "leads" na URL.
   - **Gestão de Leads**:
     - Corrigido erro de permissão (RLS) ao gerar leads de teste (agora permitido para usuários autenticados).
     - Adicionada opção para **Excluir Leads de Teste** (remove leads gerados automaticamente).
