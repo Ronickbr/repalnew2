@@ -12,6 +12,7 @@ export const ENV = {
   ADMIN_COOKIE_NAME: 'repal_admin_token',
   DEV_AUTH_BYPASS: process.env.DEV_AUTH_BYPASS === 'true',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
 };
 
 // Validação de Segurança para Produção
@@ -21,5 +22,8 @@ if (ENV.NODE_ENV === 'production') {
   }
   if (ENV.DEV_AUTH_BYPASS) {
     console.warn('⚠️  ALERTA DE SEGURANÇA: DEV_AUTH_BYPASS habilitado em ambiente de produção!');
+  }
+  if (!ENV.ENCRYPTION_KEY) {
+    console.warn('⚠️  ALERTA DE SEGURANÇA: ENCRYPTION_KEY não configurada em produção!');
   }
 }

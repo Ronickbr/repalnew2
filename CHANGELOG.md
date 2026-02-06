@@ -1,3 +1,13 @@
+## 2026-02-06 - v0.5.8
+
+- **Correções & Melhorias**:
+  - **Gestão de Leads**:
+    - Corrigido erro de permissão (RLS) ao gerar leads de teste (agora permitido para usuários autenticados).
+    - Badge do menu "Leads" agora exibe contagem dinâmica apenas de novos leads (status 'novo').
+  - **Qualidade de Código**:
+    - Removidos imports e props não utilizados em `LeadManager`.
+    - Corrigida tipagem na captura de leads via Popup (`GlobalPopup.tsx`).
+
 ## 2026-01-25 - v0.5.7
 
 - **Infraestrutura & Banco de Dados**:

@@ -37,6 +37,7 @@ const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const LeadsPage = lazy(() => import('./pages/admin/LeadsPage'));
 const PromotionsPage = lazy(() => import('./pages/admin/PromotionsPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const PriceAdjustmentsPage = lazy(() => import('./pages/admin/PriceAdjustmentsPage'));
 
 function App() {
   return <AppContent />;
@@ -84,6 +85,7 @@ function AppContent() {
             >
               <Route index element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><DashboardPage /></Suspense>} />
               <Route path="products" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><ProductsPage /></Suspense>} />
+              <Route path="products/adjustments" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><PriceAdjustmentsPage /></Suspense>} />
               <Route path="categories" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><CategoriesPage /></Suspense>} />
               <Route path="brands" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><BrandsPage /></Suspense>} />
               <Route path="banners" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><BannersPage /></Suspense>} />

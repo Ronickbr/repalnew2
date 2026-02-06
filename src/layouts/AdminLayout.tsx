@@ -15,15 +15,49 @@ import {
   MessageSquare,
   Shield,
   ChevronRight,
-  User
+  User,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
+import { table } from '../lib/schema';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [newLeadsCount, setNewLeadsCount] = React.useState(0);
+
+  React.useEffect(() => {
+    const fetchNewLeadsCount = async () => {
+      const { count, error } = await supabase
+        .from(table('leads'))
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'novo');
+      
+      if (!error && count !== null) {
+        setNewLeadsCount(count);
+      }
+    };
+
+    fetchNewLeadsCount();
+    
+    // Subscribe to changes
+    const subscription = supabase
+      .channel('leads_count_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: table('leads') }, 
+        () => {
+          fetchNewLeadsCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const navigationItems = [
     { 
@@ -40,6 +74,14 @@ const AdminLayout: React.FC = () => {
       icon: Package, 
       path: '/admin/products',
       description: 'Gerenciar produtos',
+      badge: null
+    },
+    { 
+      id: 'adjustments', 
+      label: 'Reajustes', 
+      icon: DollarSign, 
+      path: '/admin/products/adjustments',
+      description: 'Reajuste em massa',
       badge: null
     },
     { 
@@ -80,7 +122,7 @@ const AdminLayout: React.FC = () => {
       icon: MessageSquare, 
       path: '/admin/leads',
       description: 'Gerenciar leads',
-      badge: '3'
+      badge: newLeadsCount > 0 ? newLeadsCount.toString() : null
     },
     { 
       id: 'users', 

@@ -56,6 +56,7 @@ export const authMiddleware = async (req, res, next) => {
 
     const payload = verifyJwt(token);
     if (!payload) {
+      res.clearCookie(ENV.ADMIN_COOKIE_NAME, { path: '/' });
       return res.status(401).json({ success: false, error: 'Token inválido' });
     }
 
@@ -68,6 +69,7 @@ export const authMiddleware = async (req, res, next) => {
       .single();
 
     if (error || !adminUser || !adminUser.active) {
+      res.clearCookie(ENV.ADMIN_COOKIE_NAME, { path: '/' });
       return res.status(401).json({ success: false, error: 'Usuário inválido ou inativo' });
     }
 
@@ -79,6 +81,7 @@ export const authMiddleware = async (req, res, next) => {
         const lastLogin = new Date(adminUser.last_login);
         const oneDay = 24 * 60 * 60 * 1000;
         if (new Date() - lastLogin > oneDay) {
+            res.clearCookie(ENV.ADMIN_COOKIE_NAME, { path: '/' });
             return res.status(401).json({ success: false, error: 'Sessão expirada' });
         }
     }
@@ -95,43 +98,7 @@ export const authMiddleware = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('Erro no authMiddleware:', err);
+    res.clearCookie(ENV.ADMIN_COOKIE_NAME, { path: '/' });
     return res.status(401).json({ success: false, error: 'Não autorizado' });
   }
-};
-
-export const requireRole = (roles) => {
-  return (req, res, next) => {
-    if (!req.admin) {
-      return res.status(401).json({ success: false, error: 'Não autorizado' });
-    }
-    // super_admin sempre tem acesso? O original não especificava, apenas incluía 'super_admin' na lista do requireRole(['admin', 'super_admin'])
-    if (roles.includes(req.admin.role)) {
-      return next();
-    }
-    return res.status(403).json({ success: false, error: 'Acesso negado' });
-  };
-};
-
-export const authNoCsrfMiddleware = async (req, res, next) => {
-    try {
-        if (ENV.DEV_AUTH_BYPASS || !isSupabaseConfigured) {
-             req.admin = { id: 'dev-admin', email: 'dev@local', role: 'super_admin', active: true };
-             return next();
-        }
-        const token = req.cookies[ENV.ADMIN_COOKIE_NAME];
-        if (!token) return res.status(401).json({ success: false, error: 'Não autorizado' });
-        
-        const payload = verifyJwt(token);
-        if (!payload) return res.status(401).json({ success: false, error: 'Token inválido' });
-        
-        const supabase = getServiceClient();
-        const { data: adminUser, error } = await supabase.from('admin_users').select('*').eq('id', payload.id).single();
-        
-        if (error || !adminUser || !adminUser.active) return res.status(401).json({ success: false, error: 'Usuário inválido' });
-        
-        req.admin = adminUser;
-        next();
-    } catch(e) {
-        return res.status(401).json({ success: false, error: 'Erro de auth' });
-    }
 };

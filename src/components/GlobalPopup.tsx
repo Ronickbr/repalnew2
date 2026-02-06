@@ -31,7 +31,7 @@ const GlobalPopup: React.FC = () => {
     setIsSubmitting(true);
     try {
       await createLead.mutateAsync({
-        client_name: leadForm.name,
+        name: leadForm.name,
         email: leadForm.email,
         phone: leadForm.phone,
         message: 'Lead capturado via Pop-up',

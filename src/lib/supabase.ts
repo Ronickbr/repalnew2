@@ -422,11 +422,11 @@ export interface ProductImage {
 
 export interface Lead {
   id: string;
-  client_name: string;
-  phone: string;
-  email?: string;
-  message?: string;
-  name?: string;
+  name: string; // Nome do cliente
+  email: string;
+  phone?: string | null;
+  message?: string | null;
+  product_name?: string | null;
   source?: string;
   status: 'novo' | 'contato' | 'orcado' | 'fechado' | 'perdido';
   created_at: string;
