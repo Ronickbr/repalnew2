@@ -8,11 +8,15 @@ import { encryptionService } from './encryptionService.js';
  */
 class AiService {
   /**
-   * Retrieves the Gemini API Key.
-   * Prioritizes ENV var, then checks database settings (encrypted).
+   * Retrieves the AI API Key.
+   * Prioritizes ENV var (OPENROUTER/GEMINI), then checks database settings (encrypted).
    * @returns {Promise<string|null>} The API Key or null if not found.
    */
   async getApiKey() {
+    // Check for OpenRouter Key first, then Gemini
+    if (ENV.OPENROUTER_API_KEY && ENV.OPENROUTER_API_KEY.trim()) {
+      return ENV.OPENROUTER_API_KEY.trim();
+    }
     if (ENV.GEMINI_API_KEY && ENV.GEMINI_API_KEY.trim()) {
       return ENV.GEMINI_API_KEY.trim();
     }
@@ -27,6 +31,7 @@ class AiService {
 
       if (error) return null;
       
+      // Use existing field for compatibility but check if it's an OpenRouter key
       const key = data?.integrations?.gemini_api_key;
       if (!key) return null;
 
@@ -37,7 +42,6 @@ class AiService {
         return encryptionService.decrypt(keyString);
       } catch (e) {
         // If decryption fails (e.g. invalid format), assume it is a legacy plain text key
-        // This ensures backward compatibility while we migrate to encrypted keys.
         return keyString;
       }
     } catch {
@@ -46,30 +50,35 @@ class AiService {
   }
 
   /**
-   * Generates content using Gemini API.
+   * Generates content using OpenRouter API.
    * @param {string} prompt - The prompt to send.
    * @param {Object} generationConfig - Configuration for generation.
-   * @returns {Promise<Object>} The API response.
+   * @returns {Promise<Object>} The API response adapted to Gemini format for frontend compatibility.
    * @throws {Error} If API call fails or key is missing.
    */
   async generateContent(prompt, generationConfig) {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
-      throw new Error('Chave de API do Gemini não configurada');
+      throw new Error('Chave de API da IA não configurada');
     }
 
+    // Default to a Gemini model on OpenRouter for consistency, but allow override
+    const model = generationConfig?.model || 'google/gemini-2.0-flash-001';
+
     const payload = {
-      contents: [{ parts: [{ text: String(prompt) }]}],
-      generationConfig: {
-        temperature: 0.8,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 4000,
-        ...(generationConfig || {})
-      }
+      model: model,
+      messages: [
+        {
+          role: 'user',
+          content: String(prompt)
+        }
+      ],
+      temperature: generationConfig?.temperature || 0.8,
+      top_p: generationConfig?.topP || 0.95,
+      max_tokens: generationConfig?.maxOutputTokens || 4000
     };
     
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const url = 'https://openrouter.ai/api/v1/chat/completions';
     
     const maxRetries = 3;
     let lastJson = {};
@@ -79,7 +88,12 @@ class AiService {
       try {
         const resp = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': ENV.FRONTEND_URL || 'https://repalmarechal.com.br', // Site URL for OpenRouter rankings
+            'X-Title': 'Repal New Admin' // Site title for OpenRouter rankings
+          },
           body: JSON.stringify(payload)
         });
         
@@ -92,14 +106,32 @@ class AiService {
         }
         
         if (!resp.ok) {
-          const errorMsg = json?.error?.message || 'Erro Gemini';
+          const errorMsg = json?.error?.message || 'Erro na API da IA (OpenRouter)';
           const error = new Error(errorMsg);
           error.details = json;
           error.status = resp.status;
           throw error;
         }
         
-        return json;
+        // Adapt OpenRouter response to Gemini format expected by frontend
+        // OpenRouter: { choices: [{ message: { content: "..." } }] }
+        // Gemini: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+        
+        const content = json.choices?.[0]?.message?.content || '';
+        
+        return {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: content }
+                ]
+              }
+            }
+          ],
+          original_response: json // Keep original for debugging if needed
+        };
+
       } catch (err) {
         lastError = err;
         if (attempt === maxRetries) break;
@@ -111,7 +143,7 @@ class AiService {
     }
     
     // Default fallback if loop finishes without specific error throw
-    const error = new Error('Limite excedido ou erro de conexão');
+    const error = new Error('Limite excedido ou erro de conexão com a IA');
     error.status = 429;
     error.details = lastJson;
     throw error;

@@ -33,6 +33,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     google_tag_manager_id: '',
     facebook_pixel_id: '',
     instagram_account: '',
+    google_maps_api_key: '',
+    recaptcha_site_key: '',
+    recaptcha_secret_key: '',
+    openrouter_api_key: '',
     cache_enabled: true,
     compress_images: true,
     lazy_loading: true,
@@ -210,6 +214,43 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     onChange={(e) => handleInputChange('instagram_account', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                     placeholder="@usuario"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Google Maps API Key</label>
+                  <input
+                    type="password"
+                    value={formData.google_maps_api_key || ''}
+                    onChange={(e) => handleInputChange('google_maps_api_key', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">OpenRouter API Key</label>
+                  <input
+                    type="password"
+                    value={formData.openrouter_api_key || ''}
+                    onChange={(e) => handleInputChange('openrouter_api_key', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="sk-or-..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">reCAPTCHA Site Key</label>
+                  <input
+                    type="text"
+                    value={formData.recaptcha_site_key || ''}
+                    onChange={(e) => handleInputChange('recaptcha_site_key', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">reCAPTCHA Secret Key</label>
+                  <input
+                    type="password"
+                    value={formData.recaptcha_secret_key || ''}
+                    onChange={(e) => handleInputChange('recaptcha_secret_key', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 </div>
               </div>

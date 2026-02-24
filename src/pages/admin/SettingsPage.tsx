@@ -133,6 +133,7 @@ const SettingsPage: React.FC = () => {
       facebook_pixel_id: nested.integrations?.facebook_pixel_id || '',
       recaptcha_site_key: nested.integrations?.recaptcha_site_key || '',
       recaptcha_secret_key: nested.integrations?.recaptcha_secret_key || '',
+      openrouter_api_key: nested.integrations?.gemini_api_key || '',
       contact_email: nested.contact?.email || '',
       contact_phone: nested.contact?.phone || '',
       address: nested.contact?.address || '',
@@ -179,6 +180,7 @@ const SettingsPage: React.FC = () => {
         facebook_pixel_id: flat.facebook_pixel_id,
         recaptcha_site_key: flat.recaptcha_site_key,
         recaptcha_secret_key: flat.recaptcha_secret_key,
+        gemini_api_key: flat.openrouter_api_key, // Mapping OpenRouter key to existing DB column
       },
       contact: {
         ...formData.contact,

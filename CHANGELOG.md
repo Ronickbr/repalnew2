@@ -1,3 +1,14 @@
+## 2026-02-24 - v0.5.11
+
+### Alterado
+- Migração do sistema de IA de Google Gemini para OpenRouter.
+- Atualização do `backend/services/aiService.js` para usar a API do OpenRouter.
+- Atualização do endpoint `api/ai/generate-content.js` para usar a API do OpenRouter.
+- Adição de suporte à variável de ambiente `OPENROUTER_API_KEY`.
+- Atualização da interface de Configurações (`SettingsPage`, `SettingsManager`, `SettingsModal`) para permitir edição da chave da API do OpenRouter.
+- Atualização das mensagens de erro no `ProductManager` para serem agnósticas à provedora de IA.
+- A chave da API do OpenRouter é armazenada no campo `gemini_api_key` do banco de dados para manter compatibilidade sem migração de schema.
+
 ## 2026-02-24 - v0.5.10
 
 - **Analytics & Monitoramento**:

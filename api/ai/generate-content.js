@@ -12,25 +12,36 @@ export default async function handler(req, res) {
       res.status(400).json({ success: false, error: 'Prompt obrigatório' });
       return;
     }
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
-      res.status(400).json({ success: false, error: 'Chave de API do Gemini não configurada' });
+      res.status(400).json({ success: false, error: 'Chave de API da IA não configurada' });
       return;
     }
+    const model = (generationConfig && generationConfig.model) || 'google/gemini-2.0-flash-001';
+    
     const payload = {
-      contents: [{ parts: [{ text: String(prompt) }]}],
-      generationConfig: {
-        temperature: 0.8,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 4000,
-        ...(generationConfig || {})
-      }
+      model: model,
+      messages: [
+        {
+          role: 'user',
+          content: String(prompt)
+        }
+      ],
+      temperature: (generationConfig && generationConfig.temperature) || 0.8,
+      top_p: (generationConfig && generationConfig.topP) || 0.95,
+      max_tokens: (generationConfig && generationConfig.maxOutputTokens) || 4000
     };
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    const url = 'https://openrouter.ai/api/v1/chat/completions';
+    
     const r = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': process.env.FRONTEND_URL || 'https://repalmarechal.com.br',
+        'X-Title': 'Repal New Admin'
+      },
       body: JSON.stringify(payload)
     });
     const json = await r.json().catch(() => ({}));
@@ -39,11 +50,27 @@ export default async function handler(req, res) {
       return;
     }
     if (!r.ok) {
-      const msg = json?.error?.message || `Erro na API do Gemini (HTTP ${r.status})`;
+      const msg = json?.error?.message || `Erro na API da IA (HTTP ${r.status})`;
       res.status(r.status).json({ success: false, error: msg, details: json });
       return;
     }
-    res.status(200).json(json);
+    
+    // Adapt OpenRouter response to Gemini format expected by frontend
+    const content = json.choices?.[0]?.message?.content || '';
+    const adaptedResponse = {
+      candidates: [
+        {
+          content: {
+            parts: [
+              { text: content }
+            ]
+          }
+        }
+      ],
+      original_response: json
+    };
+    
+    res.status(200).json(adaptedResponse);
   } catch {
     res.status(500).json({ success: false, error: 'Erro interno ao gerar conteúdo com IA' });
   }

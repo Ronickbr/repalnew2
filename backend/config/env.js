@@ -12,6 +12,7 @@ export const ENV = {
   ADMIN_COOKIE_NAME: 'repal_admin_token',
   DEV_AUTH_BYPASS: process.env.DEV_AUTH_BYPASS === 'true',
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
 };
 
