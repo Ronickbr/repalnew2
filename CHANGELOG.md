@@ -1,3 +1,9 @@
+## 2026-02-24 - v0.5.10
+
+- **Analytics & Monitoramento**:
+  - **Correção de Visitantes**: Ajuste nas políticas de segurança (RLS) para permitir que usuários anônimos registrem logs de visita (`activity_logs`).
+  - **Lógica de Sessão**: Migração do rastreamento de visitas de `localStorage` para `sessionStorage`, garantindo contagem mais precisa por sessão de usuário.
+
 ## 2026-02-06 - v0.5.9
 
 - **Correções & Melhorias**:

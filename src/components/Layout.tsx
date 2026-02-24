@@ -30,7 +30,8 @@ const Layout: React.FC = () => {
       visitorId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       localStorage.setItem(vidKey, visitorId);
     }
-    const alreadyLogged = localStorage.getItem(visitLoggedKey);
+    // Use sessionStorage to count visits per session, not just once per lifetime
+    const alreadyLogged = sessionStorage.getItem(visitLoggedKey);
     if (!alreadyLogged) {
       const details = {
         visitor_id: visitorId,
@@ -44,8 +45,8 @@ const Layout: React.FC = () => {
         details: JSON.stringify(details),
         user_agent: navigator.userAgent,
         status: 'success',
-      })
-      localStorage.setItem(visitLoggedKey, '1');
+      });
+      sessionStorage.setItem(visitLoggedKey, '1');
     }
   }, [location.pathname]);
 
