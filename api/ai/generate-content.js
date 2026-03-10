@@ -12,13 +12,14 @@ export default async function handler(req, res) {
       res.status(400).json({ success: false, error: 'Prompt obrigatório' });
       return;
     }
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      res.status(400).json({ success: false, error: 'Chave de API da IA não configurada' });
+      res.status(400).json({ success: false, error: 'Chave de API do OpenRouter não configurada' });
       return;
     }
-    const model = (generationConfig && generationConfig.model) || 'google/gemini-2.0-flash-001';
-    
+    // Default model for OpenRouter
+    const model = (generationConfig && generationConfig.model) || 'openai/gpt-3.5-turbo';
+
     const payload = {
       model: model,
       messages: [
@@ -31,12 +32,12 @@ export default async function handler(req, res) {
       top_p: (generationConfig && generationConfig.topP) || 0.95,
       max_tokens: (generationConfig && generationConfig.maxOutputTokens) || 4000
     };
-    
+
     const url = 'https://openrouter.ai/api/v1/chat/completions';
-    
+
     const r = await fetch(url, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
         'HTTP-Referer': process.env.FRONTEND_URL || 'https://repalmarechal.com.br',
@@ -50,28 +51,15 @@ export default async function handler(req, res) {
       return;
     }
     if (!r.ok) {
-      const msg = json?.error?.message || `Erro na API da IA (HTTP ${r.status})`;
+      const msg = json?.error?.message || `Erro na API do OpenRouter (HTTP ${r.status})`;
       res.status(r.status).json({ success: false, error: msg, details: json });
       return;
     }
-    
-    // Adapt OpenRouter response to Gemini format expected by frontend
-    const content = json.choices?.[0]?.message?.content || '';
-    const adaptedResponse = {
-      candidates: [
-        {
-          content: {
-            parts: [
-              { text: content }
-            ]
-          }
-        }
-      ],
-      original_response: json
-    };
-    
-    res.status(200).json(adaptedResponse);
-  } catch {
+
+    // Return standard OpenRouter/OpenAI response
+    res.status(200).json(json);
+  } catch (error) {
+    console.error('Erro na API de IA:', error);
     res.status(500).json({ success: false, error: 'Erro interno ao gerar conteúdo com IA' });
   }
 }

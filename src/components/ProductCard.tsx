@@ -33,17 +33,17 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
 
   const handleAddToBudget = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    
-    
+
+
+
     addItem({
       id: product.id.toString(),
       name: product.name,
       image: product.product_images?.[0]?.image_url || product.image_url || '/placeholder-product.png'
     });
-    
-    
-    
+
+
+
     setIsAddedToBudget(true);
   };
 
@@ -92,7 +92,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               </div>
             )}
           </div>
-          
+
           {/* Informações do Produto */}
           <div className="flex-1 min-w-0 p-2 sm:p-3 md:p-5">
             {/* Nome/título em destaque com tamanho responsivo */}
@@ -100,9 +100,13 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
               {product.name}
             </h3>
 
-            {isAuthenticated && product.price !== undefined && (
+            {isAuthenticated && (
               <div className="font-bold text-[#D0021B] mb-2 sm:mb-3 text-base sm:text-lg">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                {product.price && product.price > 0 ? (
+                  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)
+                ) : (
+                  "Sob Consulta"
+                )}
               </div>
             )}
 
@@ -120,16 +124,15 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
                 <Search className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span>Ver Detalhes</span>
               </button>
-              
+
               {/* Botão Incluir na Lista com ícone de + */}
               <button
                 onClick={handleAddToBudget}
                 disabled={isAddedToBudget}
-                className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm sm:text-base ${
-                  isAddedToBudget
+                className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm sm:text-base ${isAddedToBudget
                     ? 'bg-green-600 text-white cursor-not-allowed focus:ring-green-600'
                     : 'bg-[#25D366] text-white hover:bg-[#20b85a] active:bg-[#1ba04e] focus:ring-[#25D366]'
-                }`}
+                  }`}
                 aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.name}`}
               >
                 {isAddedToBudget ? (
@@ -174,7 +177,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
             {getProductInitial()}
           </div>
         )}
-        
+
         {/* Overlay com ações */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <button
@@ -189,7 +192,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
           </button>
         </div>
       </div>
-      
+
       {/* Informações do Produto com padding responsivo */}
       <div className="p-3 sm:p-4">
         {/* Nome/título em destaque com tamanho responsivo */}
@@ -197,9 +200,13 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
           {product.name}
         </h3>
 
-        {isAuthenticated && product.price !== undefined && (
+        {isAuthenticated && (
           <div className="font-bold text-[#D0021B] mb-2 sm:mb-3 text-base sm:text-lg">
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+            {product.price && product.price > 0 ? (
+              new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)
+            ) : (
+              "Sob Consulta"
+            )}
           </div>
         )}
 
@@ -217,16 +224,15 @@ const ProductCard: React.FC<ProductCardProps> = memo(({
             <Search className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>Ver Detalhes</span>
           </button>
-          
+
           {/* Botão Incluir na Lista com ícone de + */}
           <button
             onClick={handleAddToBudget}
             disabled={isAddedToBudget}
-            className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm sm:text-base ${
-              isAddedToBudget
+            className={`flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50 text-sm sm:text-base ${isAddedToBudget
                 ? 'bg-green-600 text-white cursor-not-allowed focus:ring-green-600'
                 : 'bg-[#25D366] text-white hover:bg-[#20b85a] active:bg-[#1ba04e] focus:ring-[#25D366]'
-            }`}
+              }`}
             aria-label={`${isAddedToBudget ? 'Adicionado à lista' : 'Incluir na lista'} para ${product.name}`}
           >
             {isAddedToBudget ? (

@@ -3,13 +3,13 @@ import { supabase } from '../../lib/supabase';
 import { stripHtmlNormalize, normalizeKeywords } from '../../lib/seo';
 import * as XLSX from 'xlsx';
 import { Product, Category, Brand } from '../../types';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Search, 
-  Filter, 
-  Download, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Filter,
+  Download,
   Upload,
   X,
   HelpCircle,
@@ -75,7 +75,7 @@ const ProductManager: React.FC = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -98,13 +98,13 @@ const ProductManager: React.FC = () => {
 
   // Unified image upload state
   const [unifiedImages, setUnifiedImages] = useState<ImageItem[]>([]);
-  
+
   // Estado para upload de imagens por arquivo (mesma lógica do BrandManager)
   const [uploadingImages, setUploadingImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [, setFormErrors] = useState<ProductFormErrors>({});
-  
+
   // Filters
   const [filters, setFilters] = useState({
     category_id: '',
@@ -112,14 +112,14 @@ const ProductManager: React.FC = () => {
     featured: '',
     active: '',
   });
-  
+
   const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  
+
   // Loading state for modal operations
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiGenerationMessage, setAiGenerationMessage] = useState('');
-  
+
   // Hooks
   const { handleError, clearError } = useErrorHandler();
   const { notifications, addNotification, removeNotification } = useNotifications();
@@ -154,30 +154,30 @@ const ProductManager: React.FC = () => {
     try {
       setUploadingImages(true);
       const uploadedUrls: string[] = [];
-      
+
       for (const file of files) {
         // Gerar nome único para o arquivo
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
         const filePath = `product-images/${fileName}`;
-        
+
         // Fazer upload para o Supabase Storage
         const { error } = await supabase.storage
           .from('products')
           .upload(filePath, file);
-        
+
         if (error) {
           throw error;
         }
-        
+
         // Obter URL pública do arquivo
         const { data: { publicUrl } } = supabase.storage
           .from('products')
           .getPublicUrl(filePath);
-        
+
         uploadedUrls.push(publicUrl);
       }
-      
+
       return uploadedUrls;
     } catch (err) {
       handleError(err, 'Erro ao fazer upload das imagens');
@@ -200,7 +200,7 @@ const ProductManager: React.FC = () => {
   const handleFileUpload = async (files: File[]) => {
     try {
       const uploadedUrls = await uploadMultipleImagesToStorage(files);
-      
+
       if (uploadedUrls.length > 0) {
         // Adicionar as novas imagens ao estado unifiedImages
         const newImages: ImageItem[] = uploadedUrls.map((url, index) => ({
@@ -208,8 +208,8 @@ const ProductManager: React.FC = () => {
           url,
           type: 'url' // Como são URLs públicas do Supabase, usamos 'url'
         }));
-        
-        setUnifiedImages(prev => [...prev, ...newImages]);
+
+        setUnifiedImages((prev: ImageItem[]) => [...prev, ...newImages]);
         addNotification('success', 'Imagens carregadas com sucesso!');
       }
     } catch (err) {
@@ -225,7 +225,7 @@ const ProductManager: React.FC = () => {
   const fetchProducts = async () => {
     try {
       clearError();
-      
+
       let query = supabase
         .from('products')
         .select(`
@@ -255,6 +255,10 @@ const ProductManager: React.FC = () => {
         query = query.eq('active', filters.active === 'true');
       }
 
+      interface ProductWithImages extends Product {
+        product_images?: { url: string; sort_order: number }[];
+      }
+
       const { data, error: supabaseError } = await query;
 
       if (supabaseError) {
@@ -262,20 +266,20 @@ const ProductManager: React.FC = () => {
       }
 
       // Processar dados para converter product_images em additional_images
-      const processedData = (data || []).map((product: any) => {
-        const additionalImages = product.product_images 
-          ? product.product_images
-              .sort((a: any, b: any) => a.sort_order - b.sort_order)
-              .map((img: any) => img.url)
+      const processedData = (data as unknown as ProductWithImages[] || []).map((product: ProductWithImages) => {
+        const additionalImages = product.product_images
+          ? [...product.product_images]
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map(img => img.url)
           : [];
-        
+
         return {
           ...product,
           additional_images: additionalImages
         };
       });
 
-      setProducts(processedData);
+      setProducts(processedData as Product[]);
       announceToScreenReader(`${data?.length || 0} produtos carregados`, 'polite');
     } catch (err) {
       handleError(err, 'fetchProducts');
@@ -285,7 +289,7 @@ const ProductManager: React.FC = () => {
   const fetchCategories = async () => {
     try {
       clearError();
-      
+
       const { data, error: supabaseError } = await supabase
         .from('categories')
         .select('*')
@@ -302,13 +306,13 @@ const ProductManager: React.FC = () => {
   };
 
   const getMainCategories = () => {
-    return categories.filter(category => category.parent_id === null);
+    return categories.filter((category: Category) => category.parent_id === null);
   };
 
   const fetchBrands = async () => {
     try {
       clearError();
-      
+
       const { data, error: supabaseError } = await supabase
         .from('brands')
         .select('*')
@@ -383,16 +387,16 @@ const ProductManager: React.FC = () => {
   // Função para fazer upload de imagem base64 para o Supabase Storage
   const uploadBase64Image = async (base64Url: string): Promise<string> => {
     try {
-      
+
       // Extrair o tipo MIME e os dados base64
       const matches = base64Url.match(/^data:(.+);base64,(.+)$/);
       if (!matches || matches.length !== 3) {
         throw new Error('Formato de imagem base64 inválido');
       }
-      
+
       const mimeType = matches[1];
       const base64Data = matches[2];
-      
+
       // Converter base64 para Blob
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
@@ -401,17 +405,17 @@ const ProductManager: React.FC = () => {
       }
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: mimeType });
-      
+
       // Gerar nome único para o arquivo (mesma lógica do BrandManager)
       const fileExt = mimeType.split('/')[1] || 'jpg';
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${fileExt}`;
       const filePath = `product-images/${fileName}`;
-      
+
       // Fazer upload para o Supabase Storage
       const { error } = await supabase.storage
         .from('products')
         .upload(filePath, blob);
-      
+
       if (error) {
         console.error('Erro detalhado do Supabase Storage:', error);
         if (error.message.includes('row-level security') || error.message.includes('RLS')) {
@@ -422,12 +426,12 @@ const ProductManager: React.FC = () => {
         }
         throw new Error(`Erro ao fazer upload da imagem: ${error.message}`);
       }
-      
+
       // Obter URL pública do arquivo (mesma lógica do BrandManager)
       const { data: { publicUrl } } = supabase.storage
         .from('products')
         .getPublicUrl(filePath);
-      
+
       return publicUrl;
     } catch (error) {
       console.error('Erro ao fazer upload da imagem base64:', error);
@@ -438,16 +442,16 @@ const ProductManager: React.FC = () => {
   // Processar URL de imagem para garantir que não exceda o limite
   const processImageUrl = async (url: string): Promise<string> => {
     const MAX_URL_LENGTH = 1024;
-    
+
     // Se a URL for muito longa, tentar encurtar
     if (url.length > MAX_URL_LENGTH) {
       // Verificar se é uma URL base64
       if (url.startsWith('data:')) {
-        
+
         try {
           // Fazer upload da imagem base64 para o Supabase Storage
           const uploadedUrl = await uploadBase64Image(url);
-          
+
           return uploadedUrl;
         } catch (error) {
           console.error('Erro ao fazer upload da imagem base64:', error);
@@ -455,27 +459,27 @@ const ProductManager: React.FC = () => {
           return '';
         }
       }
-      
+
       try {
         const urlObj = new URL(url);
-        
+
         // Remover parâmetros de rastreamento longos mas manter parâmetros essenciais
         const essentialParams = ['w', 'h', 'width', 'height', 'size', 'quality', 'format'];
         const newUrl = new URL(urlObj.origin + urlObj.pathname);
-        
+
         essentialParams.forEach(param => {
           if (urlObj.searchParams.has(param)) {
             newUrl.searchParams.set(param, urlObj.searchParams.get(param)!);
           }
         });
-        
+
         const processedUrl = newUrl.toString();
-        
+
         // Se ainda for longa demais, retornar apenas o caminho básico
         if (processedUrl.length > MAX_URL_LENGTH) {
           return urlObj.origin + urlObj.pathname;
         }
-        
+
         return processedUrl;
       } catch (error) {
         // Se não conseguir processar a URL, retornar os primeiros 1024 caracteres
@@ -483,43 +487,43 @@ const ProductManager: React.FC = () => {
         return url.substring(0, MAX_URL_LENGTH);
       }
     }
-    
+
     return url;
   };
 
   // Sync unified images to form data
   const syncUnifiedImagesToFormData = async (images: ImageItem[]) => {
-    
-    
+
+
     if (images.length > 0) {
       const mainImage = images[0]; // Primeira imagem é a principal
-      
+
       try {
         // Processar URL da imagem principal
         const processedMainImageUrl = await processImageUrl(mainImage.url);
-        
-        
+
+
         // Se a imagem principal for uma URL base64 muito longa e falhou o upload
         if (processedMainImageUrl === '' && mainImage.url.startsWith('data:')) {
           addNotification('error', 'A imagem principal é muito grande e não pôde ser processada. Por favor, use uma imagem menor.');
           return;
         }
-        
+
         // Validar URL da imagem principal
         if (!validateImageUrl(processedMainImageUrl, 'principal')) {
           return;
         }
-        
+
         const additionalImages = images.slice(1).map(img => img.url);
-        
-        
+
+
         // Processar e validar URLs das imagens adicionais
         const processedAdditionalImages = await Promise.all(
           additionalImages.map(async (url, index) => {
             try {
-              
+
               const processedUrl = await processImageUrl(url);
-              
+
               return processedUrl;
             } catch (error) {
               console.error(`Erro ao processar imagem adicional ${index + 1}:`, error);
@@ -527,7 +531,7 @@ const ProductManager: React.FC = () => {
             }
           })
         );
-        
+
         const validAdditionalImages = processedAdditionalImages.filter(processedUrl => {
           // Filtrar imagens base64 muito longas ou vazias
           if (processedUrl === '') {
@@ -538,19 +542,19 @@ const ProductManager: React.FC = () => {
           }
           return true;
         });
-        
-        setFormData(prev => ({
+
+        setFormData((prev: ProductFormData) => ({
           ...prev,
           image: processedMainImageUrl,
           additional_images: validAdditionalImages
         }));
-        
+
       } catch (error) {
         console.error('Erro ao processar imagens:', error);
         addNotification('error', 'Erro ao processar as imagens. Por favor, tente novamente.');
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev: ProductFormData) => ({
         ...prev,
         image: undefined,
         additional_images: []
@@ -560,18 +564,18 @@ const ProductManager: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       // Validar URLs das imagens já processadas (as imagens já foram processadas no syncUnifiedImagesToFormData)
       if (formData.image && formData.image.trim() === '') {
         addNotification('error', 'A imagem principal é muito grande e não pode ser usada. Por favor, escolha uma imagem menor.');
         return;
       }
-      
+
       if (formData.image && !validateImageUrl(formData.image, 'principal')) {
         return;
       }
-      
+
       if (formData.additional_images && formData.additional_images.length > 0) {
         for (let i = 0; i < formData.additional_images.length; i++) {
           if (!validateImageUrl(formData.additional_images[i], `adicional ${i + 1}`)) {
@@ -579,11 +583,11 @@ const ProductManager: React.FC = () => {
           }
         }
       }
-      
+
       // Validate form
       const errors = validateProductForm(formData);
       setFormErrors(errors);
-      
+
       if (Object.keys(errors).length > 0) {
         const firstError = Object.values(errors)[0];
         announceToScreenReader(`Erro no formulário: ${firstError}`, 'assertive');
@@ -592,9 +596,9 @@ const ProductManager: React.FC = () => {
       }
 
       startLoading('Processando produto...');
-      
-      
-      
+
+
+
       if (editingProduct) {
         await updateProduct(formData.image, formData.additional_images);
       } else {
@@ -613,7 +617,7 @@ const ProductManager: React.FC = () => {
       }
       // Remover additional_images dos dados do produto principal
       const { additional_images, ...productDataWithoutImages } = formData;
-      
+
       // Gerar slug a partir do nome
       const baseSlug = formData.name
         .toLowerCase()
@@ -627,9 +631,9 @@ const ProductManager: React.FC = () => {
       // Verificar se o slug já existe e gerar um único se necessário
       let slug = baseSlug;
       let counter = 1;
-      
-      
-      
+
+
+
       try {
         while (true) {
           const { data: existingProduct, error: slugCheckError } = await supabase
@@ -637,29 +641,29 @@ const ProductManager: React.FC = () => {
             .select('id')
             .eq('slug', slug)
             .maybeSingle();
-          
-          
-          
+
+
+
           if (slugCheckError) {
             console.warn('Erro ao verificar slug:', slugCheckError);
             // Se houver erro na verificação, usar timestamp para garantir unicidade
             slug = `${baseSlug}-${Date.now()}`;
             break;
           }
-          
+
           if (!existingProduct) {
-            
+
             break; // Slug está disponível
           }
-          
-          
+
+
           slug = `${baseSlug}-${counter}`;
           counter++;
-          
+
           if (counter > 100) {
             // Usar timestamp como fallback para garantir unicidade
             slug = `${baseSlug}-${Date.now()}`;
-            
+
             break;
           }
         }
@@ -668,8 +672,8 @@ const ProductManager: React.FC = () => {
         // Em caso de erro, usar timestamp para garantir unicidade
         slug = `${baseSlug}-${Date.now()}`;
       }
-      
-      
+
+
 
       const productData = {
         ...productDataWithoutImages,
@@ -707,7 +711,7 @@ const ProductManager: React.FC = () => {
             }
           }
         }
-        setProducts(prev => [data, ...prev]);
+        setProducts((prev: Product[]) => [data, ...prev]);
         addNotification('success', 'Produto criado com sucesso');
         announceToScreenReader(`Produto ${data.name} criado com sucesso`, 'polite');
         handleCloseForm();
@@ -724,7 +728,7 @@ const ProductManager: React.FC = () => {
     try {
       // Remover additional_images dos dados do produto principal
       const { additional_images, ...productDataWithoutImages } = formData;
-      
+
       const productData = {
         ...productDataWithoutImages,
         category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
@@ -756,22 +760,22 @@ const ProductManager: React.FC = () => {
         // Atualizar imagens adicionais na tabela product_images
         if (additionalImages && additionalImages.length > 0) {
           const validImages = additionalImages.filter(img => img && img.trim() !== '');
-          
-          
+
+
           // Primeiro, remover imagens antigas
-          
+
           const { error: deleteError } = await supabase
             .from('product_images')
             .delete()
             .eq('product_id', editingProduct.id);
-            
+
           if (deleteError) {
             console.error('Erro ao remover imagens antigas:', deleteError);
             console.error('Detalhes do erro:', deleteError.message, deleteError.details, deleteError.hint);
           } else {
-            
+
           }
-          
+
           // Depois, inserir as novas imagens
           if (validImages.length > 0) {
             const imageRecords = validImages.map((url, index) => ({
@@ -779,21 +783,21 @@ const ProductManager: React.FC = () => {
               url: url,
               sort_order: index
             }));
-            
-            
-            
+
+
+
             try {
               const { error: imagesError } = await supabase
                 .from('product_images')
                 .insert(imageRecords);
-                
+
               if (imagesError) {
                 console.error('Erro ao salvar imagens adicionais:', imagesError);
                 console.error('Detalhes do erro:', imagesError.message, imagesError.details, imagesError.hint);
                 console.error('Código do erro:', imagesError.code);
                 addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
               } else {
-                
+
                 addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
               }
             } catch (insertError) {
@@ -802,8 +806,8 @@ const ProductManager: React.FC = () => {
             }
           }
         }
-        
-        setProducts(prev => prev.map(p => p.id === data.id ? data : p));
+
+        setProducts((prev: Product[]) => prev.map(p => p.id === data.id ? data : p));
         addNotification('success', 'Produto atualizado com sucesso');
         announceToScreenReader(`Produto ${data.name} atualizado com sucesso`, 'polite');
         handleCloseForm();
@@ -834,7 +838,7 @@ const ProductManager: React.FC = () => {
         throw new Error(`Erro ao excluir produto: ${supabaseError.message}`);
       }
 
-      setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+      setProducts((prev: Product[]) => prev.filter(p => p.id !== productToDelete.id));
       addNotification('success', 'Produto excluído com sucesso');
       announceToScreenReader(`Produto ${productToDelete.name} excluído com sucesso`, 'polite');
       setShowDeleteConfirm(false);
@@ -868,7 +872,7 @@ const ProductManager: React.FC = () => {
         throw new Error(`Erro ao excluir produtos: ${supabaseError.message}`);
       }
 
-      setProducts(prev => prev.filter(p => !selectedProducts.includes(p.id)));
+      setProducts((prev: Product[]) => prev.filter(p => !selectedProducts.includes(p.id)));
       addNotification('success', `${selectedProducts.length} produtos excluídos com sucesso`);
       announceToScreenReader(`${selectedProducts.length} produtos excluídos com sucesso`, 'polite');
       setSelectedProducts([]);
@@ -942,7 +946,7 @@ const ProductManager: React.FC = () => {
       seo_keywords: product.seo_keywords,
       price: product.price,
     });
-    
+
     // Sync images to unified format
     const unifiedImages: ImageItem[] = [];
     if (product.image) {
@@ -954,7 +958,7 @@ const ProductManager: React.FC = () => {
       });
     }
     setUnifiedImages(unifiedImages);
-    
+
     setFormErrors({});
     setShowForm(true);
     announceToScreenReader(`Editando produto ${product.name}`, 'polite');
@@ -987,12 +991,12 @@ const ProductManager: React.FC = () => {
   };
 
   const handleNameChange = (name: string) => {
-    setFormData(prev => ({ ...prev, name }));
-    
+    setFormData((prev: ProductFormData) => ({ ...prev, name }));
+
     // Auto-generate SEO title if empty
     if (!editingProduct && !formData.seo_title) {
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData((prev: ProductFormData) => ({
+        ...prev,
         name,
         seo_title: name.substring(0, 255)
       }));
@@ -1008,15 +1012,15 @@ const ProductManager: React.FC = () => {
 
     setIsGeneratingAI(true);
     setAiGenerationMessage('Gerando conteúdo com IA...');
-    
+
     try {
       // Get category name for context
-      const category = categories.find(c => c.id === formData.category_id);
+      const category = categories.find((c: Category) => c.id === formData.category_id);
       const categoryName = category?.name || '';
-      const subcategory = subcategories.find(s => s.id === formData.subcategory_id);
+      const subcategory = subcategories.find((s: Category) => s.id === formData.subcategory_id);
       const subcategoryName = subcategory?.name || '';
       const brandName = formData.brand || '';
-      
+
       const prompt = `Gere uma descrição completa de produto, especificações técnicas e informações SEO para:
       
 Nome do Produto: ${formData.name}
@@ -1060,7 +1064,7 @@ DESCRIÇÃO SEO:
 PALAVRAS-CHAVE:
 [palavras-chave separadas por vírgula]`;
 
-      // Chamar backend para geração via Gemini com chave segura
+      // Chamar backend para geração via OpenRouter com chave segura
       const { apiFetch } = await import('../../lib/api');
       const data = await apiFetch('/api/ai/generate-content', {
         method: 'POST',
@@ -1074,44 +1078,44 @@ PALAVRAS-CHAVE:
           }
         })
       }, false);
-      
-      // Verificar se a resposta tem o formato esperado
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        console.error('Resposta inesperada da API do Gemini:', data);
-        throw new Error('Formato de resposta inválido da API do Gemini');
+
+      // Verificar se a resposta tem o formato esperado (OpenRouter/OpenAI)
+      if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+        console.error('Resposta inesperada da API do OpenRouter:', data);
+        throw new Error('Formato de resposta inválido da API do OpenRouter');
       }
-      
-      const content = data.candidates[0].content.parts[0].text;
-      
+
+      const content = data.choices[0].message.content;
+
       if (!content || content.trim() === '') {
         throw new Error('Conteúdo gerado está vazio');
       }
-      
+
       // Parse the response
       const descriptionMatch = content.match(/DESCRIÇÃO:\s*\n?([\s\S]*?)\n?ESPECIFICAÇÕES:/);
       const specificationsMatch = content.match(/ESPECIFICAÇÕES:\s*\n?([\s\S]*?)\n?TÍTULO SEO:/);
       const seoTitleMatch = content.match(/TÍTULO SEO:\s*\n?([\s\S]*?)\n?DESCRIÇÃO SEO:/);
       const seoDescriptionMatch = content.match(/DESCRIÇÃO SEO:\s*\n?([\s\S]*?)\n?PALAVRAS-CHAVE:/);
       const keywordsMatch = content.match(/PALAVRAS-CHAVE:\s*\n?([\s\S]*)/);
-      
+
       if (!descriptionMatch || !specificationsMatch || !seoTitleMatch || !seoDescriptionMatch || !keywordsMatch) {
         console.error('Conteúdo gerado não segue o formato esperado:', content);
         throw new Error('Formato do conteúdo gerado está incompleto. Tente novamente.');
       }
-      
+
       const generatedDescription = descriptionMatch ? descriptionMatch[1].trim() : '';
       const generatedSpecifications = specificationsMatch ? specificationsMatch[1].trim() : '';
       const generatedSeoTitle = seoTitleMatch ? seoTitleMatch[1].trim() : '';
       const generatedSeoDescription = seoDescriptionMatch ? seoDescriptionMatch[1].trim() : '';
       const generatedKeywords = keywordsMatch ? keywordsMatch[1].trim() : '';
-      
+
       // Verificar se algum conteúdo foi gerado
       if (!generatedDescription && !generatedSpecifications && !generatedSeoTitle && !generatedSeoDescription && !generatedKeywords) {
         throw new Error('Nenhum conteúdo foi gerado. Tente novamente com informações mais detalhadas.');
       }
-      
+
       // Update form data
-      setFormData(prev => ({
+      setFormData((prev: ProductFormData) => ({
         ...prev,
         description: generatedDescription || prev.description,
         specifications: generatedSpecifications || prev.specifications,
@@ -1119,12 +1123,12 @@ PALAVRAS-CHAVE:
         seo_description: generatedSeoDescription || prev.seo_description,
         seo_keywords: generatedKeywords || prev.seo_keywords
       }));
-      
+
       addNotification('success', 'Conteúdo gerado com sucesso!');
-      
+
     } catch (error) {
       console.error('Erro ao gerar conteúdo:', error);
-      
+
       // Tratamento específico para diferentes tipos de erros da API
       if (error instanceof Error) {
         if (error.message.includes('overloaded') || error.message.includes('429') || error.message.includes('Limite de requisições')) {
@@ -1145,7 +1149,7 @@ PALAVRAS-CHAVE:
     }
   };
 
-  
+
 
 
   // Handle select all products
@@ -1154,7 +1158,7 @@ PALAVRAS-CHAVE:
       setSelectedProducts([]);
       setSelectAll(false);
     } else {
-      setSelectedProducts(products.map(p => p.id));
+      setSelectedProducts(products.map((p: Product) => p.id));
       setSelectAll(true);
     }
   };
@@ -1162,10 +1166,10 @@ PALAVRAS-CHAVE:
   // Handle individual product selection
   const handleSelectProduct = (productId: string) => {
     if (selectedProducts.includes(productId)) {
-      setSelectedProducts(prev => prev.filter(id => id !== productId));
+      setSelectedProducts((prev: string[]) => prev.filter(id => id !== productId));
       setSelectAll(false);
     } else {
-      setSelectedProducts(prev => [...prev, productId]);
+      setSelectedProducts((prev: string[]) => [...prev, productId]);
     }
   };
 
@@ -1182,12 +1186,12 @@ PALAVRAS-CHAVE:
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Produtos");
-      
+
       XLSX.writeFile(wb, `produtos_${new Date().toISOString().split('T')[0]}.xlsx`);
-      
+
       addNotification('success', 'Dados exportados com sucesso');
       announceToScreenReader('Dados exportados para Excel com sucesso', 'polite');
-      
+
     } catch (err) {
       handleError(err, 'exportToExcel');
     }
@@ -1205,10 +1209,10 @@ PALAVRAS-CHAVE:
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       addNotification('success', 'Dados exportados com sucesso');
       announceToScreenReader('Dados exportados para JSON com sucesso', 'polite');
-      
+
     } catch (err) {
       handleError(err, 'exportToJSON');
     }
@@ -1280,15 +1284,15 @@ PALAVRAS-CHAVE:
   return (
     <div className="space-y-6" role="main" aria-label="Gestão de Produtos">
       <LoadingOverlay isLoading={isGlobalLoading} message={isGlobalLoading ? 'Processando...' : ''} />
-      <NotificationContainer 
-        notifications={notifications} 
+      <NotificationContainer
+        notifications={notifications}
         onClose={removeNotification}
         position="top-right"
       />
-      
+
       {/* Skip Link para navegação rápida */}
-      <a 
-        href="#product-list" 
+      <a
+        href="#product-list"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded-md z-50"
       >
         Ir para lista de produtos
@@ -1312,7 +1316,7 @@ PALAVRAS-CHAVE:
             Ajuda
           </button>
         </div>
-        
+
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -1483,7 +1487,7 @@ PALAVRAS-CHAVE:
             </div>
           )}
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200" role="table" aria-label="Tabela de produtos">
             <thead className="bg-gray-50">
@@ -1500,8 +1504,8 @@ PALAVRAS-CHAVE:
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Imagem
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => {
                     setSortBy('name');
@@ -1518,8 +1522,8 @@ PALAVRAS-CHAVE:
                     )}
                   </div>
                 </th>
-                <th 
-                  scope="col" 
+                <th
+                  scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => {
                     setSortBy('category');
@@ -1549,8 +1553,8 @@ PALAVRAS-CHAVE:
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map((product) => (
-                <tr 
-                  key={product.id} 
+                <tr
+                  key={product.id}
                   className={`hover:bg-gray-50 ${selectedProducts.includes(product.id) ? 'bg-blue-50' : ''}`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -1565,9 +1569,9 @@ PALAVRAS-CHAVE:
                   <td className="px-6 py-4">
                     <div className="flex-shrink-0 h-12 w-12">
                       {product.image ? (
-                        <img 
-                          className="h-12 w-12 rounded-lg object-cover" 
-                          src={product.image} 
+                        <img
+                          className="h-12 w-12 rounded-lg object-cover"
+                          src={product.image}
                           alt={product.name}
                           onError={(e) => {
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAyMkMyMS4xMDQ2IDIyIDIyIDIxLjEwNDYgMjIgMjBDMjIgMTguODk1NCAyMS4xMDQ2IDE4IDIwIDE4QzE4Ljg5NTQgMTggMTggMTguODk1NCAxOCAyMEMxOCAyMS4xMDQ2IDE4Ljg5NTQgMjIgMjAgMjJaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo=';
@@ -1597,11 +1601,10 @@ PALAVRAS-CHAVE:
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        product.active
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${product.active
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                        }`}>
                         {product.active ? 'Ativo' : 'Inativo'}
                       </span>
                       {product.active ? (
@@ -1636,13 +1639,13 @@ PALAVRAS-CHAVE:
             </tbody>
           </table>
         </div>
-        
+
         {products.length === 0 && (
           <div className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-gray-400" aria-hidden="true" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum produto encontrado</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || Object.values(filters).some(v => v) 
+              {searchTerm || Object.values(filters).some(v => v)
                 ? 'Tente ajustar sua pesquisa ou filtros'
                 : 'Comece criando um novo produto'
               }
@@ -1804,270 +1807,269 @@ PALAVRAS-CHAVE:
                 {/* Form Sections */}
                 <div className="flex-1 space-y-8">
 
-              {/* Basic Information Section */}
-              <div id="basic-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações Iniciais</h3>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                        Nome do Produto *
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => handleNameChange(e.target.value)}
-                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        aria-required="true"
-                      />
-                    </div>
+                  {/* Basic Information Section */}
+                  <div id="basic-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações Iniciais</h3>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                        <div>
+                          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                            Nome do Produto *
+                          </label>
+                          <input
+                            type="text"
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => handleNameChange(e.target.value)}
+                            className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                            aria-required="true"
+                          />
+                        </div>
 
-                    <div>
-                      <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
-                        Categoria *
-                      </label>
-                      <select
-                        id="category_id"
-                        value={formData.category_id}
-                        onChange={(e) => {
-                          const categoryId = e.target.value;
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            category_id: categoryId,
-                            subcategory_id: undefined // Limpa subcategoria ao mudar categoria
-                          }));
-                          if (categoryId) {
-                            fetchSubcategories(categoryId);
-                          } else {
-                            setSubcategories([]);
-                          }
-                        }}
-                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                        aria-required="true"
-                      >
-                        <option value="">Selecione uma categoria</option>
-                        {getMainCategories().map(category => (
-                          <option key={category.id} value={category.id}>{category.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                        <div>
+                          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
+                            Categoria *
+                          </label>
+                          <select
+                            id="category_id"
+                            value={formData.category_id}
+                            onChange={(e) => {
+                              const categoryId = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                category_id: categoryId,
+                                subcategory_id: undefined // Limpa subcategoria ao mudar categoria
+                              }));
+                              if (categoryId) {
+                                fetchSubcategories(categoryId);
+                              } else {
+                                setSubcategories([]);
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                            aria-required="true"
+                          >
+                            <option value="">Selecione uma categoria</option>
+                            {getMainCategories().map(category => (
+                              <option key={category.id} value={category.id}>{category.name}</option>
+                            ))}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label htmlFor="subcategory_id" className="block text-sm font-medium text-gray-700 mb-1">
-                        Subcategoria
-                      </label>
-                      <select
-                        id="subcategory_id"
-                        value={formData.subcategory_id || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, subcategory_id: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={!formData.category_id || subcategories.length === 0}
-                      >
-                        <option value="">
-                          {formData.category_id 
-                            ? (subcategories.length > 0 ? 'Selecione uma subcategoria' : 'Nenhuma subcategoria disponível')
-                            : 'Selecione uma categoria primeiro'
-                          }
-                        </option>
-                        {subcategories.map(subcategory => (
-                          <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                        <div>
+                          <label htmlFor="subcategory_id" className="block text-sm font-medium text-gray-700 mb-1">
+                            Subcategoria
+                          </label>
+                          <select
+                            id="subcategory_id"
+                            value={formData.subcategory_id || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, subcategory_id: e.target.value || undefined }))}
+                            className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={!formData.category_id || subcategories.length === 0}
+                          >
+                            <option value="">
+                              {formData.category_id
+                                ? (subcategories.length > 0 ? 'Selecione uma subcategoria' : 'Nenhuma subcategoria disponível')
+                                : 'Selecione uma categoria primeiro'
+                              }
+                            </option>
+                            {subcategories.map(subcategory => (
+                              <option key={subcategory.id} value={subcategory.id}>{subcategory.name}</option>
+                            ))}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
-                        Marca
-                      </label>
-                      <select
-                        id="brand"
-                        value={formData.brand || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value || undefined }))}
-                        className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Selecione uma marca</option>
-                        {brands.map(brand => (
-                          <option key={brand.id} value={brand.name}>{brand.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Information Section */}
-              <div id="additional-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 relative">
-                {/* Loading overlay for AI generation */}
-                {isGeneratingAI && (
-                  <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center z-10">
-                    <div className="flex items-center space-x-3">
-                      <LoadingSpinner size="lg" color="red" />
-                      <div>
-                        <p className="text-gray-900 font-medium">{aiGenerationMessage}</p>
-                        <p className="text-sm text-gray-500 mt-1">Por favor, aguarde...</p>
+                        <div>
+                          <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
+                            Marca
+                          </label>
+                          <select
+                            id="brand"
+                            value={formData.brand || ''}
+                            onChange={(e) => setFormData(prev => ({ ...prev, brand: e.target.value || undefined }))}
+                            className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Selecione uma marca</option>
+                            {brands.map(brand => (
+                              <option key={brand.id} value={brand.name}>{brand.name}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
                   </div>
-                )}
-                <div className="flex justify-between items-center mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-medium text-gray-900">Informações Adicionais</h3>
-                  <button
-                    type="button"
-                    onClick={generateContentByAI}
-                    disabled={isGeneratingAI}
-                    className={`inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 ${
-                      isGeneratingAI 
-                        ? 'bg-purple-400 cursor-not-allowed' 
-                        : 'bg-purple-600 hover:bg-purple-700'
-                    }`}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Gerar por IA
-                  </button>
-                </div>
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
-                      Preço (R$)
-                    </label>
+
+                  {/* Additional Information Section */}
+                  <div id="additional-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200 relative">
+                    {/* Loading overlay for AI generation */}
+                    {isGeneratingAI && (
+                      <div className="absolute inset-0 bg-white bg-opacity-90 rounded-lg flex items-center justify-center z-10">
+                        <div className="flex items-center space-x-3">
+                          <LoadingSpinner size="lg" color="red" />
+                          <div>
+                            <p className="text-gray-900 font-medium">{aiGenerationMessage}</p>
+                            <p className="text-sm text-gray-500 mt-1">Por favor, aguarde...</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900">Informações Adicionais</h3>
+                      <button
+                        type="button"
+                        onClick={generateContentByAI}
+                        disabled={isGeneratingAI}
+                        className={`inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 ${isGeneratingAI
+                          ? 'bg-purple-400 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700'
+                          }`}
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Gerar por IA
+                      </button>
+                    </div>
+                    <div className="space-y-6">
+                      <div>
+                        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+                          Preço (R$)
+                        </label>
+                        <input
+                          type="number"
+                          id="price"
+                          step="0.01"
+                          min="0"
+                          value={formData.price || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || undefined }))}
+                          placeholder="0.00"
+                          className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                          Descrição
+                        </label>
+                        <textarea
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                          rows={4}
+                          className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="specifications" className="block text-sm font-medium text-gray-700 mb-1">
+                          Especificações Técnicas
+                        </label>
+                        <textarea
+                          id="specifications"
+                          value={formData.specifications || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, specifications: e.target.value || undefined }))}
+                          rows={4}
+                          placeholder="Digite as especificações técnicas do produto..."
+                          className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SEO Section */}
+                  <div id="seo-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações de SEO</h3>
+                    <div className="space-y-6">
+                      <div>
+                        <label htmlFor="seo_title" className="block text-sm font-medium text-gray-700 mb-1">
+                          Meta Title
+                        </label>
+                        <input
+                          type="text"
+                          id="seo_title"
+                          value={formData.seo_title || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value || undefined }))}
+                          placeholder="Título para SEO (máx. 255 caracteres)"
+                          maxLength={255}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{formData.seo_title?.length || 0}/255 caracteres</p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="seo_description" className="block text-sm font-medium text-gray-700 mb-1">
+                          Meta Description
+                        </label>
+                        <textarea
+                          id="seo_description"
+                          value={formData.seo_description || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value || undefined }))}
+                          placeholder="Descrição para SEO (máx. 500 caracteres)"
+                          maxLength={500}
+                          rows={3}
+                          className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{formData.seo_description?.length || 0}/500 caracteres</p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="seo_keywords" className="block text-sm font-medium text-gray-700 mb-1">
+                          Meta Tags
+                        </label>
+                        <textarea
+                          id="seo_keywords"
+                          value={formData.seo_keywords || ''}
+                          onChange={(e) => setFormData(prev => ({ ...prev, seo_keywords: e.target.value || undefined }))}
+                          placeholder="Palavras-chave separadas por vírgula (máx. 500 caracteres)"
+                          maxLength={500}
+                          rows={2}
+                          className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">{formData.seo_keywords?.length || 0}/500 caracteres</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Media Section */}
+                  <div id="media-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3">Mídia</h3>
+
+                    <UnifiedImageUpload
+                      images={unifiedImages}
+                      onImagesChange={async (newImages) => {
+                        setUnifiedImages(newImages);
+                        await syncUnifiedImagesToFormData(newImages);
+                      }}
+                      maxImages={6}
+                      maxSizeInMB={10}
+                    />
+
+                    {/* Input de arquivo oculto para upload múltiplo */}
                     <input
-                      type="number"
-                      id="price"
-                      step="0.01"
-                      min="0"
-                      value={formData.price || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || undefined }))}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
                     />
-                  </div>
 
-                  <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                      Descrição
-                    </label>
-                    <textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      rows={4}
-                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    {/* Botão de upload de arquivos */}
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={openFileSelector}
+                        disabled={uploadingImages || unifiedImages.length >= 6}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingImages ? 'Enviando...' : 'Enviar Imagens'}
+                      </button>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {unifiedImages.length}/6 imagens • Máx. 10MB por imagem
+                      </p>
+                    </div>
                   </div>
-
-                  <div>
-                    <label htmlFor="specifications" className="block text-sm font-medium text-gray-700 mb-1">
-                      Especificações Técnicas
-                    </label>
-                    <textarea
-                      id="specifications"
-                      value={formData.specifications || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, specifications: e.target.value || undefined }))}
-                      rows={4}
-                      placeholder="Digite as especificações técnicas do produto..."
-                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* SEO Section */}
-              <div id="seo-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">Informações de SEO</h3>
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="seo_title" className="block text-sm font-medium text-gray-700 mb-1">
-                      Meta Title
-                    </label>
-                    <input
-                      type="text"
-                      id="seo_title"
-                      value={formData.seo_title || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value || undefined }))}
-                      placeholder="Título para SEO (máx. 255 caracteres)"
-                      maxLength={255}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">{formData.seo_title?.length || 0}/255 caracteres</p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="seo_description" className="block text-sm font-medium text-gray-700 mb-1">
-                      Meta Description
-                    </label>
-                    <textarea
-                      id="seo_description"
-                      value={formData.seo_description || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value || undefined }))}
-                      placeholder="Descrição para SEO (máx. 500 caracteres)"
-                      maxLength={500}
-                      rows={3}
-                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">{formData.seo_description?.length || 0}/500 caracteres</p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="seo_keywords" className="block text-sm font-medium text-gray-700 mb-1">
-                      Meta Tags
-                    </label>
-                    <textarea
-                      id="seo_keywords"
-                      value={formData.seo_keywords || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, seo_keywords: e.target.value || undefined }))}
-                      placeholder="Palavras-chave separadas por vírgula (máx. 500 caracteres)"
-                      maxLength={500}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">{formData.seo_keywords?.length || 0}/500 caracteres</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Media Section */}
-              <div id="media-info" className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3">Mídia</h3>
-                
-                <UnifiedImageUpload
-                  images={unifiedImages}
-                  onImagesChange={async (newImages) => {
-                    setUnifiedImages(newImages);
-                    await syncUnifiedImagesToFormData(newImages);
-                  }}
-                  maxImages={6}
-                  maxSizeInMB={10}
-                />
-                
-                {/* Input de arquivo oculto para upload múltiplo */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                
-                {/* Botão de upload de arquivos */}
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={openFileSelector}
-                    disabled={uploadingImages || unifiedImages.length >= 6}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {uploadingImages ? 'Enviando...' : 'Enviar Imagens'}
-                  </button>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {unifiedImages.length}/6 imagens • Máx. 10MB por imagem
-                  </p>
-                </div>
-              </div>
 
                   {/* Product Status - Inline */}
                   <div className="space-y-2 pt-2 border-t border-gray-100">
@@ -2092,7 +2094,7 @@ PALAVRAS-CHAVE:
                         <span className="text-gray-700">Ativo</span>
                       </label>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       <label className="flex items-center text-sm">
                         <input
