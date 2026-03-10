@@ -102,3 +102,13 @@ export const authMiddleware = async (req, res, next) => {
     return res.status(401).json({ success: false, error: 'Não autorizado' });
   }
 };
+
+export const requireRole = (allowedRoles) => {
+  return (req, res, next) => {
+    const userRole = req.admin?.role;
+    if (userRole && allowedRoles.includes(userRole)) {
+      return next();
+    }
+    return res.status(403).json({ success: false, error: 'Acesso negado. Permissões insuficientes.' });
+  };
+};

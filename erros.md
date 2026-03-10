@@ -1,0 +1,41 @@
+main.js?attr=00dME7DE7MFkyy79D9H50XqOQySqbjnG5VazXsgz5pYh83pzayCk63lJ2t-q9U3o:4184  POST http://localhost:5173/api/ai/generate-content 403 (Forbidden)
+fetchCallImpl @ main.js?attr=00dME7DE7MFkyy79D9H50XqOQySqbjnG5VazXsgz5pYh83pzayCk63lJ2t-q9U3o:4184
+fetch @ main.js?attr=00dME7DE7MFkyy79D9H50XqOQySqbjnG5VazXsgz5pYh83pzayCk63lJ2t-q9U3o:4190
+apiFetch @ api.ts:94
+generateContentByAI @ ProductManager.tsx:1069
+await in generateContentByAI
+callCallback2 @ chunk-SXRIVT2P.js?v=3f1073a3:3680
+invokeGuardedCallbackDev @ chunk-SXRIVT2P.js?v=3f1073a3:3705
+invokeGuardedCallback @ chunk-SXRIVT2P.js?v=3f1073a3:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-SXRIVT2P.js?v=3f1073a3:3742
+executeDispatch @ chunk-SXRIVT2P.js?v=3f1073a3:7046
+processDispatchQueueItemsInOrder @ chunk-SXRIVT2P.js?v=3f1073a3:7066
+processDispatchQueue @ chunk-SXRIVT2P.js?v=3f1073a3:7075
+dispatchEventsForPlugins @ chunk-SXRIVT2P.js?v=3f1073a3:7083
+(anonymous) @ chunk-SXRIVT2P.js?v=3f1073a3:7206
+batchedUpdates$1 @ chunk-SXRIVT2P.js?v=3f1073a3:18966
+batchedUpdates @ chunk-SXRIVT2P.js?v=3f1073a3:3585
+dispatchEventForPluginEventSystem @ chunk-SXRIVT2P.js?v=3f1073a3:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-SXRIVT2P.js?v=3f1073a3:5484
+dispatchEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5478
+dispatchDiscreteEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5455
+ProductManager.tsx:1130 Erro ao gerar conteúdo: Error: Token CSRF inválido ou ausente
+    at apiFetch (api.ts:110:11)
+    at async generateContentByAI (ProductManager.tsx:1069:20)
+generateContentByAI @ ProductManager.tsx:1130
+await in generateContentByAI
+callCallback2 @ chunk-SXRIVT2P.js?v=3f1073a3:3680
+invokeGuardedCallbackDev @ chunk-SXRIVT2P.js?v=3f1073a3:3705
+invokeGuardedCallback @ chunk-SXRIVT2P.js?v=3f1073a3:3739
+invokeGuardedCallbackAndCatchFirstError @ chunk-SXRIVT2P.js?v=3f1073a3:3742
+executeDispatch @ chunk-SXRIVT2P.js?v=3f1073a3:7046
+processDispatchQueueItemsInOrder @ chunk-SXRIVT2P.js?v=3f1073a3:7066
+processDispatchQueue @ chunk-SXRIVT2P.js?v=3f1073a3:7075
+dispatchEventsForPlugins @ chunk-SXRIVT2P.js?v=3f1073a3:7083
+(anonymous) @ chunk-SXRIVT2P.js?v=3f1073a3:7206
+batchedUpdates$1 @ chunk-SXRIVT2P.js?v=3f1073a3:18966
+batchedUpdates @ chunk-SXRIVT2P.js?v=3f1073a3:3585
+dispatchEventForPluginEventSystem @ chunk-SXRIVT2P.js?v=3f1073a3:7205
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-SXRIVT2P.js?v=3f1073a3:5484
+dispatchEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5478
+dispatchDiscreteEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5455
