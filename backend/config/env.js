@@ -11,7 +11,9 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-me',
   ADMIN_COOKIE_NAME: 'repal_admin_token',
   DEV_AUTH_BYPASS: process.env.DEV_AUTH_BYPASS === 'true',
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY,
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY,
+  OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || process.env.VITE_OPENROUTER_MODEL,
 };
 
 // Validação de Segurança para Produção

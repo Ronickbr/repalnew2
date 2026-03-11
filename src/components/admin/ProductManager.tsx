@@ -1073,7 +1073,7 @@ PALAVRAS-CHAVE:
             maxOutputTokens: 4000,
           }
         })
-      }, false);
+      }, true);
       
       // Verificar se a resposta tem o formato esperado
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
