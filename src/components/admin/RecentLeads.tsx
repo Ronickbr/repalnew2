@@ -1,21 +1,15 @@
 import React from 'react';
-import { User, Calendar, Mail, Phone } from 'lucide-react';
-
-interface Lead {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  message?: string;
-  created_at: string;
-  status?: string;
-}
+import { useNavigate } from 'react-router-dom';
+import { User, Calendar, Mail, Phone, ShoppingBag } from 'lucide-react';
+import { Lead } from '../../lib/supabase';
 
 interface RecentLeadsProps {
   leads: Lead[];
 }
 
 const RecentLeads: React.FC<RecentLeadsProps> = ({ leads }) => {
+  const navigate = useNavigate();
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
@@ -26,33 +20,37 @@ const RecentLeads: React.FC<RecentLeadsProps> = ({ leads }) => {
     });
   };
 
-  const getStatusColor = (status?: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new':
+      case 'novo':
         return 'bg-blue-100 text-blue-800';
-      case 'contacted':
+      case 'contato':
         return 'bg-yellow-100 text-yellow-800';
-      case 'converted':
+      case 'orcado':
+        return 'bg-purple-100 text-purple-800';
+      case 'fechado':
         return 'bg-green-100 text-green-800';
-      case 'lost':
+      case 'perdido':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusLabel = (status?: string) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'new':
+      case 'novo':
         return 'Novo';
-      case 'contacted':
-        return 'Contactado';
-      case 'converted':
-        return 'Convertido';
-      case 'lost':
+      case 'contato':
+        return 'Em Contato';
+      case 'orcado':
+        return 'Orçado';
+      case 'fechado':
+        return 'Fechado';
+      case 'perdido':
         return 'Perdido';
       default:
-        return 'Pendente';
+        return status;
     }
   };
 
@@ -95,6 +93,12 @@ const RecentLeads: React.FC<RecentLeadsProps> = ({ leads }) => {
                     <p className="text-sm font-medium text-gray-900 truncate">
                       {lead.name}
                     </p>
+                    {lead.product_name && (
+                      <div className="flex items-center mt-1 text-xs text-indigo-600 font-medium">
+                        <ShoppingBag className="h-3 w-3 mr-1" />
+                        <span className="truncate">Interesse: {lead.product_name}</span>
+                      </div>
+                    )}
                     <div className="flex items-center mt-1 space-x-4">
                       <div className="flex items-center text-sm text-gray-500">
                         <Mail className="h-3 w-3 mr-1" />
@@ -107,11 +111,6 @@ const RecentLeads: React.FC<RecentLeadsProps> = ({ leads }) => {
                         </div>
                       )}
                     </div>
-                    {lead.message && (
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                        {lead.message}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -130,12 +129,16 @@ const RecentLeads: React.FC<RecentLeadsProps> = ({ leads }) => {
       </div>
       
       <div className="p-4 border-t border-gray-200">
-        <button className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+        <button 
+          onClick={() => navigate('/admin/leads')}
+          className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+        >
           Ver todos os leads →
         </button>
       </div>
     </div>
   );
 };
+
 
 export default RecentLeads;

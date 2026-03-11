@@ -359,9 +359,13 @@ const ProductDetail: React.FC = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-[#333333] mb-3 sm:mb-4 leading-tight">
                 {product.name}
 
-              {isAuthenticated && product.price !== undefined && (
+              {isAuthenticated && (
                 <div className="text-2xl sm:text-3xl font-bold text-primary mb-3 sm:mb-4">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                  {product.price && product.price > 0 ? (
+                    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)
+                  ) : (
+                    "Sob Consulta"
+                  )}
                 </div>
               )}
 

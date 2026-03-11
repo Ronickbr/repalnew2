@@ -36,8 +36,11 @@ const ContactForm: React.FC<ContactFormProps> = ({
 
     try {
       await createLead.mutateAsync({
-        ...formData,
-        name: productName,
+        name: formData.client_name,
+        phone: formData.phone,
+        email: formData.email,
+        message: formData.message,
+        product_name: productName,
       })
       
       // Reset form

@@ -24,4 +24,7 @@ if (ENV.NODE_ENV === 'production') {
   if (ENV.DEV_AUTH_BYPASS) {
     console.warn('⚠️  ALERTA DE SEGURANÇA: DEV_AUTH_BYPASS habilitado em ambiente de produção!');
   }
+  if (!ENV.ENCRYPTION_KEY) {
+    console.warn('⚠️  ALERTA DE SEGURANÇA: ENCRYPTION_KEY não configurada em produção!');
+  }
 }

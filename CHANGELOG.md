@@ -1,3 +1,36 @@
+## 2026-02-24 - v0.5.11
+
+### Alterado
+- Migração do sistema de IA de Google Gemini para OpenRouter.
+- Atualização do `backend/services/aiService.js` para usar a API do OpenRouter.
+- Atualização do endpoint `api/ai/generate-content.js` para usar a API do OpenRouter.
+- Adição de suporte à variável de ambiente `OPENROUTER_API_KEY`.
+- Atualização da interface de Configurações (`SettingsPage`, `SettingsManager`, `SettingsModal`) para permitir edição da chave da API do OpenRouter.
+- Atualização das mensagens de erro no `ProductManager` para serem agnósticas à provedora de IA.
+- A chave da API do OpenRouter é armazenada no campo `gemini_api_key` do banco de dados para manter compatibilidade sem migração de schema.
+
+## 2026-02-24 - v0.5.10
+
+- **Analytics & Monitoramento**:
+  - **Correção de Visitantes**: Ajuste nas políticas de segurança (RLS) para permitir que usuários anônimos registrem logs de visita (`activity_logs`).
+  - **Lógica de Sessão**: Migração do rastreamento de visitas de `localStorage` para `sessionStorage`, garantindo contagem mais precisa por sessão de usuário.
+
+## 2026-02-06 - v0.5.9
+
+- **Correções & Melhorias**:
+  - **Infraestrutura**:
+    - Implementada função RPC `get_new_contacts_count` para contagem de leads, contornando bloqueios de AdBlockers que interceptavam requisições contendo "leads" na URL.
+  - **Gestão de Leads**:
+    - Corrigido erro de permissão (RLS) ao gerar leads de teste (agora permitido para usuários autenticados).
+    - Adicionada opção para **Excluir Leads de Teste** (remove leads gerados automaticamente).
+    - Badge do menu "Leads" agora exibe contagem dinâmica apenas de novos leads (status 'novo').
+  - **Gestão de Preços**:
+    - Implementada funcionalidade de **Reajuste de Preços em Massa** (`PriceAdjustmentsPage.tsx`).
+    - Permite reajuste percentual ou fixo por produto ou marca.
+  - **Qualidade de Código**:
+    - Removidos imports e props não utilizados em `LeadManager`.
+    - Corrigida tipagem na captura de leads via Popup (`GlobalPopup.tsx`).
+
 ## 2026-01-25 - v0.5.7
 
 - **Infraestrutura & Banco de Dados**:

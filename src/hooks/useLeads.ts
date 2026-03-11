@@ -6,11 +6,11 @@ import type { Lead } from '../lib/supabase'
 import { toast } from 'sonner'
 
 interface CreateLeadData {
-  client_name: string
+  name: string
   phone: string
   email?: string
   message?: string
-  name?: string
+  product_name?: string
   source?: string
 }
 

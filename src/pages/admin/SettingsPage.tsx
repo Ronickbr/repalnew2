@@ -181,6 +181,7 @@ const SettingsPage: React.FC = () => {
         openrouter_model: flat.openrouter_model,
         recaptcha_site_key: flat.recaptcha_site_key,
         recaptcha_secret_key: flat.recaptcha_secret_key,
+        gemini_api_key: flat.openrouter_api_key, // Mapping OpenRouter key to existing DB column
       },
       contact: {
         ...formData.contact,

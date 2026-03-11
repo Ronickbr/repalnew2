@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, Lead } from '../../lib/supabase';
 import { table } from '../../lib/schema';
 // import DashboardStats from '../../components/admin/DashboardStats';
 import DashboardCharts from '../../components/admin/DashboardCharts';
+import RecentLeads from '../../components/admin/RecentLeads';
 import { Users, Package, ShoppingCart, Eye, Filter, FileText, ArrowRight } from 'lucide-react';
 
 interface DashboardData {
@@ -13,7 +14,7 @@ interface DashboardData {
   totalUsers: number;
   totalLeads: number;
   totalBanners: number;
-  recentLeads: any[];
+  recentLeads: Lead[];
   totalVisitors: number;
   topProducts: { id: string; name: string; count: number }[];
   whatsappClicksByStore: { id: string; name: string; count: number }[];
@@ -405,6 +406,10 @@ const DashboardPage: React.FC = () => {
             )}
           </div>
         </div>
+        <RecentLeads leads={data.recentLeads} />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Cliques no WhatsApp por loja</h3>
@@ -421,7 +426,6 @@ const DashboardPage: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
 
       {/* Status do Sistema */}
       <div className="bg-white rounded-lg shadow-sm p-6">
@@ -459,6 +463,7 @@ const DashboardPage: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

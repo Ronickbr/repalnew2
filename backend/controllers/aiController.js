@@ -1,5 +1,10 @@
 import { aiService } from '../services/aiService.js';
 
+/**
+ * Controller to handle content generation requests.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
 export const generateContent = async (req, res) => {
   try {
     const { prompt, generationConfig } = req.body || {};
