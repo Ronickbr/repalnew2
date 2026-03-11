@@ -11,7 +11,6 @@ interface FilterState {
   sortBy: string;
   showFeaturedOnly: boolean;
   showHomepageFeatured: boolean;
-  showClearanceSale: boolean;
   hideDisabled: boolean;
 }
 
@@ -24,7 +23,6 @@ interface UseFiltersReturn {
   setSortBy: (sort: string) => void;
   setShowFeaturedOnly: (show: boolean) => void;
   setShowHomepageFeatured: (show: boolean) => void;
-  setShowClearanceSale: (show: boolean) => void;
   setHideDisabled: (hide: boolean) => void;
   clearFilters: () => void;
   totalResults: number;
@@ -37,7 +35,6 @@ const initialFilters: FilterState = {
   sortBy: 'name',
   showFeaturedOnly: false,
   showHomepageFeatured: false,
-  showClearanceSale: false,
   hideDisabled: true
 };
 
@@ -75,10 +72,6 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
 
   const setShowHomepageFeatured = useCallback((show: boolean) => {
     setFilters(prev => ({ ...prev, showHomepageFeatured: show }));
-  }, []);
-
-  const setShowClearanceSale = useCallback((show: boolean) => {
-    setFilters(prev => ({ ...prev, showClearanceSale: show }));
   }, []);
 
   const setHideDisabled = useCallback((hide: boolean) => {
@@ -128,10 +121,6 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
       filtered = filtered.filter(product => product.featured_on_homepage);
     }
 
-    if (filters.showClearanceSale) {
-      filtered = filtered.filter(product => product.clearance_sale);
-    }
-
     // Ordenação
     filtered.sort((a, b) => {
       switch (filters.sortBy) {
@@ -144,7 +133,7 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
     });
 
     return filtered;
-  }, [products, debouncedSearchTerm, filters.selectedCategory, filters.selectedSubcategory, filters.sortBy, filters.hideDisabled, filters.showFeaturedOnly, filters.showHomepageFeatured, filters.showClearanceSale]);
+  }, [products, debouncedSearchTerm, filters.selectedCategory, filters.selectedSubcategory, filters.sortBy, filters.hideDisabled, filters.showFeaturedOnly, filters.showHomepageFeatured]);
 
   return {
     filters,
@@ -155,7 +144,6 @@ export const useFilters = (products: Product[]): UseFiltersReturn => {
     setSortBy,
     setShowFeaturedOnly,
     setShowHomepageFeatured,
-    setShowClearanceSale,
     setHideDisabled,
     clearFilters,
     totalResults: filteredProducts.length

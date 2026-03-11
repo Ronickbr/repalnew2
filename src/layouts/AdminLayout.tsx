@@ -117,14 +117,6 @@ const AdminLayout: React.FC = () => {
       badge: null
     },
     { 
-      id: 'promotions', 
-      label: 'Promoções', 
-      icon: Tag, 
-      path: '/admin/promotions',
-      description: 'Gerenciar promoções',
-      badge: null
-    },
-    { 
       id: 'leads', 
       label: 'Leads', 
       icon: MessageSquare, 

@@ -14,7 +14,6 @@ export interface ProductFormData {
   active: boolean;
   featured_in_dropdown: boolean;
   featured_on_homepage: boolean;
-  clearance_sale: boolean;
   images: ProductImageForm[];
   slug: string;
   brand?: string;
@@ -99,7 +98,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
       active: true,
       featured_in_dropdown: false,
       featured_on_homepage: false,
-      clearance_sale: false,
       images: [],
       slug: '',
       brand: '',
@@ -915,17 +913,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     />
                     <span className="ml-3 text-sm text-gray-700">Destaque na Página Inicial</span>
                     <span className="ml-auto text-xs text-gray-500">Exibe na home</span>
-                  </label>
-
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.clearance_sale}
-                      onChange={(e) => handleInputChange('clearance_sale', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="ml-3 text-sm text-gray-700">Queima de Estoque</span>
-                    <span className="ml-auto text-xs text-gray-500">Exibe em promoções</span>
                   </label>
                 </div>
               </div>
