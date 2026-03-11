@@ -1,52 +1,70 @@
 import { ENV } from '../config/env.js';
 import { isSupabaseConfigured, getServiceClient } from '../config/supabase.js';
-import { encryptionService } from './encryptionService.js';
 
 /**
- * Service for AI operations.
- * Handles API key retrieval (decryption) and interaction with Gemini API.
+ * Service for AI operations using OpenRouter.
+ * Handles API key retrieval and interaction with OpenRouter API.
  */
 class AiService {
   /**
-   * Retrieves the AI API Key.
-   * Prioritizes ENV var (OPENROUTER/GEMINI), then checks database settings (encrypted).
+   * Retrieves the OpenRouter API Key.
+   * Prioritizes ENV var (OPENROUTER_API_KEY), then checks database settings.
    * @returns {Promise<string|null>} The API Key or null if not found.
    */
   async getApiKey() {
-    // Check for OpenRouter Key first, then Gemini
-    if (ENV.OPENROUTER_API_KEY && ENV.OPENROUTER_API_KEY.trim()) {
-      return ENV.OPENROUTER_API_KEY.trim();
+    // Check for OpenRouter Key in ENV first
+    const openRouterKey = ENV.OPENROUTER_API_KEY?.trim();
+    if (openRouterKey) {
+      return openRouterKey;
     }
-    if (ENV.GEMINI_API_KEY && ENV.GEMINI_API_KEY.trim()) {
-      return ENV.GEMINI_API_KEY.trim();
+    
+    // Check for Gemini Key in ENV as fallback (for backward compatibility)
+    const geminiKey = ENV.GEMINI_API_KEY?.trim();
+    if (geminiKey) {
+      console.log('Using Gemini API Key from ENV (Fallback)');
+      return geminiKey;
+    }
+
+    console.warn('No API Key found in ENV for AI Service');
+    return null;
+  }
+
+  /**
+   * Retrieves the OpenRouter Model.
+   * Prioritizes generationConfig, then ENV (OPENROUTER_MODEL), then checks database settings.
+   * Defaults to 'google/gemini-2.0-flash-001'.
+   * @param {Object} generationConfig - Configuration for generation.
+   * @returns {Promise<string>} The Model ID.
+   */
+  async getModel(generationConfig) {
+    if (generationConfig?.model) {
+      return generationConfig.model;
+    }
+
+    const envModel = ENV.OPENROUTER_MODEL?.trim();
+    if (envModel) {
+      return envModel;
     }
 
     try {
-      if (!isSupabaseConfigured) return null;
+      if (!isSupabaseConfigured) return 'google/gemini-2.0-flash-001';
       const supabase = getServiceClient();
       const { data, error } = await supabase
         .from('site_settings')
         .select('integrations')
         .single();
 
-      if (error) return null;
+      if (error) return 'google/gemini-2.0-flash-001';
       
-      // Use existing field for compatibility but check if it's an OpenRouter key
-      const key = data?.integrations?.gemini_api_key;
-      if (!key) return null;
-
-      const keyString = String(key).trim();
-      
-      // Try to decrypt; if it fails, assume it's legacy plain text
-      try {
-        return encryptionService.decrypt(keyString);
-      } catch (e) {
-        // If decryption fails (e.g. invalid format), assume it is a legacy plain text key
-        return keyString;
+      const openRouterModel = data?.integrations?.openrouter_model;
+      if (openRouterModel && String(openRouterModel).trim()) {
+        return String(openRouterModel).trim();
       }
-    } catch {
-      return null;
+    } catch (err) {
+      console.error('Error fetching model from DB:', err);
     }
+
+    return 'google/gemini-2.0-flash-001';
   }
 
   /**
@@ -59,11 +77,11 @@ class AiService {
   async generateContent(prompt, generationConfig) {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
-      throw new Error('Chave de API da IA não configurada');
+      throw new Error('Chave de API da IA (OpenRouter) não configurada');
     }
 
-    // Default to a Gemini model on OpenRouter for consistency, but allow override
-    const model = generationConfig?.model || 'google/gemini-2.0-flash-001';
+    // Determine model to use
+    const model = await this.getModel(generationConfig);
 
     const payload = {
       model: model,
@@ -75,12 +93,14 @@ class AiService {
       ],
       temperature: generationConfig?.temperature || 0.8,
       top_p: generationConfig?.topP || 0.95,
+      // OpenRouter uses max_tokens, Gemini uses maxOutputTokens
       max_tokens: generationConfig?.maxOutputTokens || 4000
     };
     
     const url = 'https://openrouter.ai/api/v1/chat/completions';
-    
     const maxRetries = 3;
+    const baseDelay = 2000;
+    
     let lastJson = {};
     let lastError = null;
     
@@ -91,8 +111,8 @@ class AiService {
           headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': ENV.FRONTEND_URL || 'https://repalmarechal.com.br', // Site URL for OpenRouter rankings
-            'X-Title': 'Repal New Admin' // Site title for OpenRouter rankings
+            'HTTP-Referer': ENV.FRONTEND_URL || 'https://repalmarechal.com.br',
+            'X-Title': 'Repal New Admin'
           },
           body: JSON.stringify(payload)
         });
@@ -101,21 +121,19 @@ class AiService {
         lastJson = json;
         
         if (resp.status === 429 && attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 2000 * Math.pow(1.5, attempt)));
+          const delay = baseDelay * Math.pow(1.5, attempt);
+          console.warn(`Rate limit hit (429). Retrying in ${delay}ms...`);
+          await new Promise(r => setTimeout(r, delay));
           continue;
         }
         
         if (!resp.ok) {
-          const errorMsg = json?.error?.message || 'Erro na API da IA (OpenRouter)';
+          const errorMsg = json?.error?.message || `Erro na API da IA (Status: ${resp.status})`;
           const error = new Error(errorMsg);
           error.details = json;
           error.status = resp.status;
           throw error;
         }
-        
-        // Adapt OpenRouter response to Gemini format expected by frontend
-        // OpenRouter: { choices: [{ message: { content: "..." } }] }
-        // Gemini: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
         
         const content = json.choices?.[0]?.message?.content || '';
         
@@ -129,16 +147,18 @@ class AiService {
               }
             }
           ],
-          original_response: json // Keep original for debugging if needed
+          original_response: json
         };
 
       } catch (err) {
         lastError = err;
+        console.error(`Attempt ${attempt + 1} failed:`, err.message);
         if (attempt === maxRetries) break;
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
     
-    if (lastError && lastError.status) {
+    if (lastError) {
         throw lastError;
     }
     

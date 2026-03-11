@@ -33,10 +33,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     google_tag_manager_id: '',
     facebook_pixel_id: '',
     instagram_account: '',
-    google_maps_api_key: '',
+    openrouter_model: '',
     recaptcha_site_key: '',
     recaptcha_secret_key: '',
-    openrouter_api_key: '',
+    google_maps_api_key: '',
     cache_enabled: true,
     compress_images: true,
     lazy_loading: true,
@@ -174,8 +174,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {/* Integrações */}
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Integrações</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Integrações e IA</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Modelo OpenRouter</label>
+                  <input
+                    type="text"
+                    value={formData.openrouter_model}
+                    onChange={(e) => handleInputChange('openrouter_model', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="google/gemini-2.0-flash-001"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">ID do modelo a ser utilizado (padrão: google/gemini-2.0-flash-001).</p>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Google Analytics ID</label>
                   <input

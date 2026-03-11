@@ -20,9 +20,11 @@ interface Integrations {
   google_analytics_id?: string;
   google_tag_manager_id?: string;
   facebook_pixel_id?: string;
-  gemini_api_key?: string;
+  openrouter_model?: string;
   recaptcha_site_key?: string;
   recaptcha_secret_key?: string;
+  // Propriedades legadas removidas da interface para evitar erro TS2353
+  // gemini_api_key e openrouter_api_key foram removidos
 }
 
 interface Maintenance {
@@ -133,7 +135,9 @@ const SettingsPage: React.FC = () => {
       facebook_pixel_id: nested.integrations?.facebook_pixel_id || '',
       recaptcha_site_key: nested.integrations?.recaptcha_site_key || '',
       recaptcha_secret_key: nested.integrations?.recaptcha_secret_key || '',
-      openrouter_api_key: nested.integrations?.gemini_api_key || '',
+      // As chaves de API não são mais expostas no frontend por segurança
+      // gemini_api_key e openrouter_api_key foram removidos
+      openrouter_model: nested.integrations?.openrouter_model || '',
       contact_email: nested.contact?.email || '',
       contact_phone: nested.contact?.phone || '',
       address: nested.contact?.address || '',
@@ -178,9 +182,10 @@ const SettingsPage: React.FC = () => {
         google_analytics_id: flat.google_analytics_id,
         google_tag_manager_id: flat.google_tag_manager_id,
         facebook_pixel_id: flat.facebook_pixel_id,
+        openrouter_model: flat.openrouter_model,
         recaptcha_site_key: flat.recaptcha_site_key,
         recaptcha_secret_key: flat.recaptcha_secret_key,
-        gemini_api_key: flat.openrouter_api_key, // Mapping OpenRouter key to existing DB column
+        // Chaves de API não são atualizadas pelo frontend
       },
       contact: {
         ...formData.contact,
@@ -227,7 +232,7 @@ const SettingsPage: React.FC = () => {
       google_analytics_id: '',
       google_tag_manager_id: '',
       facebook_pixel_id: '',
-      gemini_api_key: '',
+      openrouter_model: '',
       recaptcha_site_key: '',
       recaptcha_secret_key: ''
     },

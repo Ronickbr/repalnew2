@@ -1077,12 +1077,14 @@ PALAVRAS-CHAVE:
             maxOutputTokens: 4000,
           }
         })
-      }, false);
 
-      // Verificar se a resposta tem o formato esperado (OpenRouter/OpenAI)
-      if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-        console.error('Resposta inesperada da API do OpenRouter:', data);
-        throw new Error('Formato de resposta inválido da API do OpenRouter');
+      }, true);
+      
+      // Verificar se a resposta tem o formato esperado
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        console.error('Resposta inesperada da API do Gemini:', data);
+        throw new Error('Formato de resposta inválido da API do Gemini');
+
       }
 
       const content = data.choices[0].message.content;

@@ -29,6 +29,7 @@ export interface SiteSettings {
   
   // APIs e Integrações
   google_maps_api_key?: string;
+  openrouter_model?: string;
   recaptcha_site_key?: string;
   recaptcha_secret_key?: string;
   openrouter_api_key?: string;
@@ -316,6 +317,13 @@ export default function SettingsManager({ siteSettings, onEditSettings }: Settin
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {renderField('Google Maps API Key', siteSettings.google_maps_api_key, 'google_maps_api_key')}
                   {renderField('OpenRouter API Key', siteSettings.openrouter_api_key, 'openrouter_api_key')}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Inteligência Artificial</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {renderField('Modelo OpenRouter', siteSettings.openrouter_model, 'openrouter_model')}
                 </div>
               </div>
 
