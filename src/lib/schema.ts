@@ -18,12 +18,6 @@ export const TABLES = {
   // Tabela de marcas
   brands: 'brands',
   
-  // Tabela de promoções
-  promotions: 'promotions',
-  
-  // Tabela de produtos em promoção (relacionamento N:N)
-  promotion_products: 'promotion_products',
-  
   // Tabela de leads/contatos
   leads: 'leads',
   

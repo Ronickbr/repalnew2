@@ -3,8 +3,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from './Header';
 import Footer from './Footer';
-import GlobalPopup from './GlobalPopup';
-import PopupManager from './PopupManager';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { logActivity } from '../lib/supabase';
 
@@ -72,8 +70,6 @@ const Layout: React.FC = () => {
         <meta name="twitter:description" content={metaDescription || 'Equipamentos gastronômicos profissionais de alta qualidade para sua cozinha industrial.'} />
       </Helmet>
       <div className="min-h-screen flex flex-col bg-white">
-        <PopupManager />
-        <GlobalPopup />
         <Header />
         <main className="flex-1">
           <Outlet />

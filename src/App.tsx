@@ -20,7 +20,6 @@ import WhatsAppStoreSelector from './components/WhatsAppStoreSelector';
 import { AuthProvider } from './hooks/useAuth';
 import { WhatsAppProvider } from './contexts/WhatsAppContext';
 import { BudgetProvider } from './contexts/BudgetContext';
-import { PopupProvider } from './contexts/PopupContext';
 import { queryClient } from './lib/react-query';
 import NotFound from './pages/NotFound';
 
@@ -35,7 +34,6 @@ const BrandsPage = lazy(() => import('./pages/admin/BrandsPage'));
 const BannersPage = lazy(() => import('./pages/admin/BannersPage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 const LeadsPage = lazy(() => import('./pages/admin/LeadsPage'));
-const PromotionsPage = lazy(() => import('./pages/admin/PromotionsPage'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const PriceAdjustmentsPage = lazy(() => import('./pages/admin/PriceAdjustmentsPage'));
 
@@ -51,7 +49,6 @@ function AppContent() {
         <AuthProvider>
           <BudgetProvider>
             <WhatsAppProvider>
-              <PopupProvider>
                 <Router>
             <Routes>
             <Route path="/" element={<Layout />}>
@@ -89,7 +86,6 @@ function AppContent() {
               <Route path="categories" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><CategoriesPage /></Suspense>} />
               <Route path="brands" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><BrandsPage /></Suspense>} />
               <Route path="banners" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><BannersPage /></Suspense>} />
-              <Route path="promotions" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><PromotionsPage /></Suspense>} />
               <Route path="leads" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><LeadsPage /></Suspense>} />
               <Route path="users" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><UsersPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-900"></div></div>}><SettingsPage /></Suspense>} />
@@ -98,7 +94,6 @@ function AppContent() {
             <Route path="*" element={<NotFound />} />
           </Routes>
               </Router>
-              </PopupProvider>
               <Analytics />
               <SpeedInsights />
               <Toaster

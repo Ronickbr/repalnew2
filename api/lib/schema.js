@@ -87,31 +87,6 @@ const TABLES = {
     }
   },
 
-  // Tabela de promoções
-  promotions: {
-    name: 'promotions',
-    columns: {
-      id: 'id',
-      title: 'title',
-      description: 'description',
-      discount_percentage: 'discount_percentage',
-      start_date: 'start_date',
-      end_date: 'end_date',
-      active: 'active',
-      created_at: 'created_at',
-      updated_at: 'updated_at'
-    }
-  },
-
-  // Tabela de produtos em promoção (relacionamento N:N)
-  promotion_products: {
-    name: 'promotion_products',
-    columns: {
-      promotion_id: 'promotion_id',
-      product_id: 'product_id'
-    }
-  },
-
   // Tabela de leads/contatos
   leads: {
     name: 'leads',
