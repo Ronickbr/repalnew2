@@ -1,6 +1,25 @@
 ## 2026-08-08 - v0.6.1
 
 ### Corrigido
+- add siteSettings to queryKeys
+- Add noscript iframe to body
+
+### Manutenção
+- implementa CI/CD com GitHub Actions e versionamento automático por Conventional Commits
+- update gitignore
+
+### merge
+- feature/optimize-ai-settings → master (implementação CI/CD + lint fixes)
+
+### Outros
+- Merge branch 'feature/optimize-ai-settings'
+- Manual deploy trigger: Update project
+- Merge branch 'feature/optimize-ai-settings'
+- Merge pull request #4 from Ronickbr/feature/optimize-ai-settings
+
+## 2026-08-08 - v0.6.1
+
+### Corrigido
 - Add noscript iframe to body
 
 ### Manutenção

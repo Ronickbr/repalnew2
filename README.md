@@ -302,7 +302,8 @@ Para suporte técnico, entre em contato:
 
 ### Resumo das Alterações
 
-- **Corrigido**: Add noscript iframe to body
-- **Manutenção**: update gitignore
+- **Corrigido**: add siteSettings to queryKeys; Add noscript iframe to body
+- **Manutenção**: implementa CI/CD com GitHub Actions e versionamento automático por Conventional Commits; update gitignore
+- **merge**: feature/optimize-ai-settings → master (implementação CI/CD + lint fixes)
 
 <!-- RELEASE-AUTO-END -->
