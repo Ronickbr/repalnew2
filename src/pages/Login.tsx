@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Helmet } from 'react-helmet-async';
 import { useSiteSettings } from '../hooks/useSiteSettings';
@@ -10,11 +10,14 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [requires2fa] = useState(false);
+  const [needs2fa, setNeeds2fa] = useState(false);
+  const [tempToken, setTempToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const pendingCredentialsRef = useRef<{ email: string; password: string } | null>(null);
   
-  const { login, isAuthenticated, user } = useAuth();
+  const { login, verify2fa, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { canonicalBaseUrl, siteName } = useSiteSettings();
@@ -63,11 +66,50 @@ const Login: React.FC = () => {
     
     try {
       const result = await login(email, password);
+      if (result.requires2fa && result.tempToken) {
+        pendingCredentialsRef.current = { email, password };
+        setTempToken(result.tempToken);
+        setNeeds2fa(true);
+        setError('');
+        return;
+      }
       if (result.success && result.user) {
         const path = getRedirectPath(result.user.role);
         navigate(path, { replace: true });
       } else {
         setError(result.error || 'Erro ao fazer login');
+      }
+    } catch {
+      setError('Erro interno. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handle2faSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const trimmedCode = code.trim();
+    if (!trimmedCode) {
+      setError('Informe o código 2FA');
+      return;
+    }
+    if (!tempToken || !pendingCredentialsRef.current) {
+      setError('Sessão de 2FA expirada. Faça login novamente.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await verify2fa(tempToken, trimmedCode, pendingCredentialsRef.current.email, pendingCredentialsRef.current.password);
+      if (result.success && result.user) {
+        pendingCredentialsRef.current = null;
+        setNeeds2fa(false);
+        const path = getRedirectPath(result.user.role);
+        navigate(path, { replace: true });
+      } else {
+        setError(result.error || 'Código 2FA inválido');
       }
     } catch {
       setError('Erro interno. Tente novamente.');
@@ -104,7 +146,7 @@ const Login: React.FC = () => {
         
         {/* Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={needs2fa ? handle2faSubmit : handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -121,7 +163,7 @@ const Login: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   placeholder="admin@repal.com.br"
-                  disabled={loading}
+                  disabled={loading || needs2fa}
                 />
               </div>
             </div>
@@ -142,13 +184,13 @@ const Login: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   placeholder="Digite sua senha"
-                  disabled={loading}
+                  disabled={loading || needs2fa}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  disabled={loading}
+                  disabled={loading || needs2fa}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -159,8 +201,35 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            
-            
+            {/* Campo de código 2FA */}
+            {needs2fa && (
+              <div>
+                <label htmlFor="2fa-code" className="block text-sm font-medium text-gray-700 mb-2">
+                  Código de verificação
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <ShieldCheck className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="2fa-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    placeholder="000000"
+                    disabled={loading}
+                    autoFocus
+                  />
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Digite o código do seu aplicativo autenticador.
+                </p>
+              </div>
+            )}
+
             {/* Error Message */}
             {error && (
               <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
@@ -178,10 +247,10 @@ const Login: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                  {requires2fa ? 'Verificando...' : 'Entrando...'}
+                  {needs2fa ? 'Verificando...' : 'Entrando...'}
                 </>
               ) : (
-                requires2fa ? 'Verificar 2FA' : 'Entrar'
+                needs2fa ? 'Verificar código' : 'Entrar'
               )}
             </button>
           </form>

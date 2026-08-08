@@ -924,6 +924,7 @@ const ProductManager: React.FC = () => {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
+    const productWithSpecs = product as Product & { specifications?: string };
     // Carregar subcategorias da categoria do produto
     if (product.category_id) {
       fetchSubcategories(product.category_id);
@@ -936,7 +937,7 @@ const ProductManager: React.FC = () => {
       brand: product.brand,
       image: product.image,
       additional_images: product.additional_images || [],
-      specifications: (product as any).specifications_html || (product as any).specifications,
+      specifications: productWithSpecs.specifications_html || productWithSpecs.specifications,
       featured: product.featured,
       featured_in_dropdown: product.featured_in_dropdown || false,
       featured_on_homepage: product.featured_on_homepage || false,
@@ -1180,7 +1181,8 @@ PALAVRAS-CHAVE:
     try {
       const data = products.map(product => {
         const productLink = `${window.location.origin}/produto/${product.slug || product.id}`;
-        const rawSpecs = (product as any).specifications || (product as any).specifications_html || '';
+        const productWithSpecs = product as Product & { specifications?: string };
+        const rawSpecs = productWithSpecs.specifications_html || productWithSpecs.specifications || '';
         return {
           ID: product.id,
           Nome: product.name,

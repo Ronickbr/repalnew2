@@ -152,7 +152,9 @@ export function useBanners() {
             const j = await resp.json();
             created = j?.data || null;
           }
-        } catch {}
+        } catch (apiErr) {
+          console.warn('Backend de banners indisponível (create), usando Supabase:', apiErr);
+        }
       }
       if (!created) {
         const { data, error } = await supabase
@@ -218,7 +220,9 @@ export function useBanners() {
             const j = await resp.json();
             updated = j?.data || null;
           }
-        } catch {}
+        } catch (apiErr) {
+          console.warn('Backend de banners indisponível (update), usando Supabase:', apiErr);
+        }
       }
       if (!updated) {
         const { data, error } = await supabase
@@ -257,7 +261,9 @@ export function useBanners() {
             credentials: 'include'
           });
           ok = resp.ok;
-        } catch {}
+        } catch (apiErr) {
+          console.warn('Backend de banners indisponível (delete), usando Supabase:', apiErr);
+        }
       }
       if (!ok) {
         const { error } = await supabase
@@ -293,7 +299,9 @@ export function useBanners() {
             body: JSON.stringify({ banner: { active } })
           });
           ok = resp.ok;
-        } catch {}
+        } catch (apiErr) {
+          console.warn('Backend de banners indisponível (toggle status), usando Supabase:', apiErr);
+        }
       }
       if (!ok) {
         const { error } = await supabase
@@ -329,7 +337,9 @@ export function useBanners() {
             body: JSON.stringify({ banner: { sort_order } })
           });
           ok = resp.ok;
-        } catch {}
+        } catch (apiErr) {
+          console.warn('Backend de banners indisponível (reorder), usando Supabase:', apiErr);
+        }
       }
       if (!ok) {
         const { error } = await supabase

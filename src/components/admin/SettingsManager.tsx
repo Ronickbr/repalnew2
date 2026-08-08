@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Globe, Code, BarChart3, Facebook, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Settings, Globe, Code, BarChart3, Facebook, Eye, EyeOff, Copy, Check, type LucideIcon } from 'lucide-react';
 
 export interface SiteSettings {
   // Informações Gerais
@@ -61,10 +61,11 @@ interface SettingsManagerProps {
 }
 
 export default function SettingsManager({ siteSettings, onEditSettings }: SettingsManagerProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'seo' | 'analytics' | 'social' | 'apis' | 'advanced'>('general');
+  type TabId = 'general' | 'seo' | 'analytics' | 'social' | 'apis' | 'advanced';
+  const [activeTab, setActiveTab] = useState<TabId>('general');
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const tabs = [
+  const tabs: { id: TabId; label: string; icon: LucideIcon }[] = [
     { id: 'general', label: 'Geral', icon: Globe },
     { id: 'seo', label: 'SEO', icon: Code },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -178,7 +179,7 @@ export default function SettingsManager({ siteSettings, onEditSettings }: Settin
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id)}
                   className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm flex items-center space-x-1 sm:space-x-2 transition-colors whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-red-900 text-red-900'

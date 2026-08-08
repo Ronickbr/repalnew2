@@ -15,7 +15,7 @@ const Home: React.FC = () => {
 
   const { addItem } = useBudget();
   const homeQuery = useFeaturedProductsHome();
-  const { data: latestProducts, isPending: loadingLatest, isFetching: fetchingLatest } = useLatestProducts(6);
+  const { data: latestProducts, isPending: loadingLatest } = useLatestProducts(6);
   const { siteName, canonicalBaseUrl, metaTitle, metaDescription, metaKeywords } = useSiteSettings();
 
   const handleTabChange = useCallback((tab: string) => {
@@ -37,16 +37,7 @@ const Home: React.FC = () => {
   }, [homeQuery.data]);
 
   const latestList = useMemo(() => latestProducts ?? [], [latestProducts]);
-  const loading = homeQuery.isPending || homeQuery.isFetching;
-  const loadingLatestCombined = loadingLatest || fetchingLatest;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#8B0000' }}></div>
-      </div>
-    );
-  }
+  const loadingLatestCombined = loadingLatest;
 
   const canonicalTrimmed = (canonicalBaseUrl || '').trim().replace(/\/+$/, '');
   const organizationJsonLd = useMemo(
@@ -343,7 +334,6 @@ const Home: React.FC = () => {
               {latestList.map((product, index) => {
                 const imgSrc =
                   product.product_images?.[0]?.image_url ||
-                  (product as any).image_url ||
                   product.image_url ||
                   'https://via.placeholder.com/400x300?text=Produto';
                 return (
@@ -387,7 +377,6 @@ const Home: React.FC = () => {
                               name: product.name,
                               image:
                                 product.product_images?.[0]?.image_url ||
-                                (product as any).image_url ||
                                 product.image_url ||
                                 undefined,
                             })

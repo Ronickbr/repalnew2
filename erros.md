@@ -1,41 +1,112 @@
-main.js?attr=00dME7DE7MFkyy79D9H50XqOQySqbjnG5VazXsgz5pYh83pzayCk63lJ2t-q9U3o:4184  POST http://localhost:5173/api/ai/generate-content 403 (Forbidden)
-fetchCallImpl @ main.js?attr=00dME7DE7MFkyy79D9H50XqOQySqbjnG5VazXsgz5pYh83pzayCk63lJ2t-q9U3o:4184
-fetch @ main.js?attr=00dME7DE7MFkyy79D9H50XqOQySqbjnG5VazXsgz5pYh83pzayCk63lJ2t-q9U3o:4190
-apiFetch @ api.ts:94
-generateContentByAI @ ProductManager.tsx:1069
-await in generateContentByAI
-callCallback2 @ chunk-SXRIVT2P.js?v=3f1073a3:3680
-invokeGuardedCallbackDev @ chunk-SXRIVT2P.js?v=3f1073a3:3705
-invokeGuardedCallback @ chunk-SXRIVT2P.js?v=3f1073a3:3739
-invokeGuardedCallbackAndCatchFirstError @ chunk-SXRIVT2P.js?v=3f1073a3:3742
-executeDispatch @ chunk-SXRIVT2P.js?v=3f1073a3:7046
-processDispatchQueueItemsInOrder @ chunk-SXRIVT2P.js?v=3f1073a3:7066
-processDispatchQueue @ chunk-SXRIVT2P.js?v=3f1073a3:7075
-dispatchEventsForPlugins @ chunk-SXRIVT2P.js?v=3f1073a3:7083
-(anonymous) @ chunk-SXRIVT2P.js?v=3f1073a3:7206
-batchedUpdates$1 @ chunk-SXRIVT2P.js?v=3f1073a3:18966
-batchedUpdates @ chunk-SXRIVT2P.js?v=3f1073a3:3585
-dispatchEventForPluginEventSystem @ chunk-SXRIVT2P.js?v=3f1073a3:7205
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-SXRIVT2P.js?v=3f1073a3:5484
-dispatchEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5478
-dispatchDiscreteEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5455
-ProductManager.tsx:1130 Erro ao gerar conteúdo: Error: Token CSRF inválido ou ausente
-    at apiFetch (api.ts:110:11)
-    at async generateContentByAI (ProductManager.tsx:1069:20)
-generateContentByAI @ ProductManager.tsx:1130
-await in generateContentByAI
-callCallback2 @ chunk-SXRIVT2P.js?v=3f1073a3:3680
-invokeGuardedCallbackDev @ chunk-SXRIVT2P.js?v=3f1073a3:3705
-invokeGuardedCallback @ chunk-SXRIVT2P.js?v=3f1073a3:3739
-invokeGuardedCallbackAndCatchFirstError @ chunk-SXRIVT2P.js?v=3f1073a3:3742
-executeDispatch @ chunk-SXRIVT2P.js?v=3f1073a3:7046
-processDispatchQueueItemsInOrder @ chunk-SXRIVT2P.js?v=3f1073a3:7066
-processDispatchQueue @ chunk-SXRIVT2P.js?v=3f1073a3:7075
-dispatchEventsForPlugins @ chunk-SXRIVT2P.js?v=3f1073a3:7083
-(anonymous) @ chunk-SXRIVT2P.js?v=3f1073a3:7206
-batchedUpdates$1 @ chunk-SXRIVT2P.js?v=3f1073a3:18966
-batchedUpdates @ chunk-SXRIVT2P.js?v=3f1073a3:3585
-dispatchEventForPluginEventSystem @ chunk-SXRIVT2P.js?v=3f1073a3:7205
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-SXRIVT2P.js?v=3f1073a3:5484
-dispatchEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5478
-dispatchDiscreteEvent @ chunk-SXRIVT2P.js?v=3f1073a3:5455
+Analise completamente todo o projeto e identifique TODOS os bugs, erros, falhas, comportamentos inesperados e possíveis problemas existentes na aplicação.
+
+Seu objetivo é realizar uma auditoria técnica profunda no sistema inteiro, corrigindo problemas de lógica, frontend, backend, integração, renderização, estado, banco de dados, responsividade e performance.
+
+Antes de modificar qualquer coisa:
+- Analise toda a estrutura do projeto
+- Analise rotas
+- Analise componentes
+- Analise hooks
+- Analise estados globais
+- Analise integrações
+- Analise Supabase
+- Analise APIs
+- Analise banco de dados
+- Analise autenticação
+- Analise permissões
+- Analise carregamentos
+- Analise console errors
+- Analise warnings
+- Analise logs
+- Analise comportamento da interface
+- Analise responsividade
+- Analise possíveis falhas silenciosas
+- Analise segurança básica
+- Analise fluxos completos do sistema
+
+Identifique e corrija:
+- Bugs visuais
+- Bugs de navegação
+- Erros de console
+- Warnings
+- Loops infinitos
+- Problemas de renderização
+- Re-renderizações desnecessárias
+- Falhas de autenticação
+- Problemas de sessão
+- Problemas de permissões
+- Problemas de loading
+- Problemas de estado
+- Problemas de sincronização
+- Problemas de responsividade
+- Problemas de formulários
+- Problemas de validação
+- Problemas em chamadas API
+- Problemas em queries Supabase
+- Problemas de realtime
+- Problemas de cache
+- Problemas de tipagem
+- Problemas de imports
+- Problemas de dependências
+- Problemas de performance
+- Problemas de UX
+- Problemas mobile
+- Problemas de acessibilidade
+- Memory leaks
+- Requests duplicados
+- Condições de corrida
+- Falhas silenciosas
+- Tratamento incorreto de erros
+- Quebras em edge cases
+
+Verifique especialmente:
+- Fluxos de login/logout
+- Persistência de sessão
+- Proteção de rotas
+- Navegação entre páginas
+- CRUDs completos
+- Uploads
+- Modais
+- Estados assíncronos
+- Atualizações em tempo real
+- Compatibilidade mobile
+- Responsividade geral
+- Componentes reutilizáveis
+- Integrações externas
+- Webhooks
+- Fluxos críticos do sistema
+
+Durante a análise:
+1. Liste os problemas encontrados
+2. Explique a causa de cada problema
+3. Explique o impacto no sistema
+4. Corrija utilizando boas práticas modernas
+5. Garanta que a correção não quebre funcionalidades existentes
+
+Regras importantes:
+- NÃO remover funcionalidades sem necessidade
+- NÃO alterar design sem motivo
+- NÃO criar soluções temporárias ou gambiarra
+- Sempre aplicar soluções profissionais
+- Priorizar estabilidade, segurança e confiabilidade
+- Garantir código limpo e sustentável
+- Melhorar tratamento de erros em toda aplicação
+- Validar edge cases importantes
+- Garantir compatibilidade mobile e desktop
+
+Após finalizar:
+- Faça uma nova varredura completa
+- Verifique se ainda existem erros
+- Verifique possíveis regressões
+- Garanta estabilidade geral do sistema
+
+O resultado final deve deixar a aplicação:
+- Estável
+- Confiável
+- Sem erros visíveis
+- Sem warnings desnecessários
+- Sem bugs críticos
+- Fluida
+- Responsiva
+- Profissional
+- Pronta para produção

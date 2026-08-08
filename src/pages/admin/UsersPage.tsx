@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { table } from '../../lib/schema';
 import { Search, Filter, Eye, KeyRound, User as UserIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { generateTemporaryPassword } from '../../utils/password';
 
 interface User {
   id: string;
@@ -41,6 +43,7 @@ const UsersPage: React.FC = () => {
   const [createType, setCreateType] = useState<'admin' | 'user'>('admin');
   const [createForm, setCreateForm] = useState<{ name: string; email: string; role: string; is_active: boolean }>({ name: '', email: '', role: 'admin', is_active: true });
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
+  const [createdCredential, setCreatedCredential] = useState<{ email: string; password: string } | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -51,7 +54,7 @@ const UsersPage: React.FC = () => {
       setLoading(true);
       setError(null);
       if (isSupabaseConfigured) {
-        const [adminsRes, usersRes] = await Promise.all([
+        const [{ error: adminsError, data: adminsData }, { error: usersError, data: usersData }] = await Promise.all([
           supabase
             .from(table('admin_users'))
             .select('id,name,email,role,active,created_at')
@@ -62,14 +65,9 @@ const UsersPage: React.FC = () => {
             .order('name')
         ]);
 
-        const adminsError = (adminsRes as any).error;
-        const usersError = (usersRes as any).error;
-        if (adminsError && usersError) throw adminsError || usersError;
+        if (adminsError || usersError) throw adminsError || usersError;
 
-        const adminsData = (adminsRes as any).data || [];
-        const usersData = (usersRes as any).data || [];
-
-        const adminsNormalized: User[] = adminsData.map((u: any) => ({
+        const adminsNormalized: User[] = (adminsData || []).map((u: { id: string; name: string; email: string; role: string | null; active: boolean | null; created_at: string | null }) => ({
           id: u.id,
           name: u.name,
           email: u.email,
@@ -80,7 +78,7 @@ const UsersPage: React.FC = () => {
           source: 'admin'
         }));
 
-        const usersNormalized: User[] = usersData.map((u: any) => ({
+        const usersNormalized: User[] = (usersData || []).map((u: { id: string; name: string; email: string; role: string | null; is_active: boolean | null; created_at: string | null; last_login: string | null }) => ({
           id: u.id,
           name: u.name,
           email: u.email,
@@ -187,9 +185,12 @@ const UsersPage: React.FC = () => {
       if (isSupabaseConfigured) {
         await supabase.auth.resetPasswordForEmail(showResetModal.email);
       }
+      toast.success(`Email de redefinição enviado para ${showResetModal.email}`);
       setShowResetModal(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Falha ao resetar senha');
+      const message = e instanceof Error ? e.message : 'Falha ao resetar senha';
+      setError(message);
+      toast.error(message);
     } finally {
       setResetting(false);
     }
@@ -582,10 +583,11 @@ const UsersPage: React.FC = () => {
                   if (Object.keys(errs).length > 0) return
                   try {
                     setCreating(true)
+                    const tempPassword = generateTemporaryPassword()
                     if (isSupabaseConfigured) {
                       const email = createForm.email.toLowerCase().trim()
                       if (createType === 'admin') {
-                        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: 'temporario123' })
+                        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: tempPassword })
                         if (authError) throw authError
                         if (authData.user) {
                           const { error } = await supabase
@@ -594,7 +596,7 @@ const UsersPage: React.FC = () => {
                           if (error) throw error
                         }
                       } else {
-                        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: 'temporario123' })
+                        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: tempPassword })
                         if (authError) throw authError
                         if (authData.user) {
                           const { error: insertUserError } = await supabase
@@ -607,9 +609,11 @@ const UsersPage: React.FC = () => {
                         }
                       }
                       await fetchUsers()
+                      setCreatedCredential({ email: createForm.email.toLowerCase().trim(), password: tempPassword })
                     } else {
                       const newUser: User = { id: Math.random().toString(36).slice(2), name: createForm.name.trim(), email: createForm.email.toLowerCase().trim(), role: createForm.role, is_active: createForm.is_active, created_at: new Date().toISOString(), source: createType, last_sign_in_at: undefined }
                       setUsers(prev => [newUser, ...prev])
+                      setCreatedCredential({ email: createForm.email.toLowerCase().trim(), password: tempPassword })
                     }
                     setShowCreateModal(false)
                   } catch (e) {
@@ -624,6 +628,38 @@ const UsersPage: React.FC = () => {
                 {creating ? 'Criando...' : 'Criar'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {createdCredential && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Usuário criado</h2>
+              <button
+                className="rounded p-1 text-gray-400 hover:text-gray-600"
+                onClick={() => setCreatedCredential(null)}
+                aria-label="Fechar"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">
+              Envie a senha temporária abaixo ao novo usuário. Ela só é exibida uma vez.
+            </p>
+            <div className="mt-3 rounded-md bg-gray-50 p-3">
+              <p className="text-xs font-medium text-gray-500">E-mail</p>
+              <p className="text-sm text-gray-900 break-all">{createdCredential.email}</p>
+              <p className="mt-2 text-xs font-medium text-gray-500">Senha temporária</p>
+              <p className="text-base font-mono text-gray-900 break-all select-all">{createdCredential.password}</p>
+            </div>
+            <button
+              className="mt-4 w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              onClick={() => setCreatedCredential(null)}
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
 import express from 'express';
@@ -26,7 +27,7 @@ const upload = multer({
 // Função para gerar nome único do arquivo
 const generateFileName = (originalName) => {
   const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 8);
+  const randomString = crypto.randomBytes(6).toString('hex');
   const extension = path.extname(originalName).toLowerCase();
   return `produto_${timestamp}_${randomString}${extension}`;
 };

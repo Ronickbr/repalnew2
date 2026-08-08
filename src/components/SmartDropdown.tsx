@@ -49,15 +49,13 @@ const SmartDropdown: React.FC<SmartDropdownProps> = ({
     const scrollTop = window.pageYOffset;
     const scrollLeft = window.pageXOffset;
 
-    // Largura fixa de 400px conforme solicitado
-    
-    // Largura fixa de 400px
-    const maxAvailableWidth = 400;
+    // Largura adaptativa: no máximo 400px, mas nunca maior que a viewport
+    const maxAvailableWidth = Math.min(400, viewportWidth - 32);
 
     // Posição base inicial
     let top = 0;
     let left = 0;
-    const width = 400; // Largura fixa de 400px
+    const width = maxAvailableWidth;
     const maxWidth = maxAvailableWidth;
 
     // Calcular posição baseada no placement

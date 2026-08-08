@@ -145,7 +145,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       );
 
       if (result) {
-        const allCategories = (result as any).data || [];
+        const allCategories = (result as unknown as { data: Category[] }).data || [];
         setCategories(allCategories);
         
         // Filtrar apenas as categorias principais (sem parent_id) para contagem
@@ -184,7 +184,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       );
 
       if (result) {
-        const subcategoriesData = (result as any).data || [];
+        const subcategoriesData = (result as unknown as { data: Category[] }).data || [];
         setSubcategories(subcategoriesData);
       }
     } catch (error) {

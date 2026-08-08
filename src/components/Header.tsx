@@ -147,6 +147,8 @@ const Header: React.FC = () => {
                 <>
                   <button 
                     onClick={() => setShowUserMenu(!showUserMenu)}
+                    aria-haspopup="true"
+                    aria-expanded={showUserMenu}
                     className="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] p-2 text-white hover:text-gray-200 transition-colors duration-200 active:bg-white/10 rounded-lg"
                     title={`Olá, ${user?.name}`}
                   >
@@ -205,6 +207,9 @@ const Header: React.FC = () => {
             <button 
               className="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] p-2 text-white hover:text-gray-200 transition-colors duration-200 active:bg-white/10 rounded-lg"
               title="Meu Orçamento"
+              aria-label="Abrir lista de orçamento"
+              aria-haspopup="dialog"
+              aria-expanded={showSideQuoteList}
               onClick={() => setShowSideQuoteList(prev => !prev)}
             >
               <div className="relative">

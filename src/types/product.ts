@@ -15,14 +15,12 @@ export interface Product {
   image_url?: string;
   product_images?: ProductImage[];
   images?: ProductImage[];
-  benefits?: string;
   category_id?: string;
   created_at?: string;
   updated_at?: string;
   featured_in_dropdown?: boolean;
   is_disabled?: boolean;
   featured_on_homepage?: boolean;
-  clearance_sale?: boolean;
   specifications?: string;
   tags?: string[];
 }
@@ -37,7 +35,6 @@ export interface ProductWithCategory {
   image_url?: string;
   product_images?: ProductImage[];
   images?: ProductImage[];
-  benefits?: string;
   category_id?: string;
   subcategory_id?: string;
   created_at?: string;
@@ -46,7 +43,6 @@ export interface ProductWithCategory {
   featured_in_dropdown?: boolean;
   is_disabled?: boolean;
   featured_on_homepage?: boolean;
-  clearance_sale?: boolean;
   specifications?: string;
   additional_images?: string[];
   brand?: string;

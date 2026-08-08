@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useWhatsAppStore } from '../contexts/WhatsAppContext';
 
@@ -16,10 +16,10 @@ const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
 }) => {
   const { openStoreSelector } = useWhatsAppStore();
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     openStoreSelector(message);
-  };
+  }, [message, openStoreSelector]);
 
   return (
     <button

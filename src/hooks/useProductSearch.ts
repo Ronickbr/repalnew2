@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useProducts } from './useProducts';
 import { useDebounce } from './useDebounce';
 import type { ProductWithCategory } from '../types/product';
@@ -40,24 +40,28 @@ export const useProductSearch = (query: string) => {
           slug: product.slug || `produto-${product.id}`,
           product_images: [{
             id: '1',
-            product_id: product.id,
             image_url: product.image_url,
             sort_order: 1,
-            created_at: '',
           }]
         } as SearchResult;
       })
   }, [debouncedQuery, products])
   
-  // Efeito para atualizar resultados e estados
-  const updateResults = useCallback(() => {
+  // Mantém o último valor filtrado acessível ao efeito sem depender da
+  // estabilidade de referência de `filteredProducts` (que deriva de `products`).
+  const filteredProductsRef = useRef(filteredProducts);
+  filteredProductsRef.current = filteredProducts;
+
+  // Efeito para atualizar resultados e estados — depende apenas de `debouncedQuery`
+  // para nunca re-executar em re-renders causados por referências instáveis.
+  useEffect(() => {
     if (debouncedQuery && debouncedQuery.length >= 3) {
       setIsSearching(true)
       setHasSearched(true)
       
       // Simular delay de busca
       const timer = setTimeout(() => {
-        setSearchResults(filteredProducts)
+        setSearchResults(filteredProductsRef.current)
         setIsSearching(false)
       }, 100)
       
@@ -69,11 +73,7 @@ export const useProductSearch = (query: string) => {
         setHasSearched(false)
       }
     }
-  }, [debouncedQuery, filteredProducts])
-
-  useEffect(() => {
-    return updateResults()
-  }, [updateResults])
+  }, [debouncedQuery])
   
   // Efeito para resetar estado quando query muda
   useEffect(() => {

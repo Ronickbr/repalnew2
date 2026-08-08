@@ -323,10 +323,11 @@ const ProductPage: React.FC = () => {
             ) : (
               <form onSubmit={handleContactSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="lead-name" className="block text-sm font-medium text-gray-700 mb-2">
                     Nome Completo *
                   </label>
                   <input
+                    id="lead-name"
                     type="text"
                     required
                     value={formData.client_name}
@@ -336,10 +337,11 @@ const ProductPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="lead-email" className="block text-sm font-medium text-gray-700 mb-2">
                     E-mail *
                   </label>
                   <input
+                    id="lead-email"
                     type="email"
                     required
                     value={formData.email}
@@ -349,10 +351,11 @@ const ProductPage: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="lead-phone" className="block text-sm font-medium text-gray-700 mb-2">
                     Telefone *
                   </label>
                   <input
+                    id="lead-phone"
                     type="tel"
                     required
                     value={formData.phone}
@@ -362,10 +365,11 @@ const ProductPage: React.FC = () => {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="lead-message" className="block text-sm font-medium text-gray-700 mb-2">
                     Mensagem
                   </label>
                   <textarea
+                    id="lead-message"
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}

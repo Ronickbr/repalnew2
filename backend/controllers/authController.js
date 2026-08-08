@@ -30,7 +30,7 @@ export const getCsrfToken = (req, res) => {
   // I will leave it as strict or match session cookie? 
   // Code was: res.cookie('csrf_token', csrf, { sameSite: 'strict', ... });
   // I'll keep it strict for CSRF unless issues arise.
-  res.cookie('csrf_token', csrf, { sameSite: 'strict', secure: false, httpOnly: false, path: '/' });
+  res.cookie('csrf_token', csrf, { sameSite: 'strict', secure: process.env.NODE_ENV === 'production', httpOnly: false, path: '/' });
   res.json({ success: true, csrfToken: csrf });
 };
 

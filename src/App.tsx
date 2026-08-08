@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -102,11 +102,7 @@ function AppContent() {
                     />
                     <Route
                       path="minha-conta"
-                      element={
-                        <ProtectedRoute requireAdmin={false}>
-                          <SS type="list" items={6}><UserProfile /></SS>
-                        </ProtectedRoute>
-                      }
+                      element={<Navigate to="/perfil" replace />}
                     />
                     <Route path="*" element={<SS type="text" items={3}><NotFound /></SS>} />
                   </Route>

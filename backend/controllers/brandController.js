@@ -41,12 +41,14 @@ export const createBrand = async (req, res) => {
       .select('*')
       .single();
     if (insertError) {
-      return res.status(500).json({ success: false, error: insertError.message, code: insertError.code, details: insertError.details, hint: insertError.hint });
+      console.error('Erro ao criar marca:', insertError);
+      return res.status(500).json({ success: false, error: 'Erro interno ao criar marca' });
     }
     await logAdminActivity(adminUser, 'create_brand', { brand_id: inserted.id });
     return res.json({ success: true, data: inserted });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+    console.error('Erro interno no controller de marcas:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 };
 
@@ -71,12 +73,14 @@ export const updateBrand = async (req, res) => {
       .select('*')
       .single();
     if (updateError) {
-      return res.status(500).json({ success: false, error: updateError.message, code: updateError.code, details: updateError.details, hint: updateError.hint });
+      console.error('Erro ao atualizar marca:', updateError);
+      return res.status(500).json({ success: false, error: 'Erro interno ao atualizar marca' });
     }
     await logAdminActivity(adminUser, 'update_brand', { brand_id: id });
     return res.json({ success: true, data: updated });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+    console.error('Erro interno no controller de marcas:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 };
 
@@ -97,12 +101,14 @@ export const deleteBrand = async (req, res) => {
       .delete()
       .eq('id', id);
     if (deleteError) {
-      return res.status(500).json({ success: false, error: deleteError.message, code: deleteError.code, details: deleteError.details, hint: deleteError.hint });
+      console.error('Erro ao deletar marca:', deleteError);
+      return res.status(500).json({ success: false, error: 'Erro interno ao deletar marca' });
     }
     await logAdminActivity(adminUser, 'delete_brand', { brand_id: id });
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Erro interno' });
+    console.error('Erro interno no controller de marcas:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 };
 
@@ -121,7 +127,8 @@ export const bulkDeleteBrands = async (req, res) => {
     const { error } = await supabase.from('brands').delete().in('id', ids);
     
     if (error) {
-       return res.status(500).json({ success: false, error: error.message });
+       console.error('Erro ao deletar marcas em massa:', error);
+       return res.status(500).json({ success: false, error: 'Erro interno ao deletar marcas em massa' });
     }
     
     await logAdminActivity(adminUser, 'bulk_delete_brand', { count: ids.length });

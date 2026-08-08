@@ -108,7 +108,9 @@ const MegaDropdown: React.FC<{
   return (
     <div
       ref={ref}
-      className={`absolute ${alignRight ? 'right-0 left-auto' : 'left-0'} top-full mt-2 w-[640px] max-w-[90vw] bg-white rounded-lg shadow-xl border border-gray-200 z-50`}
+      role="region"
+      aria-label={`Categorias de ${category.name}`}
+      className={`absolute ${alignRight ? 'right-0 left-auto' : 'left-0'} top-full mt-2 w-[min(90vw,640px)] bg-white rounded-lg shadow-xl border border-gray-200 z-50`}
     >
       <div className="flex">
         <div className="flex-1 p-5 border-r">
@@ -403,6 +405,8 @@ const NavMenu: React.FC<{ className?: string }> = ({ className = '' }) => {
             <div key={cat.id} className="relative">
               <button
                 onClick={() => setOpen(open === cat.slug ? null : cat.slug)}
+                aria-expanded={open === cat.slug}
+                aria-haspopup="true"
                 className="flex items-center gap-1 px-3 py-2 rounded-md text-primary hover:bg-red-50 hover:text-primary-hover transition"
               >
                 {Icon && <Icon className="w-6 h-6" />}

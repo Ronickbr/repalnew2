@@ -37,16 +37,8 @@ export const authMiddleware = async (req, res, next) => {
       // CSRF Check em Dev
       if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
          if (!validateCsrf(req)) {
-             // Se estiver em modo dev total, talvez ignorar CSRF?
-             // Melhor manter o padrão: se enviou request, tem que ter token.
-             // Mas se for via Postman/Curl em dev?
-             // Vou permitir passar se tiver header especial ou apenas logar aviso.
-             // Pela segurança, vou manter a validação, mas o frontend tem que mandar.
-             // Se falhar em dev, o dev percebe.
-             if (!validateCsrf(req)) {
-                console.warn('[AUTH] Falha de CSRF em modo DEV');
-                return res.status(403).json({ success: false, error: 'Token CSRF inválido ou ausente' });
-             }
+            console.warn('[AUTH] Falha de CSRF em modo DEV');
+            return res.status(403).json({ success: false, error: 'Token CSRF inválido ou ausente' });
          }
       }
       return next();

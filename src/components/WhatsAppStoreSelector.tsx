@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { X, MessageCircle } from 'lucide-react';
 import { useWhatsAppStore, Store } from '../contexts/WhatsAppContext';
 
@@ -11,24 +11,27 @@ const WhatsAppStoreSelector: React.FC<WhatsAppStoreSelectorProps> = ({
 }) => {
   const { isModalOpen, stores, currentMessage, closeStoreSelector, redirectToWhatsApp } = useWhatsAppStore();
 
-  if (!isModalOpen) return null;
-
-  const handleStoreSelect = (store: Store) => {
+  const handleStoreSelect = useCallback((store: Store) => {
     const messageToSend = currentMessage || message;
     redirectToWhatsApp(store, messageToSend);
-  };
+  }, [currentMessage, message, redirectToWhatsApp]);
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
+  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       closeStoreSelector();
     }
-  };
+  }, [closeStoreSelector]);
+
+  if (!isModalOpen) return null;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={handleOverlayClick}
-    >
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={handleOverlayClick}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Selecionar loja para contato"
+      >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -38,6 +41,7 @@ const WhatsAppStoreSelector: React.FC<WhatsAppStoreSelectorProps> = ({
           </h2>
           <button
             onClick={closeStoreSelector}
+            aria-label="Fechar seleção de loja"
             className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
           >
             <X className="w-5 h-5" />

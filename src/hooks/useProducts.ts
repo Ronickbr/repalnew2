@@ -88,7 +88,6 @@ const transformProductWithCategory = (
     name: raw.name || 'Produto',
     slug: raw.slug || generateSlug(raw.name || ''),
     description: raw.description || undefined,
-    benefits: raw.benefits || undefined,
     specifications: raw.specifications || undefined,
     category_id: raw.category_id != null ? String(raw.category_id) : undefined,
     subcategory_id: raw.subcategory_id != null ? String(raw.subcategory_id) : undefined,
@@ -96,7 +95,6 @@ const transformProductWithCategory = (
     featured_in_dropdown: raw.featured_in_dropdown || false,
     is_disabled: raw.is_disabled || false,
     featured_on_homepage: raw.featured_on_homepage || false,
-    clearance_sale: raw.clearance_sale || false,
     active: raw.active !== undefined ? !!raw.active : true,
     created_at: raw.created_at || new Date().toISOString(),
     updated_at: raw.updated_at || new Date().toISOString(),
@@ -108,6 +106,7 @@ const transformProductWithCategory = (
 };
 
 export const useProducts = () => {
+  const queryClient = useQueryClient();
   const query = useQuery<ProductWithCategory[]>({
     queryKey: queryKeys.products.all,
     queryFn: async () => {
@@ -122,7 +121,6 @@ export const useProducts = () => {
           name,
           slug,
           description,
-          benefits,
           specifications,
           category_id,
           subcategory_id,
@@ -130,7 +128,6 @@ export const useProducts = () => {
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
-          clearance_sale,
           image,
           active,
           created_at,
@@ -150,13 +147,9 @@ export const useProducts = () => {
     retry: 1,
   });
 
-  const fetchProducts = useCallback(async () => {
-    try {
-      await query.refetch();
-    } catch (err) {
-      console.warn('[useProducts] refetch falhou:', err);
-    }
-  }, [query]);
+  const fetchProducts = useCallback(() => {
+    return queryClient.refetchQueries({ queryKey: queryKeys.products.all });
+  }, [queryClient]);
 
   return useMemo(() => ({
     data: query.data ?? [],
@@ -187,11 +180,9 @@ export const useFeaturedProductsHome = () => {
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
-          clearance_sale,
           image,
           created_at,
-          updated_at,
-          price
+          updated_at
         `)
         .eq('active', true)
         .or('featured.eq.true,featured_on_homepage.eq.true')
@@ -297,8 +288,6 @@ export const useFeaturedProductByCategory = (categoryId: string | number) => {
 };
 
 export const useProductBySlug = (slug: string) => {
-  useQueryClient();
-
   return useQuery<ProductWithCategory | null>({
     queryKey: queryKeys.products.bySlug(slug),
     queryFn: async (): Promise<ProductWithCategory | null> => {
@@ -439,14 +428,12 @@ export const useLatestProducts = (limit: number = 6) => {
           name,
           slug,
           description,
-          benefits,
           image,
           category_id,
           featured,
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
-          clearance_sale,
           created_at,
           updated_at
         `)
@@ -486,14 +473,12 @@ export const useSimilarProducts = (
           name,
           slug,
           description,
-          benefits,
           category_id,
           subcategory_id,
           featured,
           featured_in_dropdown,
           is_disabled,
           featured_on_homepage,
-          clearance_sale,
           image,
           created_at,
           updated_at

@@ -24,7 +24,8 @@ export default function BannerCarousel({
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isHovered, setIsHovered] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [preloadedImages, setPreloadedImages] = useState<Set<number>>(new Set());
+  const [isInView, setIsInView] = useState(true);
+  const preloadedImagesRef = useRef<Set<number>>(new Set());
   const carouselRef = useRef<HTMLDivElement>(null);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -46,15 +47,17 @@ export default function BannerCarousel({
   }, [isTransitioning]);
 
   // Preload images for smooth transitions
+  // Usa um ref (e não state) para evitar re-renders e re-subscriptions do efeito
+  // de autoplay a cada imagem pré-carregada.
   const preloadImage = useCallback((index: number) => {
-    if (banners[index] && !preloadedImages.has(index)) {
+    if (banners[index] && !preloadedImagesRef.current.has(index)) {
       const img = new Image();
       img.onload = () => {
-        setPreloadedImages(prev => new Set(prev).add(index));
+        preloadedImagesRef.current.add(index);
       };
       img.src = banners[index].image_url;
     }
-  }, [banners, preloadedImages]);
+  }, [banners]);
 
   // Navigate to next banner
   const nextBanner = useCallback(() => {
@@ -105,7 +108,7 @@ export default function BannerCarousel({
 
   // Auto-play functionality with smooth progress animation
   useEffect(() => {
-    if (!isPlaying || isHovered || banners.length <= 1) return;
+    if (!isPlaying || isHovered || !isInView || banners.length <= 1) return;
 
     let startTime: number;
     let animationId: number;
@@ -124,7 +127,7 @@ export default function BannerCarousel({
         startTime = currentTime;
       }
 
-      if (isPlaying && !isHovered) {
+      if (isPlaying && !isHovered && isInView) {
         animationId = requestAnimationFrame(animate);
       }
     };
@@ -140,7 +143,7 @@ export default function BannerCarousel({
         progressEl.style.width = '0%';
       }
     };
-  }, [isPlaying, isHovered, nextBanner, autoPlayInterval, banners.length]);
+  }, [isPlaying, isHovered, isInView, nextBanner, autoPlayInterval, banners.length]);
 
   // Reset current index if banners change
   useEffect(() => {
@@ -168,6 +171,7 @@ export default function BannerCarousel({
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          setIsInView(entry.isIntersecting);
           if (entry.isIntersecting) {
             // Preload all images when carousel comes into view
             banners.forEach((_, index) => {
@@ -350,7 +354,7 @@ export default function BannerCarousel({
                   e.currentTarget.alt = 'Imagem não encontrada';
                 }}
                 onLoad={() => {
-                  setPreloadedImages(prev => new Set(prev).add(index));
+                  preloadedImagesRef.current.add(index);
                 }}
               />
             </picture>
@@ -472,30 +476,4 @@ export default function BannerCarousel({
 
     </div>
   );
-}
-
-// Add custom CSS for animations
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.7;
-    }
-  }
-  
-  @media (prefers-reduced-motion: reduce) {
-    * {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-`;
-
-if (!document.head.querySelector('style[data-banner-carousel]')) {
-  style.setAttribute('data-banner-carousel', 'true');
-  document.head.appendChild(style);
 }

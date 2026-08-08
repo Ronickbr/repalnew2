@@ -79,7 +79,7 @@ const MultipleImageUpload: React.FC<MultipleImageUploadProps> = ({
         onImagesChange([...images, ...newImages]);
       }
     } catch (error) {
-      console.error('Erro ao fazer upload da imagem:', error);
+      console.warn('Erro ao fazer upload da imagem:', error);
       setError('Erro ao fazer upload da imagem');
     } finally {
       setIsLoading(false);

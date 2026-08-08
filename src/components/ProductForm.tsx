@@ -146,7 +146,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         const nextVal = initialData[key];
         // Apenas atualiza se o valor vindo de fora for diferente
         if (typeof nextVal !== 'undefined' && nextVal !== prev[key]) {
-          (changes as any)[key] = nextVal as any;
+          changes[key] = nextVal as never;
         }
       }
 
@@ -421,9 +421,9 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col lg:flex-row">
         {/* Sidebar com navegação por seções */}
-        <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+        <div className="w-full lg:w-80 flex-shrink-0 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-6 overflow-y-auto max-h-48 lg:max-h-none">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               {initialData ? 'Editar Produto' : 'Novo Produto'}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { table } from '../../lib/schema';
+import { generateTemporaryPassword } from '../../utils/password';
 import { 
   Plus, 
   Edit, 
@@ -93,6 +94,7 @@ export default function UserManager() {
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [createdCredential, setCreatedCredential] = useState<{ email: string; password: string } | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -221,6 +223,8 @@ export default function UserManager() {
         email: formData.email.toLowerCase().trim()
       };
 
+      let createdPassword: string | null = null;
+
       if (editingUser) {
         const { error } = await supabase
           .from(table('admin_users'))
@@ -230,9 +234,11 @@ export default function UserManager() {
         if (error) throw error;
       } else {
         // Para criar novo usuário, precisamos usar o auth do Supabase
+        // A senha temporária é gerada aleatoriamente (nunca hardcoded)
+        createdPassword = generateTemporaryPassword();
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userData.email,
-          password: 'temporario123', // Senha temporária - usuário deve redefinir
+          password: createdPassword,
         });
 
         if (authError) throw authError;
@@ -256,6 +262,9 @@ export default function UserManager() {
 
       await fetchUsers();
       handleCloseForm();
+      if (createdPassword) {
+        setCreatedCredential({ email: userData.email, password: createdPassword });
+      }
     } catch (err) {
       setFormErrors({ submit: err instanceof Error ? err.message : 'Erro ao salvar usuário' });
     } finally {
@@ -1005,6 +1014,38 @@ export default function UserManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {createdCredential && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Usuário criado</h2>
+              <button
+                className="rounded p-1 text-gray-400 hover:text-gray-600"
+                onClick={() => setCreatedCredential(null)}
+                aria-label="Fechar"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">
+              Envie a senha temporária abaixo ao novo usuário. Ela só é exibida uma vez.
+            </p>
+            <div className="mt-3 rounded-md bg-gray-50 p-3">
+              <p className="text-xs font-medium text-gray-500">E-mail</p>
+              <p className="text-sm text-gray-900 break-all">{createdCredential.email}</p>
+              <p className="mt-2 text-xs font-medium text-gray-500">Senha temporária</p>
+              <p className="text-base font-mono text-gray-900 break-all select-all">{createdCredential.password}</p>
+            </div>
+            <button
+              className="mt-4 w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              onClick={() => setCreatedCredential(null)}
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}

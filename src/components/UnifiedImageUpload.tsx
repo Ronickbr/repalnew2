@@ -99,7 +99,7 @@ const UnifiedImageUpload: React.FC<UnifiedImageUploadProps> = ({
         onImagesChange([...images, ...newImages]);
       }
     } catch (error) {
-      console.error('Erro ao processar imagens:', error);
+      console.warn('Erro ao processar imagens:', error);
       setError('Erro ao processar imagens');
     } finally {
       setIsLoading(false);

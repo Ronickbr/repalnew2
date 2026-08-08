@@ -79,7 +79,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));

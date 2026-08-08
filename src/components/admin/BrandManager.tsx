@@ -101,9 +101,10 @@ export default function BrandManager() {
         'buscar marcas'
       );
 
-      if (result && (result as any).data) {
-        setBrands((result as any).data || []);
-        announceToScreenReader(`${(result as any).data.length || 0} marcas carregadas com sucesso`);
+      if (result) {
+        const data = (result as unknown as { data: Brand[] }).data || [];
+        setBrands(data);
+        announceToScreenReader(`${data.length} marcas carregadas com sucesso`);
       }
     } catch (err) {
       handleError(err, 'Erro ao carregar marcas');

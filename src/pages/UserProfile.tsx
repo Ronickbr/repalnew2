@@ -408,8 +408,9 @@ const UserProfile: React.FC = () => {
             <form onSubmit={handleUpdatePassword}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
+                  <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
                   <input
+                    id="new-password"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -419,8 +420,9 @@ const UserProfile: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Senha</label>
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">Confirmar Nova Senha</label>
                   <input
+                    id="confirm-password"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

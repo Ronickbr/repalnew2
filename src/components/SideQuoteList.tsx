@@ -48,7 +48,7 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
       openStoreSelector(fullMessage);
       onClose();
     } catch (error) {
-      console.error('Erro ao enviar orçamento:', error);
+      console.warn('Erro ao enviar orçamento:', error);
       alert('Erro ao enviar orçamento. Tente novamente.');
     }
   };
@@ -85,6 +85,9 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Lista de orçamento"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
@@ -94,6 +97,7 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
           </div>
           <button
             onClick={onClose}
+            aria-label="Fechar lista de orçamento"
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-full transition-colors duration-200"
           >
             <X className="h-5 w-5" />
@@ -138,6 +142,7 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                              aria-label={`Diminuir quantidade de ${item.name}`}
                               className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors duration-200"
                             >
                               <Minus className="h-4 w-4" />
@@ -147,6 +152,7 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
                             </span>
                             <button
                               onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                              aria-label={`Aumentar quantidade de ${item.name}`}
                               className="p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors duration-200"
                             >
                               <Plus className="h-4 w-4" />
@@ -155,6 +161,7 @@ const SideQuoteList: React.FC<SideQuoteListProps> = ({ isOpen, onClose }) => {
                           
                           <button
                             onClick={() => removeItem(item.id)}
+                            aria-label={`Remover ${item.name} da lista`}
                             className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
                           >
                             <Trash2 className="h-4 w-4" />

@@ -10,7 +10,8 @@ export const getProducts = async (req, res) => {
     const data = await productService.getAll();
     return res.json({ success: true, data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message || 'Erro interno ao listar produtos' });
+    console.error('Erro ao listar produtos:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno ao listar produtos' });
   }
 };
 
@@ -34,11 +35,10 @@ export const createProduct = async (req, res) => {
     return res.json({ success: true, data });
   } catch (err) {
     const status = err.message === 'Dados do produto inválidos' ? 400 : 500;
-    return res.status(status).json({ 
-      success: false, 
-      error: err.message, 
-      details: err.details,
-      hint: err.details?.hint 
+    console.error('Erro ao criar produto:', err);
+    return res.status(status).json({
+      success: false,
+      error: status === 400 ? err.message : 'Erro interno ao criar produto'
     });
   }
 };
@@ -58,7 +58,8 @@ export const updateProduct = async (req, res) => {
     return res.json({ success: true, data });
   } catch (err) {
     const status = err.message === 'Dados inválidos' ? 400 : 500;
-    return res.status(status).json({ success: false, error: err.message });
+    console.error('Erro ao atualizar produto:', err);
+    return res.status(status).json({ success: false, error: status === 400 ? err.message : 'Erro interno ao atualizar produto' });
   }
 };
 
@@ -77,7 +78,8 @@ export const deleteProduct = async (req, res) => {
     }
     return res.json({ success: true, message: 'Produto deletado com sucesso' });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message || 'Erro interno ao deletar produto' });
+    console.error('Erro ao deletar produto:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno ao deletar produto' });
   }
 };
 
@@ -102,6 +104,7 @@ export const bulkDeleteProducts = async (req, res) => {
       failed: result.failed || []
     });
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message || 'Erro interno ao deletar produtos em massa' });
+    console.error('Erro ao deletar produtos em massa:', err);
+    return res.status(500).json({ success: false, error: 'Erro interno ao deletar produtos em massa' });
   }
 };

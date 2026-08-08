@@ -1,4 +1,4 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
+import React, { memo, useCallback, useState, useRef, useEffect } from 'react';
 import { ChevronDown, Grid3X3 } from 'lucide-react';
 
 interface Category {
@@ -42,7 +42,7 @@ const CategoryMenu: React.FC<CategoryMenuProps> = memo(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleCategoryClick = (categoryId: string) => {
+  const handleCategoryClick = useCallback((categoryId: string) => {
     if (categoryId === 'all') {
       onCategorySelect('all');
       onSubcategorySelect('');
@@ -55,18 +55,18 @@ const CategoryMenu: React.FC<CategoryMenuProps> = memo(({
     } else {
       setOpenDropdown(categoryId);
     }
-  };
+  }, [openDropdown, onCategorySelect, onSubcategorySelect]);
 
-  const handleSubcategoryClick = (categoryId: string, subcategoryId: string) => {
+  const handleSubcategoryClick = useCallback((categoryId: string, subcategoryId: string) => {
     onCategorySelect(categoryId);
     onSubcategorySelect(subcategoryId);
     setOpenDropdown(null);
-  };
+  }, [onCategorySelect, onSubcategorySelect]);
 
-  const getCategoryDisplayName = (categoryId: string) => {
+  const getCategoryDisplayName = useCallback((categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
     return category?.name || categoryId;
-  };
+  }, [categories]);
 
   return (
     <div className={`bg-white border-b border-gray-200 ${className}`} ref={menuRef}>

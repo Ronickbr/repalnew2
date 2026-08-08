@@ -70,7 +70,11 @@ class AuthService {
     }
 
     const hashed = typeof userData.password_hash === 'string' && userData.password_hash.startsWith('$2');
-    const valid = hashed ? await bcrypt.compare(password, userData.password_hash) : userData.password_hash === password;
+    if (!hashed) {
+      console.warn(`[AUTH] Usuário ${emailLower} possui hash de senha inválido/legado. Rejeitando login para forçar redefinição.`);
+      throw new Error('Credenciais inválidas');
+    }
+    const valid = await bcrypt.compare(password, userData.password_hash);
     
     if (!valid) {
       throw new Error('Credenciais inválidas');

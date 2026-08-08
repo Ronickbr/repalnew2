@@ -1,5 +1,5 @@
 import React, { useCallback, memo, useEffect, useRef, forwardRef } from 'react';
-import { Link, LinkProps, useLocation, useMatch } from 'react-router-dom';
+import { Link, LinkProps } from 'react-router-dom';
 import { queryClient } from '../lib/react-query';
 
 type SmartLinkProps = LinkProps & {
@@ -57,16 +57,9 @@ const SmartLinkInner = forwardRef<HTMLAnchorElement, SmartLinkProps>((props, for
     ...rest
   } = props;
 
-  const location = useLocation();
   const timerRef = useRef<number | undefined>(undefined);
   const linkRef = useRef<HTMLAnchorElement | null>(null);
   const prefetchedRef = useRef(false);
-
-  const isStringTo = typeof to === 'string';
-  const matchPath = isStringTo ? to.split('?')[0] : '__no_smartlink_match__';
-  const matchEnd = isStringTo ? to === '/' : false;
-  const matchResult = useMatch({ path: matchPath, end: matchEnd });
-  const isActive = isStringTo ? !!matchResult : false;
 
   const toPath = typeof to === 'string' ? to : to.pathname || '/';
 
@@ -167,9 +160,6 @@ const SmartLinkInner = forwardRef<HTMLAnchorElement, SmartLinkProps>((props, for
       (forwardedRef as React.MutableRefObject<HTMLAnchorElement | null>).current = node;
     }
   }, [forwardedRef]);
-
-  void location;
-  void isActive;
 
   return (
     <Link

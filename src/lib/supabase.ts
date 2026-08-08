@@ -106,7 +106,9 @@ export async function logActivity(payload: {
   if (!isSupabaseConfigured || !isActivityLogsEnabled) return
   try {
     await supabase.from(table('activity_logs')).insert(payload)
-  } catch {}
+  } catch (err) {
+    console.warn('Falha ao registrar atividade:', err instanceof Error ? err.message : err)
+  }
 }
 
 // Types para o banco de dados
@@ -517,7 +519,6 @@ export interface Product {
   slug: string;
   description?: string;
   specifications?: string;
-  benefits?: string;
   category_id?: number;
   subcategory_id?: number;
   image_url?: string;

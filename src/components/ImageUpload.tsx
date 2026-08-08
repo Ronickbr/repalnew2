@@ -90,17 +90,17 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     }
   }, [handleFile]);
 
-  const handleRemove = () => {
+  const handleRemove = useCallback(() => {
     onChange(null);
     setError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
+  }, [onChange]);
 
-  const openFileDialog = () => {
+  const openFileDialog = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
   return (
     <div className={`space-y-3 ${className}`}>
