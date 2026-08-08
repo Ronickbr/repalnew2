@@ -70,8 +70,9 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = await productService.delete(id);
-    if (!data) {
+    const adminUser = req.admin;
+    const deleted = await productService.delete(id, adminUser);
+    if (!deleted) {
       return res.status(404).json({ success: false, error: 'Produto não encontrado' });
     }
     return res.json({ success: true, message: 'Produto deletado com sucesso' });
@@ -87,12 +88,19 @@ export const deleteProduct = async (req, res) => {
  */
 export const bulkDeleteProducts = async (req, res) => {
   try {
-    const { ids } = req.body;
+    const adminUser = req.admin;
+    const { ids } = req.body || {};
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ success: false, error: 'Nenhum ID de produto fornecido para exclusão em massa' });
     }
-    const data = await productService.bulkDelete(ids);
-    return res.json({ success: true, message: `${data.count} produtos deletados com sucesso` });
+    const result = await productService.bulkDelete(ids, adminUser);
+    const deletedCount = typeof result.deletedCount === 'number' ? result.deletedCount : ids.length;
+    return res.json({
+      success: true,
+      message: `${deletedCount} produtos deletados com sucesso`,
+      deletedCount,
+      failed: result.failed || []
+    });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message || 'Erro interno ao deletar produtos em massa' });
   }

@@ -20,8 +20,12 @@ const validateCsrf = (req) => {
 
 export const authMiddleware = async (req, res, next) => {
   try {
-    // 1. Verificar Dev Bypass
-    if (ENV.DEV_AUTH_BYPASS || !isSupabaseConfigured) {
+    // 1. Verificar Dev Bypass (apenas se explicitamente habilitado E estivermos fora de produção)
+    // IMPORTANTE: Nunca fazer bypass automático em produção por falta de configuração!
+    const isDevEnvironment = ENV.NODE_ENV !== 'production';
+    const canBypassAuth = ENV.DEV_AUTH_BYPASS === true && isDevEnvironment;
+
+    if (canBypassAuth) {
       req.admin = { 
         id: 'dev-admin', 
         email: 'dev@local', 
@@ -62,10 +66,15 @@ export const authMiddleware = async (req, res, next) => {
 
     // Validar usuário no Supabase
     const supabase = getServiceClient();
+    const userId = payload.sub || payload.id;
+    if (!userId) {
+      res.clearCookie(ENV.ADMIN_COOKIE_NAME, { path: '/' });
+      return res.status(401).json({ success: false, error: 'Token inválido (sem subject)' });
+    }
     const { data: adminUser, error } = await supabase
       .from('admin_users')
       .select('*')
-      .eq('id', payload.id)
+      .eq('id', userId)
       .single();
 
     if (error || !adminUser || !adminUser.active) {

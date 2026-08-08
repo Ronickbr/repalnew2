@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -14,6 +14,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, isAdmin, loading, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Mostrar loading enquanto verifica autenticação
   if (loading) {
@@ -55,7 +56,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             Sua conta foi desativada. Entre em contato com o administrador do sistema.
           </p>
           <button
-            onClick={() => window.location.href = '/login'}
+            onClick={() => navigate('/login', { replace: true })}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Voltar ao Login
@@ -83,13 +84,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           </p>
           <div className="space-y-3">
             <button
-              onClick={() => window.history.back()}
+              onClick={() => navigate(-1)}
               className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
             >
               Voltar
             </button>
             <button
-              onClick={() => window.location.href = '/login'}
+              onClick={() => navigate('/login', { replace: true })}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Fazer Login Novamente

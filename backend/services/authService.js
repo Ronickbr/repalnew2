@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import crypto from 'crypto';
 import { ENV } from '../config/env.js';
 import { isSupabaseConfigured, getServiceClient } from '../config/supabase.js';
 import { logAdminActivity } from '../utils/logger.js';
@@ -25,11 +26,12 @@ class AuthService {
   }
 
   /**
-   * Generates a random CSRF token.
-   * @returns {string} The CSRF token.
+   * Generates a cryptographically secure random CSRF token.
+   * Uses crypto.randomBytes for CSPRNG instead of weak Math.random().
+   * @returns {string} The CSRF token (hex-encoded).
    */
   issueCsrfToken() {
-    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    return crypto.randomBytes(32).toString('hex') + Date.now().toString(36);
   }
 
   /**
@@ -84,6 +86,18 @@ class AuthService {
     
     // Direct Login
     const token = this.issueJwt(baseUser);
+
+    // Update last_login timestamp
+    try {
+      const sbLocal = getServiceClient();
+      await sbLocal
+        .from('admin_users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', baseUser.id);
+    } catch (updateErr) {
+      console.warn('Falha ao atualizar last_login (login normal):', updateErr instanceof Error ? updateErr.message : String(updateErr));
+    }
+
     await logAdminActivity(baseUser, 'login', { email });
     return { success: true, requires2fa: false, token, user: baseUser };
   }
@@ -135,6 +149,18 @@ class AuthService {
 
     const baseUser = { id: userData.id, email: userData.email, name: userData.name, role: userData.role, active: userData.active };
     const token = this.issueJwt(baseUser);
+
+    // Update last_login timestamp after successful 2FA
+    try {
+      const sbLocal = getServiceClient();
+      await sbLocal
+        .from('admin_users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', baseUser.id);
+    } catch (updateErr) {
+      console.warn('Falha ao atualizar last_login (login 2FA):', updateErr instanceof Error ? updateErr.message : String(updateErr));
+    }
+
     await logAdminActivity(baseUser, 'login_2fa', {});
     
     return { success: true, token, user: baseUser };

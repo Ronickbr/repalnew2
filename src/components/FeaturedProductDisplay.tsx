@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useFeaturedProductByCategory, useProductsByCategory } from '../hooks/useProducts';
 import type { ProductWithCategory } from '../types/product';
 
@@ -10,6 +11,7 @@ interface FeaturedProductDisplayProps {
 }
 
 const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categoryId, isOpen }) => {
+  const navigate = useNavigate();
   const { data: featuredProduct, isLoading: isLoadingFeatured } = useFeaturedProductByCategory(categoryId);
   const { data: allProducts, isLoading: isLoadingAll } = useProductsByCategory(categoryId);
 
@@ -136,8 +138,8 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <button
           className="w-full py-3 bg-gradient-to-r from-[#E75A1F] to-[#F06422] text-white font-semibold rounded-lg hover:from-[#d0501c] hover:to-[#e05a1f] active:from-[#b84618] active:to-[#c8501c] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-md hover:shadow-lg mb-2"
           onClick={() => {
-            // Navegar para página de detalhes do produto
-            window.location.href = `/produto/${displayProduct.id}`;
+            const slug = displayProduct.slug || String(displayProduct.id);
+            navigate(`/produto/${slug}`);
           }}
           aria-label={`Ver detalhes de ${displayProduct.name}`}
         >
@@ -189,7 +191,7 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <button
           className="w-full py-3 bg-gradient-to-r from-[#E75A1F] to-[#F06422] text-white font-semibold rounded-lg hover:from-[#d0501c] hover:to-[#e05a1f] active:from-[#b84618] active:to-[#c8501c] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-md hover:shadow-lg mb-2"
           onClick={() => {
-            window.location.href = `/produto/${mockProduct.slug}`;
+            navigate(`/produto/${mockProduct.slug}`);
           }}
         >
           Ver Mais
@@ -240,8 +242,8 @@ const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categor
         <button
           className="w-full py-3 bg-gradient-to-r from-[#E75A1F] to-[#F06422] text-white font-semibold rounded-lg hover:from-[#d0501c] hover:to-[#e05a1f] active:from-[#b84618] active:to-[#c8501c] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 shadow-md hover:shadow-lg mb-2"
           onClick={() => {
-            // Navegar para página de detalhes do produto
-            window.location.href = `/produto/${displayProduct?.id}`;
+            const slug = displayProduct?.slug || String(displayProduct?.id ?? '');
+            if (slug) navigate(`/produto/${slug}`);
           }}
           aria-label={`Ver detalhes de ${displayProduct?.name || 'produto'}`}
         >

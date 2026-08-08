@@ -38,11 +38,45 @@ const ensureDirectoryExists = (dirPath) => {
   }
 };
 
+function validateMagicBytes(buffer, allowedMimeTypes) {
+  const signatures = {
+    'image/jpeg': [0xFF, 0xD8, 0xFF],
+    'image/png':  [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+    'image/gif':  [0x47, 0x49, 0x46, 0x38],
+    'image/webp': [0x52, 0x49, 0x46, 0x46]
+  };
+
+  for (const mimeType of allowedMimeTypes) {
+    const sig = signatures[mimeType];
+    if (!sig) continue;
+    let matches = true;
+    for (let i = 0; i < sig.length; i++) {
+      if (buffer[i] !== sig[i]) { matches = false; break; }
+    }
+    if (matches) return true;
+  }
+  return false;
+}
+
 export default async function handler(req, res) {
-  // Configurar CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.VITE_FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ].filter(Boolean);
+
+  const requestOrigin = req.headers.origin || '';
+  const isAllowedOrigin = allowedOrigins.includes(requestOrigin) ||
+    (process.env.NODE_ENV !== 'production' && !requestOrigin);
+
+  const safeOrigin = isAllowedOrigin && requestOrigin ? requestOrigin : 'null';
+  res.setHeader('Access-Control-Allow-Origin', safeOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -53,21 +87,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Usar multer como middleware
     const uploadMiddleware = upload.single('image');
-    
+
     await new Promise((resolve, reject) => {
       uploadMiddleware(req, res, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
+        if (err) { reject(err); } else { resolve(); }
       });
     });
 
     if (!req.file) {
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+    }
+
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validateMagicBytes(req.file.buffer, allowedMimeTypes)) {
+      return res.status(400).json({ error: 'Arquivo inválido: conteúdo não corresponde a uma imagem válida' });
     }
 
     // Caminho para a pasta img no diretório public
@@ -104,9 +138,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: error.message });
     }
 
+    console.error('Erro interno no upload de imagem (detalhes técnicos para audit):', error);
     res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: error.message 
+      error: 'Erro interno do servidor ao processar imagem'
     });
   }
 }

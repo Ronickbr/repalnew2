@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }> => {
     try {
       setLoading(true);
       if (devAuthBypass) {
@@ -110,13 +110,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (error) {
           console.error('Supabase login error:', error);
           
-          // Log failed login attempt (without user_id obviously)
-          await supabase.from('activity_logs').insert({
-             action: 'login_failed',
-             resource_type: 'auth',
-             details: { email, error: error.message },
-             status: 'error'
-          });
+          try {
+            await supabase.from('activity_logs').insert({
+               action: 'login_failed',
+               resource_type: 'auth',
+               details: JSON.stringify({ email, error: error.message }),
+               status: 'error'
+            });
+          } catch (logErr) {
+            console.warn('Falha ao registrar login_failed em activity_logs:', logErr);
+          }
           
           return { success: false, error: error.message || 'Credenciais inválidas' };
         }
@@ -127,14 +130,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         setUser(adminUser);
 
-        // Log successful login
-        await supabase.from('activity_logs').insert({
-           user_id: u.id,
-           action: 'login',
-           resource_type: 'auth',
-           details: { email: u.email, role: metaRole },
-           status: 'success'
-        });
+        try {
+          await supabase.from('activity_logs').insert({
+             user_id: u.id,
+             action: 'login',
+             resource_type: 'auth',
+             details: JSON.stringify({ email: u.email, role: metaRole }),
+             status: 'success'
+          });
+        } catch (logErr) {
+          console.warn('Falha ao registrar login em activity_logs:', logErr);
+        }
 
         return { success: true, user: adminUser };
       } catch (e: unknown) {
@@ -144,16 +150,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setLoading(false);
     }
-  };
-  
-  const logout = async (): Promise<void> => {
+  }, []);
+
+  const logout = useCallback(async (): Promise<void> => {
     try {
       await supabase.auth.signOut();
       setUser(null);
     } catch {}
-  };
+  }, []);
 
-  const updateProfile = async (data: { name?: string }): Promise<{ success: boolean; error?: string }> => {
+  const updateProfile = useCallback(async (data: { name?: string }): Promise<{ success: boolean; error?: string }> => {
     try {
       if (!user) return { success: false, error: 'Usuário não autenticado' };
 
@@ -172,9 +178,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar perfil';
       return { success: false, error: errorMessage };
     }
-  };
+  }, [supabase, setUser]);
 
-  const updatePassword = async (password: string): Promise<{ success: boolean; error?: string }> => {
+  const updatePassword = useCallback(async (password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
@@ -183,18 +189,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar senha';
       return { success: false, error: errorMessage };
     }
-  };
+  }, [supabase]);
   
   const isAuthenticated = !!user;
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   
   // Função simples de permissões baseada no papel do usuário
-  const hasPermission = (permission: string): boolean => {
+  const hasPermission = useCallback((permission: string): boolean => {
     if (!user) return false;
-    
+
     // Super admin tem todas as permissões
     if (user.role === 'super_admin') return true;
-    
+
     // Admin tem permissões administrativas
     if (user.role === 'admin') {
       const adminPermissions = [
@@ -205,7 +211,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       ];
       return adminPermissions.includes(permission);
     }
-    
+
     // Outros papéis podem ter permissões específicas
     if (user.role === 'editor') {
       const editorPermissions = [
@@ -214,11 +220,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       ];
       return editorPermissions.includes(permission);
     }
-    
+
     return false;
-  };
-  
-  const value: AuthContextType = {
+  }, [user]);
+
+  const value: AuthContextType = useMemo(() => ({
     user,
     loading,
     login,
@@ -228,7 +234,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAuthenticated,
     isAdmin,
     hasPermission
-  };
+  }), [user, loading, login, logout, updateProfile, updatePassword, isAuthenticated, isAdmin, hasPermission]);
   
   return (
     <AuthContext.Provider value={value}>

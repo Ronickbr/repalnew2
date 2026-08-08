@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 
 interface BudgetItem {
   id: string;
@@ -131,34 +131,34 @@ export const BudgetProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [state.items]);
 
-  const addItem = (item: Omit<BudgetItem, 'quantity' | 'addedAt'>) => {
+  const addItem = useCallback((item: Omit<BudgetItem, 'quantity' | 'addedAt'>) => {
     const newItem: BudgetItem = {
       ...item,
       quantity: 1,
       addedAt: new Date()
     };
     dispatch({ type: 'ADD_ITEM', payload: newItem });
-  };
+  }, []);
 
-  const removeItem = (id: string) => {
+  const removeItem = useCallback((id: string) => {
     dispatch({ type: 'REMOVE_ITEM', payload: id });
-  };
+  }, []);
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = useCallback((id: string, quantity: number) => {
     dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
-  };
+  }, []);
 
-  const clearBudget = () => {
+  const clearBudget = useCallback(() => {
     dispatch({ type: 'CLEAR_BUDGET' });
-  };
+  }, []);
 
-  const value: BudgetContextType = {
+  const value: BudgetContextType = useMemo(() => ({
     state,
     addItem,
     removeItem,
     updateQuantity,
     clearBudget
-  };
+  }), [state.items, state.totalItems, addItem, removeItem, updateQuantity, clearBudget]);
 
   return (
     <BudgetContext.Provider value={value}>
@@ -174,3 +174,38 @@ export const useBudget = () => {
   }
   return context;
 };
+
+/**
+ * Selector estável: retorna apenas true/false se um produto específico está no orçamento.
+ * Evita re-renderizar TODOS os ProductCards quando itens não-relacionados mudam.
+ */
+export function useIsProductInBudget(productId: string | number): boolean {
+  const ctx = useBudget();
+  const idStr = String(productId);
+  return useMemo(
+    () => ctx.state.items.some(item => String(item.id) === idStr),
+    [ctx.state.items, idStr]
+  );
+}
+
+interface BudgetActions {
+  addItem: BudgetContextType['addItem'];
+  removeItem: BudgetContextType['removeItem'];
+  updateQuantity: BudgetContextType['updateQuantity'];
+  clearBudget: BudgetContextType['clearBudget'];
+}
+
+/**
+ * Retorna APENAS as ações mutáveis do orçamento (identidades sempre estáveis).
+ * Usar em componentes como ProductCard que NÃO precisam ler todo o state,
+ * evitando re-renders quando state.totalItems ou state.items não relacionados mudam.
+ */
+export function useBudgetActions(): BudgetActions {
+  const ctx = useBudget();
+  return useMemo(() => ({
+    addItem: ctx.addItem,
+    removeItem: ctx.removeItem,
+    updateQuantity: ctx.updateQuantity,
+    clearBudget: ctx.clearBudget,
+  }), [ctx.addItem, ctx.removeItem, ctx.updateQuantity, ctx.clearBudget]);
+}

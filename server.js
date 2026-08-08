@@ -26,16 +26,54 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware Global
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}));
+// Middleware Global - Segurança
+const helmetDirectives = {
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      'default-src': ["'self'"],
+      'img-src': ["'self'", 'data:', 'blob:', 'https:', 'http://i.imgur.com', 'https://i.imgur.com'],
+      'script-src': ["'self'", "'unsafe-inline'", 'https://www.googletagmanager.com', 'https://connect.facebook.net'],
+      'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      'connect-src': ["'self'", 'https:', 'wss:'],
+      'frame-src': ['https://www.googletagmanager.com', 'https://www.facebook.com'],
+    },
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  hsts: ENV.NODE_ENV === 'production' ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false,
+  frameguard: { action: 'sameorigin' },
+  noSniff: true,
+  permittedCrossDomainPolicies: { policy: 'none' },
+  hidePoweredBy: true,
+};
+app.use(helmet(helmetDirectives));
+
+const allowedDevOrigins = [
+  ENV.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+].filter(Boolean);
 
 const corsOptions = {
-  origin: ENV.NODE_ENV === 'production' ? ENV.FRONTEND_URL : true,
+  origin: ENV.NODE_ENV === 'production'
+    ? ENV.FRONTEND_URL
+    : (origin, callback) => {
+        if (!origin || allowedDevOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS não autorizado para origem: ' + origin), false);
+        }
+      },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization']
+  allowedHeaders: ['Content-Type', 'X-CSRF-Token', 'Authorization'],
+  optionsSuccessStatus: 204,
+  preflightContinue: false,
+  maxAge: 86400,
 };
 
 app.use(cors(corsOptions));

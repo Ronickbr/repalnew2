@@ -1,3 +1,11 @@
+## 2026-08-08 - v0.6.1
+
+### Corrigido
+- Add noscript iframe to body
+
+### Manutenção
+- update gitignore
+
 ## 2026-02-24 - v0.5.11
 
 ### Alterado
