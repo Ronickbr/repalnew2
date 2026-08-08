@@ -1,3 +1,8 @@
+## 2026-08-08 - v0.6.2
+
+### Corrigido
+- restore original favicon and fix react vendor chunking to resolve blank screen
+
 ## 2026-08-08 - v0.6.1
 
 ### Corrigido

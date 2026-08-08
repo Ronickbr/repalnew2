@@ -296,14 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.6.1`
+- **Versão**: `v0.6.2`
 - **Data**: 2026-08-08
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: add siteSettings to queryKeys; Add noscript iframe to body
-- **Manutenção**: implementa CI/CD com GitHub Actions e versionamento automático por Conventional Commits; update gitignore
-- **merge**: feature/optimize-ai-settings → master (implementação CI/CD + lint fixes)
+- **Corrigido**: restore original favicon and fix react vendor chunking to resolve blank screen
 
 <!-- RELEASE-AUTO-END -->
