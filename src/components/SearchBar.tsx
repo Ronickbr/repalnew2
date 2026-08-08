@@ -50,14 +50,14 @@ const SearchBar: React.FC<SearchBarProps> = memo(({
 
   // Controlar visibilidade do dropdown
   useEffect(() => {
-    const shouldShowDropdown = query.length >= 3 && (searchResults.length > 0 || isSearching || isEmpty)
-    setIsDropdownOpen(shouldShowDropdown)
-  }, [query, searchResults, isSearching, isEmpty])
+    const shouldShowDropdown = query.length >= 3 && (searchResults.length > 0 || isSearching || isEmpty);
+    setIsDropdownOpen(prev => (prev !== shouldShowDropdown ? shouldShowDropdown : prev));
+  }, [query, searchResults.length, isSearching, isEmpty]);
 
-  // Reset do índice selecionado quando resultados mudam
+  // Reset do índice selecionado quando a query muda
   useEffect(() => {
-    setSelectedIndex(-1)
-  }, [searchResults])
+    setSelectedIndex(-1);
+  }, [query]);
   
   // Busca geral quando não há resultados específicos
   const handleSearch = useCallback(() => {

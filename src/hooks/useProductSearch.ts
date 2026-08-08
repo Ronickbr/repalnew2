@@ -32,18 +32,20 @@ export const useProductSearch = (query: string) => {
     })
       .slice(0, 10) // Limitar a 10 resultados
       .map(product => {
-        // Garantir que o produto tenha a estrutura correta para o SearchDropdown
+        if (product.product_images || !product.image_url) {
+          return product as SearchResult;
+        }
         return {
           ...product,
           slug: product.slug || `produto-${product.id}`,
-          product_images: product.product_images || (product.image_url ? [{
+          product_images: [{
             id: '1',
             product_id: product.id,
             image_url: product.image_url,
             sort_order: 1,
-            created_at: new Date().toISOString()
-          }] : [])
-        } as SearchResult
+            created_at: '',
+          }]
+        } as SearchResult;
       })
   }, [debouncedQuery, products])
   

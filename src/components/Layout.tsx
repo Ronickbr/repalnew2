@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { Outlet, useLocation, useNavigation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Header from './Header';
 import Footer from './Footer';
@@ -9,7 +9,6 @@ import { logActivity } from '../lib/supabase';
 const Layout: React.FC = () => {
   const { siteName, metaTitle, metaDescription, metaKeywords, canonicalBaseUrl } = useSiteSettings();
   const location = useLocation();
-  const navigation = useNavigation();
 
   const rawOrigin = (canonicalBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '')).trim();
   const origin = rawOrigin.replace(/\/+$/, '');
@@ -21,8 +20,6 @@ const Layout: React.FC = () => {
     canonicalPath = '/categorias';
   }
   const canonicalHref = origin ? `${origin}${canonicalPath}` : undefined;
-
-  const isNavigating = navigation.state !== 'idle';
 
   useEffect(() => {
     const vidKey = 'repal_visitor_id';
@@ -72,18 +69,6 @@ const Layout: React.FC = () => {
       }
     }
   }, [location.pathname]);
-
-  const contentStyle = useMemo<React.CSSProperties>(() => {
-    if (!isNavigating) {
-      return { transition: 'opacity 150ms ease-out, filter 150ms ease-out' };
-    }
-    return {
-      opacity: 0.7,
-      filter: 'blur(0.5px)',
-      transition: 'opacity 100ms ease-out, filter 100ms ease-out',
-      willChange: 'opacity, filter',
-    } as React.CSSProperties;
-  }, [isNavigating]);
 
   const pageTitle = useMemo(
     () => metaTitle || `${siteName || 'Repal Equipamentos'} - Equipamentos Gastronômicos Profissionais`,
@@ -135,12 +120,7 @@ const Layout: React.FC = () => {
       </Helmet>
       <div className="min-h-screen flex flex-col bg-white" data-layout-root>
         <Header />
-        <main
-          className="flex-1"
-          style={contentStyle}
-          aria-busy={isNavigating || undefined}
-          data-nav-state={navigation.state}
-        >
+        <main className="flex-1">
           <Outlet />
         </main>
         <Footer />
