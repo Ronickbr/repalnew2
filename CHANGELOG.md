@@ -1,3 +1,9 @@
+## 2026-08-08 - v0.6.3
+
+### Corrigido
+- auditoria de seguranca, correcoes de UI e tela em branco (busca)
+- remove useNavigation to fix blank screen on BrowserRouter
+
 ## 2026-08-08 - v0.6.2
 
 ### Corrigido
