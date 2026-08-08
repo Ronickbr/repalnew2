@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { fetchIntegrations } from './lib/integrations.ts';
+import { fetchIntegrations } from './lib/integrations';
 
 const SUPABASE_URL_PUBLIC = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 
