@@ -291,3 +291,18 @@ Para suporte técnico, entre em contato:
 - Cookies de sessão: `HttpOnly`, `Secure`, `SameSite=Strict`
 - CSRF: cookie `csrf_token` + cabeçalho `X-CSRF-Token` em mutações
 - 2FA: TOTP com verificação no backend
+
+<!-- RELEASE-AUTO-START -->
+
+## Última Release
+
+- **Versão**: `v0.6.1`
+- **Data**: 2026-08-08
+- **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
+
+### Resumo das Alterações
+
+- **Corrigido**: Add noscript iframe to body
+- **Manutenção**: update gitignore
+
+<!-- RELEASE-AUTO-END -->

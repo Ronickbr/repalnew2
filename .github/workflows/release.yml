@@ -1,0 +1,153 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release (Version & Publish)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run check
+
+      - name: Run build (pre-release validation)
+        run: npm run build
+
+      - name: Determine next version and update files
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT=$(node scripts/release.mjs | tee /tmp/release-output.log)
+          echo "$OUTPUT"
+
+          NO_RELEASE=$(echo "$OUTPUT" | grep -E '^NO_RELEASE=' | cut -d= -f2 || true)
+          NEW_VERSION=$(echo "$OUTPUT" | grep -E '^NEW_VERSION=' | cut -d= -f2 || true)
+          NEW_VERSION_TAG=$(echo "$OUTPUT" | grep -E '^NEW_VERSION_TAG=' | cut -d= -f2 || true)
+          BUMP_LEVEL=$(echo "$OUTPUT" | grep -E '^BUMP_LEVEL=' | cut -d= -f2 || true)
+
+          echo "no_release=${NO_RELEASE}" >> $GITHUB_OUTPUT
+          echo "new_version=${NEW_VERSION}" >> $GITHUB_OUTPUT
+          echo "new_version_tag=${NEW_VERSION_TAG}" >> $GITHUB_OUTPUT
+          echo "bump_level=${BUMP_LEVEL}" >> $GITHUB_OUTPUT
+
+          if [ "$NO_RELEASE" = "1" ]; then
+            echo "Nenhuma release necessária. Encerrando."
+            exit 0
+          fi
+
+          if [ -z "${NEW_VERSION}" ]; then
+            echo "Erro: Não foi possível determinar a nova versão."
+            exit 1
+          fi
+
+      - name: Configure git identity for automated commit
+        if: steps.version.outputs.no_release != '1'
+        shell: bash
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit, tag and push version bump
+        id: commit_tag
+        if: steps.version.outputs.no_release != '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.new_version }}"
+          TAG="v${VERSION}"
+          MSG="chore(release): ${TAG} [skip ci]"
+
+          git add package.json package-lock.json CHANGELOG.md README.md 2>/dev/null || true
+          git add -A -- package.json package-lock.json CHANGELOG.md README.md 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "Aviso: Sem alterações para commitar após o script de release."
+          else
+            git commit -m "${MSG}"
+          fi
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Aviso: Tag ${TAG} já existe. Removendo tag local para recriar."
+            git tag -d "${TAG}" || true
+          fi
+
+          git tag -a "${TAG}" -m "Release ${TAG}"
+
+          git push --follow-tags origin master
+
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "commit_msg=${MSG}" >> $GITHUB_OUTPUT
+
+      - name: Clean dist and rebuild with bumped version
+        if: steps.version.outputs.no_release != '1'
+        run: |
+          if [ -d dist ]; then rm -rf dist; fi
+          npm run build
+
+      - name: Create dist ZIP
+        id: zip
+        if: steps.version.outputs.no_release != '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.new_version }}"
+          ZIP_NAME="repalnew2-v${VERSION}-dist.zip"
+          (cd dist && zip -r "../${ZIP_NAME}" .)
+          ls -la "${ZIP_NAME}"
+          echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
+          echo "zip_path=./${ZIP_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release (with --generate-notes)
+        if: steps.version.outputs.no_release != '1'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.new_version_tag }}"
+          ZIP_PATH="${{ steps.zip.outputs.zip_path }}"
+          ZIP_NAME="${{ steps.zip.outputs.zip_name }}"
+
+          if [ ! -f "${ZIP_PATH}" ]; then
+            echo "Erro: Arquivo ZIP não encontrado em ${ZIP_PATH}"
+            exit 1
+          fi
+
+          gh release create "${TAG}" \
+            "${ZIP_PATH}#${ZIP_NAME}" \
+            --title "Release ${TAG}" \
+            --generate-notes

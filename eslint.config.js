@@ -7,6 +7,8 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   { ignores: [
     'dist',
+    '**/tsconfig*.json',
+    '*.tsbuildinfo',
     'src/components/admin/**',
     'src/pages/admin/**',
     'src/services/**',
@@ -19,10 +21,17 @@ export default tseslint.config(
     'src/hooks/useAuth.tsx',
     'src/hooks/useProducts.ts',
     'src/hooks/useSubcategories.ts',
-    'src/pages/CategoryProducts.tsx',
+    'src/pages/**/CategoryProducts.tsx',
     'src/pages/Home.tsx',
     'src/components/ProductForm.tsx',
-    'src/components/DatabaseTest.tsx'
+    'src/components/DatabaseTest.tsx',
+    'server.js',
+    'backend/**',
+    'api/**',
+    'scripts/**',
+    'server-lib/**',
+    'supabase/**',
+    'public/**',
   ] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
