@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Search, Filter, ChevronLeft, ChevronRight, Grid2x2, List } from 'lucide-react'
 import { useCategories, useSubcategoriesByCategory } from '../hooks/useCategories'
@@ -33,12 +33,12 @@ const CategoryProducts: React.FC = () => {
 
   const { data: categoryProducts = [], isLoading } = useProductsByCategory(selectedCategorySlug || '')
 
-  const { data: subcategories = [] } = useSubcategoriesByCategory(
-    useMemo(() => {
-      const found = categories?.find(c => c.slug === (selectedCategorySlug || ''))
-      return found?.id || ''
-    }, [categories, selectedCategorySlug])
-  )
+  const categoryIdForSubcategories = useMemo(() => {
+    const found = categories?.find(c => c.slug === (selectedCategorySlug || ''))
+    return found?.id || ''
+  }, [categories, selectedCategorySlug])
+
+  const { data: subcategories = [] } = useSubcategoriesByCategory(categoryIdForSubcategories)
 
   useEffect(() => {
     if (isFilterModalOpen && modalRef.current) trapFocus(modalRef.current)
@@ -67,8 +67,6 @@ const CategoryProducts: React.FC = () => {
     setSelectedSubcategories(next)
     setCurrentPage(1)
   }, [searchParams])
-
-  
 
   const subcategoryCounts = useMemo(() => {
     const map = new Map<string, number>()
@@ -115,15 +113,15 @@ const CategoryProducts: React.FC = () => {
     return subcategories.find(s => String(s.id) === String(first) || String(s.slug) === String(first)) || null
   }, [subcategories, selectedSubcategories])
 
-  const handleCategoryChange = (slug: string) => {
+  const handleCategoryChange = useCallback((slug: string) => {
     if (!slug) return
     setSelectedCategorySlug(slug)
     setSelectedSubcategories([])
     navigate(`/categorias/${slug}`)
     setCurrentPage(1)
-  }
+  }, [navigate])
 
-  const handleSubcategoryToggle = (id: string) => {
+  const handleSubcategoryToggle = useCallback((id: string) => {
     setSelectedSubcategories(prev => {
       const sub = subcategories.find(s => String(s.id) === String(id))
       const slug = sub?.slug ? String(sub.slug) : ''
@@ -142,24 +140,64 @@ const CategoryProducts: React.FC = () => {
       }
       return Array.from(set)
     })
-  }
+  }, [subcategories])
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     setIsFilterModalOpen(false)
-  }
+  }, [])
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm('')
     setSelectedSubcategories([])
     setSortBy('name')
     setViewMode('grid')
     setCurrentPage(1)
-  }
+  }, [])
+
+  const handleOpenFilterModal = useCallback(() => {
+    setIsFilterModalOpen(true)
+  }, [])
+
+  const handleCloseFilterModal = useCallback(() => {
+    setIsFilterModalOpen(false)
+  }, [])
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+  }, [])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('')
+  }, [])
+
+  const handleSetViewGrid = useCallback(() => {
+    setViewMode('grid')
+  }, [])
+
+  const handleSetViewList = useCallback(() => {
+    setViewMode('list')
+  }, [])
+
+  const handlePageSizeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPageSize(Number(e.target.value))
+  }, [])
+
+  const handlePrevPage = useCallback(() => {
+    setCurrentPage(p => Math.max(1, p - 1))
+  }, [])
+
+  const handleNextPage = useCallback(() => {
+    setCurrentPage(p => Math.min(totalPages, p + 1))
+  }, [totalPages])
+
+  const handleViewDetails = useCallback((p: ProductWithCategory) => {
+    navigate(`/produto/${p.slug || p.id}`)
+  }, [navigate])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6 bg-white/70 backdrop-blur-sm rounded-full px-5 py-3 shadow-sm border border-gray-200/50" aria-label="breadcrumb">
+        <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6 bg-white/80 rounded-full px-5 py-3 shadow-sm border border-gray-200/50" aria-label="breadcrumb">
           <Link to="/" className="hover:text-primary transition-colors duration-200 font-medium">Início</Link>
           {currentCategory && (
             <>
@@ -185,7 +223,7 @@ const CategoryProducts: React.FC = () => {
                   <Filter className="h-4 w-4 text-gray-600" />
                   <span className="font-semibold text-gray-900">Filtros</span>
                 </div>
-                <button onClick={() => setIsFilterModalOpen(true)} className="lg:hidden text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200">
+                <button onClick={handleOpenFilterModal} className="lg:hidden text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200">
                   Abrir
                 </button>
               </div>
@@ -225,9 +263,9 @@ const CategoryProducts: React.FC = () => {
                   <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Busca</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input id="search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Buscar produto" className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" aria-label="Buscar produtos" />
+                    <input id="search" value={searchTerm} onChange={handleSearchChange} placeholder="Buscar produto" className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" aria-label="Buscar produtos" />
                     {searchTerm && (
-                      <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-sm px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">Limpar</button>
+                      <button onClick={handleClearSearch} className="absolute right-2 top-1/2 -translate-y-1/2 text-sm px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">Limpar</button>
                     )}
                   </div>
                 </div>
@@ -247,20 +285,20 @@ const CategoryProducts: React.FC = () => {
                   <span className="text-sm text-gray-600">Mostrando {totalItems === 0 ? 0 : startIndex + 1} a {endIndex} de {totalItems} produtos</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setIsFilterModalOpen(true)} className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 lg:hidden" aria-label="Abrir filtros">
+                  <button onClick={handleOpenFilterModal} className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 lg:hidden" aria-label="Abrir filtros">
                     <Filter className="h-4 w-4 text-gray-600" />
                     <span>Filtros</span>
                   </button>
                   <div className="ml-3 flex items-center gap-1" role="group" aria-label="Alternar visualização">
-                    <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'grid'} aria-label="Visualização em grade">
+                    <button onClick={handleSetViewGrid} className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'grid'} aria-label="Visualização em grade">
                       <Grid2x2 className="h-4 w-4" />
                     </button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'list'} aria-label="Visualização em lista">
+                    <button onClick={handleSetViewList} className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} aria-pressed={viewMode === 'list'} aria-label="Visualização em lista">
                       <List className="h-4 w-4" />
                     </button>
                   </div>
                   <label className="ml-3 text-sm text-gray-700">Itens por página</label>
-                  <select value={pageSize} onChange={e => setPageSize(Number(e.target.value))} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" aria-label="Itens por página">
+                  <select value={pageSize} onChange={handlePageSizeChange} className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" aria-label="Itens por página">
                     <option value={12}>12</option>
                     <option value={24}>24</option>
                     <option value={36}>36</option>
@@ -278,7 +316,7 @@ const CategoryProducts: React.FC = () => {
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4' : 'space-y-3'}>
                 {paginatedProducts.map(product => (
-                  <ProductCard key={product.id} product={product} viewMode={viewMode} onViewDetails={(p) => navigate(`/produto/${p.slug || p.id}`)} />
+                  <ProductCard key={product.id} product={product} viewMode={viewMode} onViewDetails={handleViewDetails} />
                 ))}
                 {paginatedProducts.length === 0 && (
                   <div className="text-center text-gray-600 py-10">Nenhum produto encontrado</div>
@@ -287,12 +325,12 @@ const CategoryProducts: React.FC = () => {
             )}
 
             <div className="mt-6 flex items-center justify-between">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`} aria-disabled={currentPage === 1}>
+              <button onClick={handlePrevPage} disabled={currentPage === 1} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`} aria-disabled={currentPage === 1}>
                 <ChevronLeft className="h-4 w-4" />
                 <span>Anterior</span>
               </button>
               <span className="text-sm text-gray-700">Página {currentPage} de {totalPages}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalItems === 0} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${currentPage === totalPages || totalItems === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`} aria-disabled={currentPage === totalPages || totalItems === 0}>
+              <button onClick={handleNextPage} disabled={currentPage === totalPages || totalItems === 0} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border ${currentPage === totalPages || totalItems === 0 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`} aria-disabled={currentPage === totalPages || totalItems === 0}>
                 <span>Próxima</span>
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -308,7 +346,7 @@ const CategoryProducts: React.FC = () => {
                   <Filter className="h-4 w-4 text-gray-600" />
                   <span className="font-semibold text-gray-900">Filtros</span>
                 </div>
-                <button onClick={() => setIsFilterModalOpen(false)} className="text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200">Fechar</button>
+                <button onClick={handleCloseFilterModal} className="text-sm px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200">Fechar</button>
               </div>
               <div className="mt-4 space-y-4">
                 <div>
@@ -343,9 +381,9 @@ const CategoryProducts: React.FC = () => {
                   <label htmlFor="m-search" className="block text-sm font-medium text-gray-700 mb-1">Busca</label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input id="m-search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Buscar produto" className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                    <input id="m-search" value={searchTerm} onChange={handleSearchChange} placeholder="Buscar produto" className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                     {searchTerm && (
-                      <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-sm px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">Limpar</button>
+                      <button onClick={handleClearSearch} className="absolute right-2 top-1/2 -translate-y-1/2 text-sm px-2 py-1 rounded bg-gray-100 hover:bg-gray-200">Limpar</button>
                     )}
                   </div>
                 </div>
@@ -363,4 +401,3 @@ const CategoryProducts: React.FC = () => {
 }
 
 export default CategoryProducts
-

@@ -61,7 +61,7 @@ class EncryptionService {
     
     const iv = Buffer.from(ivHex, 'hex');
     const authTag = Buffer.from(authTagHex, 'hex');
-    const decipher = crypto.createCipheriv(this.algorithm, this.key, iv);
+    const decipher = crypto.createDecipheriv(this.algorithm, this.key, iv);
     
     decipher.setAuthTag(authTag);
     

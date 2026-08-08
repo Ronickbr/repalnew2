@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { Search, Loader2 } from 'lucide-react';
 import { SearchResult } from '../hooks/useProductSearch';
+import SmartLink from './SmartLink';
+import { queryKeys } from '../lib/react-query';
 
 interface SearchDropdownProps {
   results: SearchResult[];
@@ -82,12 +83,14 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
           
           {results.map((result, index) => {
             const isSelected = index === selectedIndex;
+            const slugOrId = result.slug || String(result.id);
             return (
-              <Link
+              <SmartLink
                 key={result.id}
                 id={`search-option-${result.id}`}
                 ref={isSelected ? selectedItemRef : null}
-                to={`/produto/${result.slug || result.id}`}
+                to={`/produto/${slugOrId}`}
+                prefetchQueryKeys={[queryKeys.products.bySlug(slugOrId)]}
                 onClick={() => {
                   onResultClick(result);
                   onClose();
@@ -139,7 +142,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({
                     <div className="w-2 h-2 bg-red-600 rounded-full"></div>
                   </div>
                 )}
-              </Link>
+              </SmartLink>
             );
           })}
           

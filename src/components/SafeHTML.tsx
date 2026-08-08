@@ -1,26 +1,23 @@
-import React from 'react';
-import DOMPurify from 'dompurify';
+import React, { useMemo } from 'react';
+import { sanitizeHtml, type SanitizeMode } from '../lib/utils';
 
 interface SafeHTMLProps {
   html: string;
   className?: string;
-  as?: React.ElementType; // Allow rendering as span, div, etc.
+  as?: React.ElementType;
+  mode?: SanitizeMode;
 }
 
 /**
  * Componente seguro para renderizar HTML sanitizado.
- * Centraliza a configuração do DOMPurify para prevenir XSS.
+ * Centraliza a configuração DOMPurify através de sanitizeHtml().
+ * mode padrão: `strict` (tags editoriais básicas).
  */
-export const SafeHTML: React.FC<SafeHTMLProps> = ({ html, className, as: Component = 'div' }) => {
-  const sanitized = DOMPurify.sanitize(html, {
-    USE_PROFILES: { html: true },
-    ADD_ATTR: ['target', 'rel', 'class', 'style'], 
-    // Permitir target="_blank" mas forçar rel="noopener noreferrer" se necessário, 
-    // mas DOMPurify já cuida de muitos vetores.
-  });
+export const SafeHTML: React.FC<SafeHTMLProps> = ({ html, className, as: Component = 'div', mode = 'strict' }) => {
+  const sanitized = useMemo(() => sanitizeHtml(html, mode), [html, mode]);
 
   return (
-    <Component 
+    <Component
       className={className}
       dangerouslySetInnerHTML={{ __html: sanitized }}
     />

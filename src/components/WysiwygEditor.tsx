@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import '../styles/wysiwyg-editor.css';
+import { sanitizeHtml } from '../lib/utils';
 
 interface WysiwygEditorProps {
   value: string;
@@ -20,18 +21,15 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const quillRef = useRef<Quill | null>(null);
+  const lastEmittedRef = useRef<string>('');
 
-  // Inicializar editor Quill uma única vez
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
-      // Prevenir duplicação em StrictMode: limpar qualquer resquício de inicializações anteriores
-      // Remove toolbars anteriores inseridas pelo Quill
       const prevSibling = container.previousElementSibling as HTMLElement | null;
       if (prevSibling && prevSibling.classList.contains('ql-toolbar')) {
         prevSibling.remove();
       }
-      // Limpar conteúdo do container antes de inicializar
       container.innerHTML = '';
     }
 
@@ -46,32 +44,35 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
             ['link'],
             ['clean']
           ],
+          clipboard: {
+            matchVisual: false,
+          },
         },
         placeholder,
       });
 
-      // Definir conteúdo inicial a partir da prop
       const initialHtml = (value || '').trim();
       if (initialHtml) {
-        quillRef.current.clipboard.dangerouslyPasteHTML(initialHtml);
+        const safe = sanitizeHtml(initialHtml, 'editor');
+        quillRef.current.clipboard.dangerouslyPasteHTML(safe);
       }
 
-      // Propagar mudanças do usuário
       quillRef.current.on('text-change', (_delta, _oldDelta, source) => {
-        if (source === 'user') {
-          const html = quillRef.current?.root.innerHTML || '';
-          onChange(html);
+        const rawHtml = quillRef.current?.root.innerHTML || '';
+        const safeHtml = sanitizeHtml(rawHtml, 'editor');
+        if (lastEmittedRef.current !== safeHtml) {
+          lastEmittedRef.current = safeHtml;
+          onChange(safeHtml);
         }
+        void source;
       });
     }
 
-    // Cleanup
     return () => {
       const quill = quillRef.current;
       const cleanupContainer = container;
       if (quill) {
         quill.off('text-change');
-        // Remover toolbar e conteúdo para evitar duplicação em novos mounts
         const toolbar = quill.root.parentElement?.previousElementSibling as HTMLElement | null;
         if (toolbar && toolbar.classList.contains('ql-toolbar')) {
           toolbar.remove();
@@ -86,18 +87,32 @@ const WysiwygEditor: React.FC<WysiwygEditorProps> = ({
         }
       }
     };
-  }, [onChange, placeholder, value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Sincronizar alterações externas (por exemplo, geração via IA)
+  useEffect(() => {
+    if (!placeholder) return;
+    const quill = quillRef.current;
+    if (!quill) return;
+    try {
+      (quill as unknown as { root?: HTMLElement }).root?.setAttribute?.('data-placeholder', placeholder);
+    } catch {
+      /* noop */
+    }
+  }, [placeholder]);
+
   useEffect(() => {
     const quill = quillRef.current;
     if (!quill) return;
 
     const currentHtml = quill.root.innerHTML || '';
     const nextHtml = value || '';
+    const currentSafe = sanitizeHtml(currentHtml, 'editor');
+    const nextSafe = sanitizeHtml(nextHtml, 'editor');
 
-    if (currentHtml !== nextHtml) {
-      quill.clipboard.dangerouslyPasteHTML(nextHtml);
+    if (currentSafe !== nextSafe) {
+      lastEmittedRef.current = nextSafe;
+      quill.clipboard.dangerouslyPasteHTML(nextSafe);
     }
   }, [value]);
 

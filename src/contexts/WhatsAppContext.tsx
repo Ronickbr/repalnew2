@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { logActivity, supabase } from '../lib/supabase';
 
 export interface Store {
@@ -71,16 +71,16 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  const openStoreSelector = (message?: string) => {
+  const openStoreSelector = useCallback((message?: string) => {
     setCurrentMessage(message);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const closeStoreSelector = () => {
+  const closeStoreSelector = useCallback(() => {
     setIsModalOpen(false);
-  };
+  }, []);
 
-  const redirectToWhatsApp = (store: Store, message: string = 'Olá, gostaria de mais informações') => {
+  const redirectToWhatsApp = useCallback((store: Store, message: string = 'Olá, gostaria de mais informações') => {
     const whatsappUrl = `https://wa.me/${store.phone}?text=${encodeURIComponent(message)}`;
     const details = {
       store_id: store.id,
@@ -96,12 +96,12 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
       details: JSON.stringify(details),
       user_agent: navigator.userAgent,
       status: 'success',
-    })
+    });
     window.open(whatsappUrl, '_blank');
     closeStoreSelector();
-  };
+  }, [closeStoreSelector]);
 
-  const value = {
+  const value = useMemo(() => ({
     isModalOpen,
     stores,
     loading,
@@ -109,7 +109,7 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
     openStoreSelector,
     closeStoreSelector,
     redirectToWhatsApp
-  };
+  }), [isModalOpen, stores, loading, currentMessage, openStoreSelector, closeStoreSelector, redirectToWhatsApp]);
 
   return (
     <WhatsAppContext.Provider value={value}>

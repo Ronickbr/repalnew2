@@ -1,10 +1,10 @@
 import express from 'express';
 import { generateContent } from '../controllers/aiController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { aiGenerateRateLimiter, aiGenerateSlowDown } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
-// Rota protegida para geração de conteúdo
-router.post('/generate-content', authMiddleware, generateContent);
+router.post('/generate-content', aiGenerateSlowDown, aiGenerateRateLimiter, authMiddleware, generateContent);
 
 export default router;

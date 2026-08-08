@@ -14,6 +14,7 @@ export const ENV = {
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY,
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY,
   OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || process.env.VITE_OPENROUTER_MODEL,
+  ENCRYPTION_KEY: process.env.ENCRYPTION_KEY || process.env.VITE_ENCRYPTION_KEY,
 };
 
 // Validação de Segurança para Produção

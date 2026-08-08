@@ -286,6 +286,196 @@ export interface Database {
           updated_at?: string
         }
       }
+      stores: {
+        Row: {
+          id: number | string
+          name: string
+          whatsapp_number?: string | null
+          phone?: string | null
+          address?: string | null
+          email?: string | null
+          city?: string | null
+          state?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Insert: {
+          id?: number | string
+          name: string
+          whatsapp_number?: string | null
+          phone?: string | null
+          address?: string | null
+          email?: string | null
+          city?: string | null
+          state?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number | string
+          name?: string
+          whatsapp_number?: string | null
+          phone?: string | null
+          address?: string | null
+          email?: string | null
+          city?: string | null
+          state?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      banners: {
+        Row: {
+          id: number | string
+          image_url: string
+          link_url?: string | null
+          title?: string | null
+          subtitle?: string | null
+          cta_text?: string | null
+          sort_order?: number
+          active?: boolean
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Insert: {
+          id?: number | string
+          image_url: string
+          link_url?: string | null
+          title?: string | null
+          subtitle?: string | null
+          cta_text?: string | null
+          sort_order?: number
+          active?: boolean
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number | string
+          image_url?: string
+          link_url?: string | null
+          title?: string | null
+          subtitle?: string | null
+          cta_text?: string | null
+          sort_order?: number
+          active?: boolean
+          start_date?: string | null
+          end_date?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      brands: {
+        Row: {
+          id: number | string
+          name: string
+          slug: string
+          logo_url?: string | null
+          website_url?: string | null
+          description?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Insert: {
+          id?: number | string
+          name: string
+          slug: string
+          logo_url?: string | null
+          website_url?: string | null
+          description?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number | string
+          name?: string
+          slug?: string
+          logo_url?: string | null
+          website_url?: string | null
+          description?: string | null
+          active?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      site_settings: {
+        Row: {
+          id?: number | string
+          site_info?: Record<string, any> | null
+          integrations?: Record<string, any> | null
+          maintenance?: Record<string, any> | null
+          theme?: Record<string, any> | null
+          contact?: Record<string, any> | null
+          social_media?: Record<string, any> | null
+          seo?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+        Insert: {
+          id?: number | string
+          site_info?: Record<string, any> | null
+          integrations?: Record<string, any> | null
+          maintenance?: Record<string, any> | null
+          theme?: Record<string, any> | null
+          contact?: Record<string, any> | null
+          social_media?: Record<string, any> | null
+          seo?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number | string
+          site_info?: Record<string, any> | null
+          integrations?: Record<string, any> | null
+          maintenance?: Record<string, any> | null
+          theme?: Record<string, any> | null
+          contact?: Record<string, any> | null
+          social_media?: Record<string, any> | null
+          seo?: Record<string, any> | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      activity_logs: {
+        Row: {
+          id: number | string
+          user_id?: string | number | null
+          action: string
+          resource_type?: string | null
+          resource_id?: string | number | null
+          details?: string | null
+          user_agent?: string | null
+          ip_address?: string | null
+          status?: string | null
+          created_at?: string
+        }
+        Insert: {
+          id?: number | string
+          user_id?: string | number | null
+          action: string
+          resource_type?: string | null
+          resource_id?: string | number | null
+          details?: string | null
+          user_agent?: string | null
+          ip_address?: string | null
+          status?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useActiveBanners } from '../hooks/useBanners';
 
@@ -17,6 +18,7 @@ export default function BannerCarousel({
   showIndicators = true,
   className = ''
 }: BannerCarouselProps) {
+  const navigate = useNavigate();
   const { banners, loading, error } = useActiveBanners();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
@@ -224,17 +226,32 @@ export default function BannerCarousel({
   }, []);
 
   // Handle banner click
-  const handleBannerClick = (banner: typeof banners[0]) => {
-    if (banner.link_url) {
-      // Check if it's an external link
-      if (banner.link_url.startsWith('http')) {
-        window.open(banner.link_url, '_blank', 'noopener,noreferrer');
-      } else {
-        // Internal link - use router navigation
-        window.location.href = banner.link_url;
+  const handleBannerClick = useCallback((banner: typeof banners[0]) => {
+    if (!banner.link_url) return;
+    // Check if it's an external link
+    if (/^https?:\/\//i.test(banner.link_url)) {
+      try {
+        const url = new URL(banner.link_url);
+        const sameOrigin = typeof window !== 'undefined' && url.origin === window.location.origin;
+        if (sameOrigin) {
+          const target = `${url.pathname}${url.search}${url.hash}`;
+          navigate(target);
+          return;
+        }
+      } catch {
+        /* fallthrough: open external */
       }
+      window.open(banner.link_url, '_blank', 'noopener,noreferrer');
+    } else if (banner.link_url.startsWith('#')) {
+      if (typeof document !== 'undefined') {
+        const el = document.querySelector(banner.link_url);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    } else {
+      // Internal link - preserve SPA state
+      navigate(banner.link_url);
     }
-  };
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -352,8 +369,8 @@ export default function BannerCarousel({
             onClick={prevBanner}
             disabled={isTransitioning}
             className={`absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 
-              bg-gradient-to-r from-black/60 to-black/40 backdrop-blur-sm
-              hover:from-black/80 hover:to-black/60 
+              bg-gradient-to-r from-black/70 to-black/50
+              hover:from-black/85 hover:to-black/65
               text-white p-2 sm:p-3 rounded-full 
               transition-all duration-300 ease-out
               opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
@@ -371,8 +388,8 @@ export default function BannerCarousel({
             onClick={nextBanner}
             disabled={isTransitioning}
             className={`absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 
-              bg-gradient-to-l from-black/60 to-black/40 backdrop-blur-sm
-              hover:from-black/80 hover:to-black/60 
+              bg-gradient-to-l from-black/70 to-black/50
+              hover:from-black/85 hover:to-black/65
               text-white p-2 sm:p-3 rounded-full 
               transition-all duration-300 ease-out
               opacity-0 group-hover:opacity-100 group-focus-within:opacity-100
@@ -390,8 +407,8 @@ export default function BannerCarousel({
             <button
               onClick={togglePlayPause}
               className={`absolute top-2 sm:top-4 right-2 sm:right-4 
-                bg-gradient-to-br from-black/60 to-black/40 backdrop-blur-sm
-                hover:from-black/80 hover:to-black/60 
+                bg-gradient-to-br from-black/70 to-black/50
+                hover:from-black/85 hover:to-black/65
                 text-white p-2 sm:p-2.5 rounded-full 
                 transition-all duration-300 ease-out
                 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100

@@ -74,7 +74,11 @@ export const verify2FA = async (req, res) => {
       setAuthCookie(res, result.token);
     }
     
-    return res.json({ success: true });
+    return res.json({
+      success: true,
+      token: result.token,
+      user: result.user
+    });
   } catch (err) {
     const status = err.message === 'Erro interno' ? 500 : 401; // Most errors here are validation/auth failures
     return res.status(status).json({ success: false, error: err.message });

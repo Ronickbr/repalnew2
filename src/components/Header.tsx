@@ -179,8 +179,7 @@ const Header: React.FC = () => {
                             Meu Perfil
                           </button>
                         </>
-                      )
-                    }
+                      )}
                       
                       <div className="border-t border-gray-200">
                         <button

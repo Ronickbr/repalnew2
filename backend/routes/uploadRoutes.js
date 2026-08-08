@@ -1,6 +1,7 @@
 import express from 'express';
 import { uploadImage } from '../controllers/uploadController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { uploadRateLimiter, uploadSlowDown } from '../middleware/rateLimit.js';
 import multer from 'multer';
 
 // Configuração básica do multer para memory storage, pois o controller lida com o buffer
@@ -31,6 +32,6 @@ const router = express.Router();
 // Ele checa req.file. Isso significa que ele ESPERA que um middleware ANTERIOR já tenha processado o upload.
 // ENTÃO, eu DEVO colocar o middleware do multer aqui no router.
 
-router.post('/', authMiddleware, upload.single('image'), uploadImage);
+router.post('/', uploadSlowDown, uploadRateLimiter, authMiddleware, upload.single('image'), uploadImage);
 
 export default router;

@@ -46,28 +46,72 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: true,
+      sourcemap: mode !== 'production',
+      cssCodeSplit: true,
+      assetsInlineLimit: 4096,
       minify: 'terser',
+      reportCompressedSize: true,
       terserOptions: {
         compress: {
-          drop_console: true,
-          drop_debugger: true
+          drop_console: mode === 'production',
+          drop_debugger: true,
+          passes: mode === 'production' ? 2 : 1
         }
       },
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom'],
-            supabase: ['@supabase/supabase-js'],
-            lucide: ['lucide-react'],
-            router: ['react-router-dom']
+          manualChunks: (id: string) => {
+            const norm = id.replace(/\\/g, '/');
+            if (norm.includes('node_modules/react/') || norm.includes('node_modules/scheduler/')) {
+              return 'runtime-react';
+            }
+            if (norm.includes('react-dom') || norm.includes('react-router-dom') || norm.includes('react-helmet-async')) {
+              return 'vendor-core';
+            }
+            if (norm.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            if (norm.includes('@tanstack')) {
+              return 'vendor-query';
+            }
+            if (norm.includes('zustand')) {
+              return 'vendor-query';
+            }
+            if (norm.includes('lucide-react')) {
+              return 'vendor-lucide';
+            }
+            if (norm.includes('sonner') || norm.includes('dompurify')) {
+              return 'vendor-ui-utils';
+            }
+            if (norm.includes('quill') || norm.includes('react-quill')) {
+              return 'vendor-editor';
+            }
+            if (norm.includes('xlsx') || norm.includes('sheetjs')) {
+              return 'vendor-xlsx';
+            }
+            if (norm.includes('node_modules/')) {
+              return null;
+            }
+            if (norm.includes('src/components/') && !norm.includes('src/components/admin/')) {
+              return 'components-common';
+            }
+            if (norm.includes('src/hooks/useDebounce') || norm.includes('src/hooks/usePagination')) {
+              return 'hooks-utils';
+            }
+            if (norm.includes('src/lib/utils.ts') || norm.includes('src/lib/seo.ts') || norm.includes('src/lib/api.ts')) {
+              return 'lib-utils';
+            }
+            return undefined;
           }
         }
       },
-      chunkSizeWarningLimit: 1000
+      chunkSizeWarningLimit: 600,
+      commonjsOptions: {
+        include: /node_modules/
+      }
     },
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react-router-dom', 'lucide-react', '@supabase/supabase-js']
+      include: ['react', 'react-dom', 'react-router-dom', 'lucide-react', '@supabase/supabase-js', '@tanstack/react-query', 'sonner', 'react-helmet-async']
     }
   }
 })

@@ -13,20 +13,23 @@ const rootDir = path.resolve(path.dirname(__filename), '../../');
 const getCanonicalBaseUrl = async () => {
   try {
     const anon = getAnonClient();
-    // Use environment variable as primary source of truth
     const envUrl = process.env.FRONTEND_URL;
     if (envUrl) return envUrl.replace(/\/+$/, '');
 
     if (!anon) return process.env.NODE_ENV === 'production' ? 'https://repal.com.br' : 'http://localhost:5173';
-    const { data } = await anon
+    const { data, error } = await anon
       .from('site_settings')
       .select('seo')
       .limit(1)
-      .single();
+      .maybeSingle();
+    if (error) {
+      console.warn('getCanonicalBaseUrl falhou ao buscar site_settings, usando fallback:', error.message);
+    }
     const url = data?.seo?.canonical_url || '';
     const trimmed = (url || '').trim().replace(/\/+$/, '');
     return trimmed || (process.env.NODE_ENV === 'production' ? 'https://repal.com.br' : 'http://localhost:5173');
-  } catch {
+  } catch (err) {
+    console.warn('getCanonicalBaseUrl catch, usando fallback:', err instanceof Error ? err.message : String(err));
     return process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? 'https://repal.com.br' : 'http://localhost:5173');
   }
 };
@@ -36,10 +39,27 @@ const formatDate = (dateInput) => {
       const d = dateInput ? new Date(dateInput) : new Date();
       if (isNaN(d.getTime())) return new Date().toISOString().split('T')[0];
       return d.toISOString().split('T')[0];
-    } catch {
+    } catch (err) {
+      console.warn('formatDate catch:', err instanceof Error ? err.message : String(err));
       return new Date().toISOString().split('T')[0];
     }
 };
+
+/**
+ * Escapa uma string para ser segura em um campo XML (sitemap, feed).
+ * Previne injeção de XML através de slugs/nomes maliciosos.
+ * Ver também https://www.w3.org/TR/xml/#syntax (chars < > & " ').
+ */
+function escapeXml(str) {
+  if (str == null) return '';
+  const s = typeof str === 'string' ? str : String(str);
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
 
 export const generateSitemapXml = async (originOverride) => {
   const origin = (typeof originOverride === 'string' && originOverride.trim())
@@ -70,25 +90,32 @@ export const generateSitemapXml = async (originOverride) => {
       }
       for (const c of categories || []) {
         const lastmod = formatDate(c.updated_at);
+        if (!c.slug || typeof c.slug !== 'string') continue;
+        const safeSlug = encodeURIComponent(c.slug);
         if (!c.parent_id) {
-          urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+          urls.push({ loc: `${origin}/categorias/${safeSlug}`, changefreq: 'weekly', priority: '0.6', lastmod });
         } else {
           const parent = c.parent_id ? byId.get(c.parent_id) : null;
           if (parent?.slug) {
-            urls.push({ loc: `${origin}/categorias/${parent.slug}/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+            const safeParent = encodeURIComponent(parent.slug);
+            urls.push({ loc: `${origin}/categorias/${safeParent}/${safeSlug}`, changefreq: 'weekly', priority: '0.6', lastmod });
           } else {
-            urls.push({ loc: `${origin}/categorias/${c.slug}`, changefreq: 'weekly', priority: '0.6', lastmod });
+            urls.push({ loc: `${origin}/categorias/${safeSlug}`, changefreq: 'weekly', priority: '0.6', lastmod });
           }
         }
       }
       for (const p of products || []) {
+        if (!p.slug || typeof p.slug !== 'string') continue;
         const lastmod = formatDate(p.updated_at);
-        urls.push({ loc: `${origin}/produto/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod });
+        const safeProductSlug = encodeURIComponent(p.slug);
+        urls.push({ loc: `${origin}/produto/${safeProductSlug}`, changefreq: 'weekly', priority: '0.7', lastmod });
       }
     }
-  } catch {}
+  } catch (err) {
+    console.warn('generateSitemapXml fetch catch (continuando com urls base):', err instanceof Error ? err.message : String(err));
+  }
   const urlsXml = urls
-    .map(u => `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`)
+    .map(u => `  <url>\n    <loc>${escapeXml(u.loc)}</loc>\n    <lastmod>${escapeXml(u.lastmod)}</lastmod>\n    <changefreq>${escapeXml(u.changefreq)}</changefreq>\n    <priority>${escapeXml(u.priority)}</priority>\n  </url>`)
     .join('\n');
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlsXml}\n</urlset>`;
   return xml;
@@ -212,12 +239,13 @@ export const getSitemapIndex = async (req, res) => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${origin}/sitemap.xml</loc>
-    <lastmod>${now}</lastmod>
+    <loc>${escapeXml(`${origin}/sitemap.xml`)}</loc>
+    <lastmod>${escapeXml(now)}</lastmod>
   </sitemap>
 </sitemapindex>`;
     res.type('application/xml').send(xml);
-  } catch {
+  } catch (err) {
+    console.error('getSitemapIndex catch:', err);
     res.status(500).type('text/plain').send('Erro ao gerar sitemap index');
   }
 };
@@ -236,12 +264,16 @@ export const getSitemapGz = async (req, res) => {
     }
     const zlib = await import('zlib');
     zlib.gzip(content, (err, buffer) => {
-      if (err) return res.status(500).type('text/plain').send('Erro ao comprimir sitemap');
+      if (err) {
+        console.error('getSitemapGz gzip error:', err);
+        return res.status(500).type('text/plain').send('Erro ao comprimir sitemap');
+      }
       res.setHeader('Content-Type', 'application/x-gzip');
       res.setHeader('Content-Encoding', 'gzip');
       res.send(buffer);
     });
-  } catch {
+  } catch (err) {
+    console.error('getSitemapGz catch:', err);
     res.status(500).type('text/plain').send('Erro ao gerar sitemap.gz');
   }
 };
@@ -254,9 +286,10 @@ export const getRobots = async (req, res) => {
       const content = fs.readFileSync(robotsPath, 'utf-8');
       res.type('text/plain').send(content);
     } else {
-      res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml`);
+      res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${escapeXml(origin)}/sitemap.xml`);
     }
-  } catch {
+  } catch (err) {
+    console.error('getRobots catch:', err);
     res.type('text/plain').send('User-agent: *\nAllow: /');
   }
 };
@@ -268,37 +301,45 @@ export const getFeed = async (req, res) => {
     const now = new Date().toISOString();
     let entries = [];
     if (anon) {
-      const { data: products } = await anon
+      const { data: products, error } = await anon
         .from('products')
         .select('slug, name, description, updated_at, created_at, active')
         .eq('active', true)
         .order('updated_at', { ascending: false })
         .limit(20);
-      entries = (products || []).map(p => ({
-        id: `${origin}/produto/${p.slug}`,
-        title: p.name,
-        updated: p.updated_at || p.created_at || now,
-        summary: p.description || ''
-      }));
+      if (error) {
+        console.warn('getFeed products query error, retornando feed vazio:', error.message);
+      }
+      entries = (products || []).map(p => {
+        const safeSlug = p.slug ? encodeURIComponent(p.slug) : '';
+        const url = safeSlug ? `${origin}/produto/${safeSlug}` : `${origin}/`;
+        return {
+          id: url,
+          title: p.name || 'Produto',
+          updated: p.updated_at || p.created_at || now,
+          summary: p.description || ''
+        };
+      });
     }
-    const feedEntries = entries.map(e => 
+    const feedEntries = entries.map(e =>
       `  <entry>
-    <id>${e.id}</id>
-    <title>${e.title}</title>
-    <updated>${e.updated}</updated>
-    <link href="${e.id}" />
-    <summary>${e.summary}</summary>
+    <id>${escapeXml(e.id)}</id>
+    <title>${escapeXml(e.title)}</title>
+    <updated>${escapeXml(e.updated)}</updated>
+    <link href="${escapeXml(e.id)}" />
+    <summary>${escapeXml(e.summary)}</summary>
   </entry>`).join('\n');
     const xml = `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <id>${origin}/</id>
+  <id>${escapeXml(`${origin}/`)}</id>
   <title>Repal Equipamentos - Novidades</title>
-  <updated>${now}</updated>
-  <link href="${origin}/feed.xml" rel="self" />
+  <updated>${escapeXml(now)}</updated>
+  <link href="${escapeXml(`${origin}/feed.xml`)}" rel="self" />
   ${feedEntries}
 </feed>`;
     res.type('application/atom+xml').send(xml);
-  } catch {
+  } catch (err) {
+    console.error('getFeed catch:', err);
     res.status(500).type('text/plain').send('Erro ao gerar feed');
   }
 };

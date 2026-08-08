@@ -1,96 +1,80 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from './lib/react-query'
-import './index.css'
-import './styles/responsive.css'
-import App from './App.tsx'
-import { supabase } from './lib/supabase'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+import { fetchIntegrations } from './lib/integrations.ts';
 
-function addScriptToHead(element: HTMLScriptElement) {
-  document.head.appendChild(element)
-}
+const SUPABASE_URL_PUBLIC = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 
-function createExternalScript(src: string, id: string) {
-  if (document.getElementById(id)) return
-  const s = document.createElement('script')
-  s.src = src
-  s.async = true
-  s.id = id
-  addScriptToHead(s)
-}
-
-function createInlineScript(content: string, id: string) {
-  if (document.getElementById(id)) return
-  const s = document.createElement('script')
-  s.id = id
-  s.text = content
-  addScriptToHead(s)
-}
-
-function addNoScriptToBody(content: string, id: string, prepend = false) {
-  if (document.getElementById(id)) return
-  const n = document.createElement('noscript')
-  n.id = id
-  n.innerHTML = content
-  if (prepend && document.body.firstChild) {
-    document.body.insertBefore(n, document.body.firstChild)
-    return
+function injectPreconnects() {
+  if (typeof document === 'undefined') return;
+  const preconnects: Array<{ href: string; crossorigin?: boolean }> = [
+    { href: 'https://i.imgur.com', crossorigin: true },
+  ];
+  if (SUPABASE_URL_PUBLIC) {
+    try {
+      const url = new URL(SUPABASE_URL_PUBLIC);
+      preconnects.push({ href: `${url.protocol}//${url.host}`, crossorigin: true });
+    } catch {
+      /* noop */
+    }
   }
-  document.body.appendChild(n)
-}
-
-async function loadIntegrations() {
+  const existingHrefs = new Set<string>();
   try {
-    const { data, error } = await supabase
-      .from('site_settings')
-      .select('integrations')
-      .maybeSingle()
-    if (error) return
-    const cfg = (data && (data as { integrations?: Record<string, string> }).integrations) || {}
+    const tags = document.querySelectorAll<HTMLLinkElement>('link[rel="preconnect"], link[rel="dns-prefetch"]');
+    tags.forEach((l) => { if (l.href) existingHrefs.add(l.href); });
+  } catch { /* noop */ }
 
-    const gtmId = String(cfg.google_tag_manager_id || '').trim()
-    const pixelId = String(cfg.facebook_pixel_id || '').trim()
-
-    
-
-    if (gtmId) {
-      createInlineScript(
-        `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`,
-        'gtm-init'
-      )
-      addNoScriptToBody(
-        `<iframe src="https://www.googletagmanager.com/ns.html?id=${gtmId}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`,
-        'gtm-noscript',
-        true
-      )
-    }
-
-    if (pixelId) {
-      createExternalScript('https://connect.facebook.net/en_US/fbevents.js', 'fb-pixel-loader')
-      createInlineScript(
-        `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod? n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView');`,
-        'fb-pixel-init'
-      )
-      addNoScriptToBody(
-        `<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1"/>`,
-        'fb-pixel-noscript'
-      )
-    }
-  } catch (err) {
-    console.warn('Falha ao carregar integrações', err)
+  for (const p of preconnects) {
+    try {
+      if (existingHrefs.has(p.href)) continue;
+      const pc = document.createElement('link');
+      pc.rel = 'preconnect';
+      pc.href = p.href;
+      if (p.crossorigin) pc.crossOrigin = 'anonymous';
+      document.head.appendChild(pc);
+      const dns = document.createElement('link');
+      dns.rel = 'dns-prefetch';
+      dns.href = p.href;
+      document.head.appendChild(dns);
+    } catch { /* noop */ }
   }
 }
 
 async function bootstrap() {
-  await loadIntegrations()
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
+  try {
+    const container = document.getElementById('root');
+    if (!container) return;
+
+    injectPreconnects();
+
+    const root = ReactDOM.createRoot(container);
+
+    const timeoutMs = 3000;
+    const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`timeout ${ms}ms`)), ms)),
+      ]);
+
+    try {
+      const integrations = await withTimeout(fetchIntegrations(), timeoutMs);
+      (window as unknown as { __INTEGRATIONS__?: unknown }).__INTEGRATIONS__ = integrations;
+    } catch (err) {
+      console.warn(
+        'Não foi possível carregar integrações no bootstrap:',
+        err instanceof Error ? err.message : 'timeout/erro',
+      );
+    }
+
+    root.render(
+      <React.StrictMode>
         <App />
-      </QueryClientProvider>
-    </StrictMode>,
-  )
+      </React.StrictMode>,
+    );
+  } catch (err) {
+    console.error('Falha no bootstrap da aplicação:', err);
+  }
 }
 
-bootstrap()
+void bootstrap();

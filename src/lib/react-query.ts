@@ -19,7 +19,9 @@ export const queryKeys = {
     byCategory: (categorySlug: string) => ['products', 'category', categorySlug] as const,
     bySlug: (slug: string) => ['products', 'slug', slug] as const,
     featured: ['products', 'featured'] as const,
+    homeFeatured: ['products', 'home-featured'] as const,
     search: (query: string) => ['products', 'search', query] as const,
   },
+  siteSettings: ['site_settings'] as const,
   leads: ['leads'] as const,
 } as const

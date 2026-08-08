@@ -11,6 +11,8 @@ import type { CategoryWithSubcategories, Subcategory } from '../hooks/useSubcate
 import type { ProductWithCategory } from '../types/product';
 import { useFeaturedProductsByCategory } from '../hooks/useProducts';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import SmartLink from './SmartLink';
+import { queryKeys } from '../lib/react-query';
 
 /* ----------  TYPES  ---------- */
 type Category = {
@@ -55,12 +57,13 @@ const Featured: React.FC<{ categoryId: string | number }> = ({ categoryId }) => 
         </div>
       )}
       <p className="text-sm text-gray-700">{product.name}</p>
-      <Link
-        to={`/produto/${product.id}`}
+      <SmartLink
+        to={`/produto/${product.slug || String(product.id)}`}
+        prefetchQueryKeys={[queryKeys.products.bySlug(product.slug || String(product.id))]}
         className="block w-full py-2 bg-orange-500 text-white text-center rounded hover:bg-orange-600"
       >
         Ver produto
-      </Link>
+      </SmartLink>
     </div>
   );
 };
@@ -117,13 +120,14 @@ const MegaDropdown: React.FC<{
             <ul className="space-y-2">
               {category.children?.map((sub) => (
                 <li key={sub.id}>
-                  <Link
+                  <SmartLink
                     to={`/categorias/${category.slug}?sub=${sub.id}`}
+                    prefetchQueryKeys={[queryKeys.products.byCategory(category.slug), queryKeys.categories]}
                     onClick={onClose}
                     className="block px-3 py-2 rounded text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600"
                   >
                     {sub.name}
-                  </Link>
+                  </SmartLink>
                 </li>
               ))}
             </ul>
@@ -250,13 +254,14 @@ export const MobileMenuDrawer: React.FC<{
 
             {/* Links Principais */}
             <div className="p-4 space-y-1 border-b border-gray-100">
-                <Link 
+                <SmartLink 
                   to="/" 
+                  prefetchQueryKeys={[queryKeys.products.homeFeatured, queryKeys.siteSettings, queryKeys.categories]}
                   className="flex items-center gap-3 px-3 rounded-lg text-gray-700 hover:bg-red-50 active:bg-red-100 hover:text-primary font-medium transition-colors min-h-[48px] p-3"
                   onClick={onClose}
                 >
                   <span className="text-base">Início</span>
-                </Link>
+                </SmartLink>
 
                 <Link 
                   to="/minha-conta" 
@@ -301,22 +306,24 @@ export const MobileMenuDrawer: React.FC<{
                       <div className="overflow-hidden">
                         <div className="pl-12 pr-2 py-1 space-y-1">
                           {cat.children?.map((sub) => (
-                            <Link
+                            <SmartLink
                               key={sub.id}
                               to={`/categorias/${cat.slug}?sub=${sub.id}`}
+                              prefetchQueryKeys={[queryKeys.products.byCategory(cat.slug), queryKeys.categories]}
                               onClick={onClose}
                               className="block text-sm text-gray-600 hover:text-primary active:bg-gray-50 px-2 rounded transition-colors mobile-menu-item flex items-center"
                             >
                               {sub.name}
-                            </Link>
+                            </SmartLink>
                           ))}
-                          <Link
+                          <SmartLink
                               to={`/categorias/${cat.slug}`}
+                              prefetchQueryKeys={[queryKeys.products.byCategory(cat.slug), queryKeys.categories]}
                               onClick={onClose}
                               className="block text-sm font-medium text-primary hover:underline px-2 mt-1 mobile-menu-item flex items-center"
                            >
                               Ver tudo em {cat.name}
-                           </Link>
+                           </SmartLink>
                         </div>
                       </div>
                     </div>

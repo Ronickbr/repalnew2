@@ -122,6 +122,73 @@ class ProductService {
     await logAdminActivity(adminUser, 'update_product', { product_id: id });
     return updated;
   }
+
+  /**
+   * Deletes a product by ID.
+   * @param {string|number} id - Product ID.
+   * @param {Object} adminUser - The admin user performing the action.
+   * @returns {Promise<boolean>} True if deleted.
+   * @throws {Error} If deletion fails.
+   */
+  async delete(id, adminUser) {
+    if (!id) {
+      throw new Error('ID do produto obrigatório');
+    }
+
+    if (!isSupabaseConfigured) {
+      await logAdminActivity(adminUser, 'delete_product_dev', { product_id: id });
+      return true;
+    }
+
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await logAdminActivity(adminUser, 'delete_product', { product_id: id });
+    return true;
+  }
+
+  /**
+   * Deletes multiple products by their IDs.
+   * @param {Array<string|number>} ids - List of product IDs.
+   * @param {Object} adminUser - The admin user performing the action.
+   * @returns {Promise<{ deletedCount: number, failed: Array }>} Result summary.
+   * @throws {Error} If bulk operation fails.
+   */
+  async bulkDelete(ids, adminUser) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error('Lista de IDs inválida');
+    }
+
+    const validIds = ids.filter(id => id !== null && id !== undefined && id !== '');
+    if (validIds.length === 0) {
+      throw new Error('Nenhum ID válido fornecido');
+    }
+
+    if (!isSupabaseConfigured) {
+      await logAdminActivity(adminUser, 'bulk_delete_products_dev', { count: validIds.length });
+      return { deletedCount: validIds.length, failed: [] };
+    }
+
+    const supabase = getServiceClient();
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .in('id', validIds);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await logAdminActivity(adminUser, 'bulk_delete_products', { count: validIds.length, ids: validIds });
+    return { deletedCount: validIds.length, failed: [] };
+  }
 }
 
 export const productService = new ProductService();

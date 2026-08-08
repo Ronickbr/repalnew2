@@ -1178,12 +1178,19 @@ PALAVRAS-CHAVE:
   // Export functions
   const exportToExcel = () => {
     try {
-      const data = products.map(product => ({
-        ID: product.id,
-        Nome: product.name,
-        Marca: product.brand || '',
-        Preço: product.price || 0
-      }));
+      const data = products.map(product => {
+        const productLink = `${window.location.origin}/produto/${product.slug || product.id}`;
+        const rawSpecs = (product as any).specifications || (product as any).specifications_html || '';
+        return {
+          ID: product.id,
+          Nome: product.name,
+          Marca: product.brand || '',
+          Preço: product.price || 0,
+          Descrição: stripHtmlNormalize(product.description || ''),
+          'Especificações Técnicas': stripHtmlNormalize(rawSpecs),
+          Link: productLink
+        };
+      });
 
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
