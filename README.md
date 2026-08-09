@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.7.4`
+- **Versão**: `v0.7.5`
 - **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: valida sessao backend do admin no login para evitar painel quebrado
+- **Corrigido**: consolida handlers api em funcao unica para respeitar limite do plano Hobby
 
 <!-- RELEASE-AUTO-END -->

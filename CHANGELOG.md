@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.5
+
+### Corrigido
+- consolida handlers api em funcao unica para respeitar limite do plano Hobby
+
 ## 2026-08-09 - v0.7.4
 
 ### Corrigido
