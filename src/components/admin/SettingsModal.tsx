@@ -183,9 +183,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     value={formData.openrouter_model}
                     onChange={(e) => handleInputChange('openrouter_model', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
-                    placeholder="google/gemini-2.0-flash-001"
+                    placeholder="google/gemini-2.5-flash"
                   />
-                  <p className="text-xs text-gray-500 mt-1">ID do modelo a ser utilizado (padrão: google/gemini-2.0-flash-001).</p>
+                  <p className="text-xs text-gray-500 mt-1">ID do modelo a ser utilizado (padrão: google/gemini-2.5-flash).</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Google Analytics ID</label>

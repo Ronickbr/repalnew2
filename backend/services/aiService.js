@@ -1,4 +1,4 @@
-import { ENV } from '../config/env.js';
+﻿import { ENV } from '../config/env.js';
 import { isSupabaseConfigured, getServiceClient } from '../config/supabase.js';
 
 /**
@@ -32,7 +32,7 @@ class AiService {
   /**
    * Retrieves the OpenRouter Model.
    * Prioritizes generationConfig, then ENV (OPENROUTER_MODEL), then checks database settings.
-   * Defaults to 'google/gemini-2.0-flash-001'.
+   * Defaults to 'google/gemini-2.5-flash'.
    * @param {Object} generationConfig - Configuration for generation.
    * @returns {Promise<string>} The Model ID.
    */
@@ -47,14 +47,14 @@ class AiService {
     }
 
     try {
-      if (!isSupabaseConfigured) return 'google/gemini-2.0-flash-001';
+      if (!isSupabaseConfigured) return 'google/gemini-2.5-flash';
       const supabase = getServiceClient();
       const { data, error } = await supabase
         .from('site_settings')
         .select('integrations')
         .single();
 
-      if (error) return 'google/gemini-2.0-flash-001';
+      if (error) return 'google/gemini-2.5-flash';
       
       const openRouterModel = data?.integrations?.openrouter_model;
       if (openRouterModel && String(openRouterModel).trim()) {
@@ -64,7 +64,7 @@ class AiService {
       console.error('Error fetching model from DB:', err);
     }
 
-    return 'google/gemini-2.0-flash-001';
+    return 'google/gemini-2.5-flash';
   }
 
   /**
@@ -77,7 +77,7 @@ class AiService {
   async generateContent(prompt, generationConfig) {
     const apiKey = await this.getApiKey();
     if (!apiKey) {
-      throw new Error('Chave de API da IA (OpenRouter) não configurada');
+      throw new Error('Chave de API da IA (OpenRouter) nÃ£o configurada');
     }
 
     // Determine model to use
@@ -163,7 +163,7 @@ class AiService {
     }
     
     // Default fallback if loop finishes without specific error throw
-    const error = new Error('Limite excedido ou erro de conexão com a IA');
+    const error = new Error('Limite excedido ou erro de conexÃ£o com a IA');
     error.status = 429;
     error.details = lastJson;
     throw error;

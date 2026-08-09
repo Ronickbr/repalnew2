@@ -1,13 +1,23 @@
 import { productService } from '../services/productService.js';
 
 /**
- * Retrieves the list of products.
+ * Retrieves the list of products (admin view — includes inactive products).
+ * Supports search, category/subcategory filters and sorting via query params.
  * @param {Object} req - Express request object.
  * @param {Object} res - Express response object.
  */
 export const getProducts = async (req, res) => {
   try {
-    const data = await productService.getAll();
+    const { search, category_id, subcategory_id, featured, active, sort_by, sort_order } = req.query || {};
+    const data = await productService.getAll({
+      search,
+      categoryId: category_id,
+      subcategoryId: subcategory_id,
+      featured,
+      active,
+      sortBy: sort_by,
+      sortOrder: sort_order,
+    });
     return res.json({ success: true, data });
   } catch (err) {
     console.error('Erro ao listar produtos:', err);
@@ -52,14 +62,33 @@ export const updateProduct = async (req, res) => {
   try {
     const adminUser = req.admin;
     const id = req.params.id;
-    const { product } = req.body || {};
+    const { product, additionalImages } = req.body || {};
 
-    const data = await productService.update(id, product, adminUser);
+    const data = await productService.update(id, product, additionalImages, adminUser);
     return res.json({ success: true, data });
   } catch (err) {
     const status = err.message === 'Dados inválidos' ? 400 : 500;
     console.error('Erro ao atualizar produto:', err);
     return res.status(status).json({ success: false, error: status === 400 ? err.message : 'Erro interno ao atualizar produto' });
+  }
+};
+
+/**
+ * Updates prices for multiple products in bulk (price adjustment).
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ */
+export const bulkUpdatePrice = async (req, res) => {
+  try {
+    const adminUser = req.admin;
+    const { updates } = req.body || {};
+
+    const count = await productService.bulkUpdatePrice(updates, adminUser);
+    return res.json({ success: true, data: { updated: count } });
+  } catch (err) {
+    const status = err.message === 'Nenhum produto para atualizar' || err.message === 'Dados de reajuste inválidos' ? 400 : 500;
+    console.error('Erro ao atualizar preços em massa:', err);
+    return res.status(status).json({ success: false, error: status === 400 ? err.message : 'Erro interno ao atualizar preços em massa' });
   }
 };
 

@@ -7,7 +7,7 @@ export const ENV = {
   FRONTEND_URL: process.env.FRONTEND_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5173'),
   SUPABASE_URL: process.env.VITE_SUPABASE_URL,
   SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-me',
   ADMIN_COOKIE_NAME: 'repal_admin_token',
   DEV_AUTH_BYPASS: process.env.DEV_AUTH_BYPASS === 'true',

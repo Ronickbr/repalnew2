@@ -8,18 +8,45 @@ import { logAdminActivity } from '../utils/logger.js';
 class ProductService {
   /**
    * Retrieves all products ordered by creation date (descending).
+   * @param {Object} opts - Optional filters: search, categoryId, subcategoryId, featured, active, sortBy, sortOrder.
    * @returns {Promise<Array>} List of products with their images.
    * @throws {Error} If database query fails.
    */
-  async getAll() {
+  async getAll(opts = {}) {
     if (!isSupabaseConfigured) {
       return [];
     }
     const supabase = getServiceClient();
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
-      .select('*, product_images(url, sort_order)')
-      .order('created_at', { ascending: false });
+      .select('*, categories(name), product_images(url, sort_order)');
+
+    if (opts.search) {
+      query = query.or(`name.ilike.%${opts.search}%,description.ilike.%${opts.search}%`);
+    }
+    if (opts.categoryId != null && opts.categoryId !== '') {
+      query = query.eq('category_id', opts.categoryId);
+    }
+    if (opts.subcategoryId != null && opts.subcategoryId !== '') {
+      query = query.eq('subcategory_id', opts.subcategoryId);
+    }
+    if (opts.featured === 'true') {
+      query = query.eq('featured', true);
+    } else if (opts.featured === 'false') {
+      query = query.eq('featured', false);
+    }
+    if (opts.active === 'true') {
+      query = query.eq('active', true);
+    } else if (opts.active === 'false') {
+      query = query.eq('active', false);
+    }
+
+    const allowedSort = ['created_at', 'name', 'price', 'updated_at'];
+    const sortBy = allowedSort.includes(opts.sortBy) ? opts.sortBy : 'created_at';
+    const ascending = opts.sortOrder === 'asc';
+    query = query.order(sortBy, { ascending });
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(error.message);
@@ -47,9 +74,37 @@ class ProductService {
     }
 
     const supabase = getServiceClient();
+
+    // Garantir unicidade do slug
+    let slug = productData.slug;
+    if (slug) {
+      const baseSlug = slug;
+      let counter = 1;
+      let currentSlug = slug;
+      for (;;) {
+        const { data: existing, error: checkError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('slug', currentSlug)
+          .maybeSingle();
+        if (checkError) {
+          break;
+        }
+        if (!existing) {
+          slug = currentSlug;
+          break;
+        }
+        currentSlug = `${baseSlug}-${counter}`;
+        counter += 1;
+        if (counter > 100) {
+          slug = `${baseSlug}-${Date.now()}`;
+          break;
+        }
+      }
+    }
     const { data: inserted, error: insertError } = await supabase
       .from('products')
-      .insert([productData])
+      .insert([{ ...productData, slug }])
       .select('*')
       .single();
 
@@ -86,14 +141,15 @@ class ProductService {
   }
 
   /**
-   * Updates an existing product.
+   * Updates an existing product and optionally replaces its additional images.
    * @param {string} id - Product ID.
    * @param {Object} productData - Data to update.
+   * @param {Array<string>} additionalImages - List of image URLs to replace existing ones.
    * @param {Object} adminUser - Admin user performing the action.
    * @returns {Promise<Object>} The updated product.
    * @throws {Error} If update fails.
    */
-  async update(id, productData, adminUser) {
+  async update(id, productData, additionalImages, adminUser) {
     if (!id || !productData) {
       throw new Error('Dados inválidos');
     }
@@ -114,13 +170,83 @@ class ProductService {
     if (updateError) {
       throw new Error(updateError.message);
     }
-    
-    // Note: The original controller didn't seem to handle additionalImages update logic fully 
-    // (it accepted them in body but didn't use them in update block shown in Read output).
-    // I will stick to what was visible in the Read output for updateProduct (lines 74-99).
-    
+
+    if (Array.isArray(additionalImages)) {
+      const { error: deleteError } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('product_id', id);
+
+      if (deleteError) {
+        console.warn('Erro ao remover imagens antigas:', deleteError.message);
+      } else {
+        const validImages = additionalImages.filter(img => img && img.trim() !== '');
+        if (validImages.length > 0) {
+          const imageRecords = validImages.map((url, index) => ({
+            product_id: id,
+            url,
+            sort_order: index
+          }));
+          const { error: imagesError } = await supabase
+            .from('product_images')
+            .insert(imageRecords);
+          if (imagesError) {
+            updated.images_warning = imagesError.message;
+          }
+        }
+      }
+    }
+
     await logAdminActivity(adminUser, 'update_product', { product_id: id });
     return updated;
+  }
+
+  /**
+   * Updates prices for multiple products in bulk (price adjustment).
+   * @param {Array<{id: string|number, price: number}>} updates - List of { id, price }.
+   * @param {Object} adminUser - The admin user performing the action.
+   * @returns {Promise<number>} Count of products updated.
+   * @throws {Error} If validation or update fails.
+   */
+  async bulkUpdatePrice(updates, adminUser) {
+    if (!Array.isArray(updates) || updates.length === 0) {
+      throw new Error('Nenhum produto para atualizar');
+    }
+
+    const validUpdates = updates.filter(u => {
+      if (!u || u.id === undefined || u.id === null || u.id === '') return false;
+      const price = Number(u.price);
+      return u.price !== null && u.price !== undefined && u.price !== '' && Number.isFinite(price);
+    });
+    if (validUpdates.length === 0) {
+      throw new Error('Dados de reajuste inválidos');
+    }
+
+    if (!isSupabaseConfigured) {
+      await logAdminActivity(adminUser, 'bulk_update_price_dev', { count: validUpdates.length });
+      return validUpdates.length;
+    }
+
+    const supabase = getServiceClient();
+    const now = new Date().toISOString();
+    let updatedCount = 0;
+
+    for (const update of validUpdates) {
+      const price = Number(update.price);
+      const { error } = await supabase
+        .from('products')
+        .update({ price, updated_at: now })
+        .eq('id', update.id);
+
+      if (error) {
+        console.warn(`Erro ao atualizar preço do produto ${update.id}:`, error.message);
+      } else {
+        updatedCount++;
+      }
+    }
+
+    await logAdminActivity(adminUser, 'bulk_update_price', { count: updatedCount });
+    return updatedCount;
   }
 
   /**

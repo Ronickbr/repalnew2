@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.get('/', authMiddleware, requireRole(['admin', 'super_admin']), productController.getProducts);
 router.post('/', authMiddleware, requireRole(['admin', 'super_admin']), productController.createProduct);
+router.put('/bulk-update', authMiddleware, requireRole(['admin', 'super_admin']), productController.bulkUpdatePrice);
 router.put('/:id', authMiddleware, requireRole(['admin', 'super_admin']), productController.updateProduct);
 router.delete('/:id', authMiddleware, requireRole(['admin', 'super_admin']), productController.deleteProduct);
 router.post('/bulk-delete', authMiddleware, requireRole(['admin', 'super_admin']), productController.bulkDeleteProducts);

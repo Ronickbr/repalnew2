@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { table } from '../../lib/schema';
+import { adminApi } from '../../lib/adminApi';
 import { toast } from 'sonner';
 import { 
   Search, 
@@ -88,12 +87,8 @@ const PriceAdjustmentsManager: React.FC = () => {
 
   const fetchBrands = async () => {
     try {
-      const { data, error } = await supabase
-        .from(table('brands'))
-        .select('id, name')
-        .order('name');
-      
-      if (error) throw error;
+      const result = await adminApi.getBrands();
+      const data = (result?.data || []).map((b: { id: string; name: string }) => ({ id: b.id, name: b.name }));
       setBrands(data || []);
     } catch (error) {
       console.error('Error fetching brands:', error);
@@ -104,18 +99,15 @@ const PriceAdjustmentsManager: React.FC = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from(table('products'))
-        .select(`
-          id, 
-          name, 
-          price, 
-          brand, 
-          category_id
-        `)
-        .order('name');
-      
-      if (error) throw error;
+      const result = await adminApi.getProducts({ sort_by: 'name', sort_order: 'asc' });
+      const data = (result?.data || []).map((p: Product) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        brand: p.brand,
+        category_id: p.category_id,
+        product_images: p.product_images
+      }));
       setProducts(data || []);
       setFilteredProducts(data || []);
     } catch (error) {
@@ -199,19 +191,14 @@ const PriceAdjustmentsManager: React.FC = () => {
       // Process in batches to avoid huge requests
       const updates = previewData.map(item => ({
         id: item.id,
-        price: item.newPrice,
-        updated_at: new Date().toISOString()
+        price: item.newPrice
       }));
 
-      // Supabase doesn't support bulk update with different values easily in one query
-      // unless we use upsert.
-      const { error } = await supabase
-        .from(table('products'))
-        .upsert(updates, { onConflict: 'id' });
+      const result = await adminApi.bulkUpdatePrice(updates);
 
-      if (error) throw error;
-
-      toast.success(`${previewData.length} produtos atualizados com sucesso!`);
+      if (result?.success) {
+        toast.success(`${previewData.length} produtos atualizados com sucesso!`);
+      }
       
       // Refresh products
       await fetchProducts();

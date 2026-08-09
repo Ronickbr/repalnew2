@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
-import { table } from '../../lib/schema';
-import { generateTemporaryPassword } from '../../utils/password';
+import { adminApi } from '../../lib/adminApi';
 import { 
   Plus, 
   Edit, 
@@ -105,13 +104,9 @@ export default function UserManager() {
       setLoading(true);
       setError(null);
       
-      const { data, error: supabaseError } = await supabase
-        .from(table('admin_users'))
-        .select('*')
-        .order('name');
+      const result = await adminApi.getUsers();
 
-      if (supabaseError) throw supabaseError;
-      setUsers(data || []);
+      setUsers(result.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar usuários');
     } finally {
@@ -226,38 +221,11 @@ export default function UserManager() {
       let createdPassword: string | null = null;
 
       if (editingUser) {
-        const { error } = await supabase
-          .from(table('admin_users'))
-          .update(userData)
-          .eq('id', editingUser.id);
-
-        if (error) throw error;
+        await adminApi.updateUser(editingUser.id, userData);
       } else {
-        // Para criar novo usuário, precisamos usar o auth do Supabase
-        // A senha temporária é gerada aleatoriamente (nunca hardcoded)
-        createdPassword = generateTemporaryPassword();
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: userData.email,
-          password: createdPassword,
-        });
-
-        if (authError) throw authError;
-
-        if (authData.user) {
-          const { error } = await supabase
-            .from(table('admin_users'))
-            .insert({
-              id: authData.user.id,
-              name: userData.name,
-              email: userData.email,
-              phone: userData.phone || null,
-              role: userData.role,
-              is_active: userData.is_active,
-              avatar: userData.avatar || null
-            });
-
-          if (error) throw error;
-        }
+        // Para criar novo usuário, o backend cria o auth user e retorna a senha temporária
+        const result = await adminApi.createUser(userData);
+        createdPassword = result.tempPassword || null;
       }
 
       await fetchUsers();
@@ -276,20 +244,9 @@ export default function UserManager() {
     if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
 
     try {
-      // Primeiro deletar o auth user
-      const { error: authError } = await supabase.auth.admin.deleteUser(id);
-      
-      if (authError && authError.message !== 'User not found') {
-        throw authError;
-      }
+      // O backend deleta o auth user e o registro na tabela admin_users
+      await adminApi.deleteUser(id);
 
-      // Depois deletar o registro na tabela users
-      const { error } = await supabase
-        .from(table('admin_users'))
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
       await fetchUsers();
     } catch (err) {
       alert('Erro ao excluir usuário: ' + (err instanceof Error ? err.message : 'Erro desconhecido'));
@@ -301,22 +258,9 @@ export default function UserManager() {
     if (!confirm(`Tem certeza que deseja excluir ${selectedUsers.size} usuários?`)) return;
 
     try {
-      // Deletar users um por um devido à necessidade de deletar auth users
+      // O backend deleta o auth user e o registro na tabela admin_users
       for (const userId of selectedUsers) {
-        try {
-          await supabase.auth.admin.deleteUser(userId);
-        } catch (authError: any) {
-          if (authError.message !== 'User not found') {
-            console.warn('Erro ao deletar auth user:', authError);
-          }
-        }
-
-        const { error } = await supabase
-          .from(table('admin_users'))
-          .delete()
-          .eq('id', userId);
-
-        if (error) throw error;
+        await adminApi.deleteUser(userId);
       }
 
       setSelectedUsers(new Set());
@@ -328,12 +272,7 @@ export default function UserManager() {
 
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from(table('admin_users'))
-        .update({ is_active: !currentStatus })
-        .eq('id', id);
-
-      if (error) throw error;
+      await adminApi.toggleUserStatus(id, !currentStatus);
       await fetchUsers();
     } catch (err) {
       alert('Erro ao alterar status: ' + (err instanceof Error ? err.message : 'Erro desconhecido'));

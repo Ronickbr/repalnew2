@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
+import { adminApi } from '../lib/adminApi';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -31,21 +31,12 @@ const AdminLayout: React.FC = () => {
 
   React.useEffect(() => {
     const fetchNewLeadsCount = async () => {
-      // Use RPC to avoid 'leads' keyword in URL (AdBlock workaround)
-      const { data, error } = await supabase.rpc('get_new_contacts_count');
-      
-      if (!error && typeof data === 'number') {
-        setNewLeadsCount(data);
-      } else {
-        // Fallback to direct query if RPC fails (or for development)
-        const { count, error: countError } = await supabase
-          .from(table('leads'))
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'novo');
-          
-        if (!countError && count !== null) {
-          setNewLeadsCount(count);
-        }
+      try {
+        const result = await adminApi.getLeads();
+        const count = (result.data || []).filter((l: { status?: string }) => l.status === 'novo').length;
+        setNewLeadsCount(count);
+      } catch {
+        setNewLeadsCount(0);
       }
     };
 
@@ -55,7 +46,7 @@ const AdminLayout: React.FC = () => {
     const subscription = supabase
       .channel('leads_count_changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: table('leads') }, 
+        { event: '*', schema: 'public', table: 'leads' }, 
         () => {
           fetchNewLeadsCount();
         }

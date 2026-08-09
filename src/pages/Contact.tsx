@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MapPin, Phone, Mail, Clock, Send, Check } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { table } from '../lib/schema';
+import { apiFetch } from '../lib/api';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import MyMapsComponent from '../components/MyMapsComponent';
 import WhatsAppButton from '../components/WhatsAppButton';
@@ -24,17 +23,16 @@ const Contact: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from(table('leads'))
-        .insert({
-          client_name: formData.client_name,
+      await apiFetch('/api/leads', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: formData.client_name,
           email: formData.email,
           phone: formData.phone,
           message: formData.message,
           product_name: formData.product_name || 'Contato Geral'
-        });
-
-      if (error) throw error;
+        })
+      });
 
       setSubmitted(true);
       setFormData({

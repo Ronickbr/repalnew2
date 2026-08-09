@@ -16,8 +16,7 @@ import {
   CheckCircle,
   MoreVertical
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { table } from '../../lib/schema';
+import { adminApi } from '../../lib/adminApi';
 import type { Category } from '../../lib/supabase';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useLoadingState } from '../../hooks/useLoadingState';
@@ -136,16 +135,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       clearError();
       
       const result = await handleAsync(
-        supabase
-          .from(table('categories'))
-          .select('*')
-          .order('sort_order', { ascending: true })
-          .order('name', { ascending: true }),
+        adminApi.getCategories(),
         'buscar categorias'
       );
 
       if (result) {
-        const allCategories = (result as unknown as { data: Category[] }).data || [];
+        const allCategories = result.data || [];
         setCategories(allCategories);
         
         // Filtrar apenas as categorias principais (sem parent_id) para contagem
@@ -175,16 +170,12 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
   const fetchAllSubcategories = async () => {
     try {
       const result = await handleAsync(
-        supabase
-          .from(table('categories'))
-          .select('*')
-          .not('parent_id', 'is', null)
-          .order('name', { ascending: true }),
+        adminApi.getCategories(),
         'buscar todas as subcategorias'
       );
 
       if (result) {
-        const subcategoriesData = (result as unknown as { data: Category[] }).data || [];
+        const subcategoriesData = (result.data || []).filter((cat: Category) => cat.parent_id != null);
         setSubcategories(subcategoriesData);
       }
     } catch (error) {
@@ -262,11 +253,9 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       
       // Check if slug already exists (for new categories or when updating slug)
       if (!editingCategory?.id || formData.slug !== editingCategory.slug) {
-        const { data: existingCategory } = await supabase
-          .from(table('categories'))
-          .select('id')
-          .eq('slug', formData.slug)
-          .maybeSingle();
+        const existingCategory = categories.some(
+          (cat: Category) => cat.slug === formData.slug
+        );
         
         if (existingCategory) {
           setFormErrors({ slug: 'Este slug já está em uso' });
@@ -284,10 +273,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           active: formData.active ?? true,
         };
         const result = await handleAsync(
-          supabase
-            .from(table('categories'))
-            .update(payload)
-            .eq('id', editingCategory.id),
+          adminApi.updateCategory(editingCategory.id, payload),
           'atualizar categoria'
         );
         
@@ -306,9 +292,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
           active: formData.active ?? true,
         };
         const result = await handleAsync(
-          supabase
-            .from(table('categories'))
-            .insert(payload),
+          adminApi.createCategory(payload),
           'criar categoria'
         );
         
@@ -422,10 +406,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       startLoading('Excluindo categoria...');
       
       const result = await handleAsync(
-        supabase
-          .from(table('categories'))
-          .delete()
-          .eq('id', categoryId),
+        adminApi.deleteCategory(String(categoryId)),
         'excluir categoria'
       );
       
@@ -457,10 +438,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({
       startLoading(`Excluindo ${selectedCategories.size} categorias...`);
       
       const result = await handleAsync(
-        supabase
-          .from(table('categories'))
-          .delete()
-          .in('id', Array.from(selectedCategories)),
+        adminApi.bulkDeleteCategories(Array.from(selectedCategories)),
         'excluir categorias em massa'
       );
       

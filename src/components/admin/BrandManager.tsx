@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
-import { table } from '../../lib/schema';
+import { adminApi } from '../../lib/adminApi';
 import { 
   Plus, 
   Edit, 
@@ -94,15 +94,12 @@ export default function BrandManager() {
       clearError();
       
       const result = await handleAsync(
-        supabase
-          .from(table('brands'))
-          .select('*')
-          .order('name'),
+        adminApi.getBrands(),
         'buscar marcas'
       );
 
       if (result) {
-        const data = (result as unknown as { data: Brand[] }).data || [];
+        const data = result.data || [];
         setBrands(data);
         announceToScreenReader(`${data.length} marcas carregadas com sucesso`);
       }
@@ -226,11 +223,9 @@ export default function BrandManager() {
       if (editingBrand) {
         // Check if slug already exists (for new brands or when updating slug)
         if (!editingBrand.id || formData.slug !== editingBrand.slug) {
-          const { data: existingBrand } = await supabase
-            .from(table('brands'))
-            .select('id')
-            .eq('slug', formData.slug)
-            .single();
+          const existingBrand = brands.some(
+            (b: Brand) => b.slug === formData.slug && b.id !== editingBrand.id
+          );
           
           if (existingBrand) {
             setFormErrors({ slug: 'Este slug já está em uso' });
@@ -240,10 +235,7 @@ export default function BrandManager() {
         }
 
         const result = await handleAsync(
-          supabase
-            .from(table('brands'))
-            .update(brandData)
-            .eq('id', editingBrand.id),
+          adminApi.updateBrand(editingBrand.id, brandData),
           'atualizar marca'
         );
 
@@ -255,11 +247,7 @@ export default function BrandManager() {
         }
       } else {
         // Check if slug already exists for new brands
-        const { data: existingBrand } = await supabase
-          .from(table('brands'))
-          .select('id')
-          .eq('slug', formData.slug)
-          .single();
+        const existingBrand = brands.some((b: Brand) => b.slug === formData.slug);
         
         if (existingBrand) {
           setFormErrors({ slug: 'Este slug já está em uso' });
@@ -268,9 +256,7 @@ export default function BrandManager() {
         }
 
         const result = await handleAsync(
-          supabase
-            .from(table('brands'))
-            .insert(brandData),
+          adminApi.createBrand(brandData),
           'criar marca'
         );
 
@@ -307,10 +293,7 @@ export default function BrandManager() {
       startLoading('Excluindo marca...');
       
       const result = await handleAsync(
-        supabase
-          .from(table('brands'))
-          .delete()
-          .eq('id', id),
+        adminApi.deleteBrand(id),
         'excluir marca'
       );
 
@@ -343,10 +326,7 @@ export default function BrandManager() {
       startLoading(`Excluindo ${selectedBrands.size} marcas...`);
       
       const result = await handleAsync(
-        supabase
-          .from(table('brands'))
-          .delete()
-          .in('id', Array.from(selectedBrands)),
+        adminApi.bulkDeleteBrands(Array.from(selectedBrands)),
         'excluir marcas em massa'
       );
 

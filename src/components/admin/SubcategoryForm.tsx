@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Package } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { table } from '../../lib/schema';
+import { adminApi } from '../../lib/adminApi';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
 import { useLoadingState } from '../../hooks/useLoadingState';
 import { useAccessibility } from '../../hooks/useAccessibility';
@@ -115,12 +114,10 @@ const SubcategoryForm: React.FC<SubcategoryFormProps> = ({
       startLoading('Criando subcategoria...');
       
       // Check if slug already exists in the same parent category
-      const { data: existingSubcategory } = await supabase
-        .from(table('categories'))
-        .select('id')
-        .eq('slug', formData.slug)
-        .eq('parent_id', parentCategory.id)
-        .maybeSingle();
+      const existingCategories = await adminApi.getCategories();
+      const existingSubcategory = (existingCategories.data || []).some(
+        (cat: Category) => cat.slug === formData.slug && String(cat.parent_id) === String(parentCategory.id)
+      );
       
       if (existingSubcategory) {
         setFormErrors({ slug: 'Este slug já está em uso nesta categoria' });
@@ -137,9 +134,7 @@ const SubcategoryForm: React.FC<SubcategoryFormProps> = ({
       };
       
       const result = await handleAsync(
-        supabase
-          .from(table('categories'))
-          .insert(payload),
+        adminApi.createCategory(payload),
         'criar subcategoria'
       );
       

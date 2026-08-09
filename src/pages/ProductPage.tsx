@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Phone, Mail, MessageCircle, Star, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { table } from '../lib/schema';
+import { apiFetch } from '../lib/api';
 import type { Product, ProductImage } from '../lib/supabase';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { Helmet } from 'react-helmet-async';
@@ -71,18 +72,17 @@ const ProductPage: React.FC = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from(table('leads'))
-        .insert({
-          client_name: formData.client_name,
+      await apiFetch('/api/leads', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: formData.client_name,
           email: formData.email,
           phone: formData.phone,
           message: formData.message,
-          name: product.name,
+          product_name: product.name,
           source: 'product_page'
-        });
-
-      if (error) throw error;
+        })
+      });
 
       setSubmitted(true);
       setFormData({ client_name: '', email: '', phone: '', message: '' });

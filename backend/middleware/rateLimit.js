@@ -1,10 +1,10 @@
-import rateLimit from 'express-rate-limit';
+﻿import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import slowDown from 'express-slow-down';
 import { ENV } from '../config/env.js';
 
 /**
  * Determina a chave (ip) para rate limiter.
- * Prioriza X-Forwarded-For (proxy/reverse proxy), senão usa req.ip.
+ * Prioriza X-Forwarded-For (proxy/reverse proxy), senÃ£o usa req.ip.
  */
 function getIpKey(req) {
   const xForwarded = req.headers && typeof req.headers['x-forwarded-for'] === 'string'
@@ -13,22 +13,25 @@ function getIpKey(req) {
   return xForwarded || (req.ip && req.ip !== '::ffff:127.0.0.1' ? req.ip : '127.0.0.1');
 }
 
+// Chave gerada com ipKeyGenerator (compatÃ­vel com IPv6 na v8 do express-rate-limit)
+const ipKey = (req) => ipKeyGenerator({ ip: getIpKey(req), maxIPv6Octets: 8 });
+
 const isDev = ENV.NODE_ENV !== 'production';
 
-// Padrão: headers Retry-After + X-RateLimit-* ativados, padrão RFC 7231
+// PadrÃ£o: headers Retry-After + X-RateLimit-* ativados, padrÃ£o RFC 7231
 const standardHeaders = 'draft-7';
 const legacyHeaders = false;
 
 /* ----------------------------------------------------------
  * 1. LOGIN: 5 tentativas por 15 min por IP (anti brute force).
- *    Após 2a tentativa começa a adicionar latência (slow down).
+ *    ApÃ³s 2a tentativa comeÃ§a a adicionar latÃªncia (slow down).
  * ---------------------------------------------------------- */
 export const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isDev ? 50 : 5,
   standardHeaders,
   legacyHeaders,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
   skipFailedRequests: false,
   skipSuccessfulRequests: false,
   message: {
@@ -47,8 +50,8 @@ export const loginRateLimiter = rateLimit({
 export const loginSlowDown = slowDown({
   windowMs: 15 * 60 * 1000,
   delayAfter: isDev ? 20 : 2,
-  delayMs: (hits) => hits * 350, // 2ª tentativa +350ms, 3ª +700ms, etc.
-  keyGenerator: getIpKey,
+  delayMs: (hits) => hits * 350, // 2Âª tentativa +350ms, 3Âª +700ms, etc.
+  keyGenerator: ipKey,
 });
 
 /* ----------------------------------------------------------
@@ -59,7 +62,7 @@ export const verify2faRateLimiter = rateLimit({
   max: isDev ? 100 : 10,
   standardHeaders,
   legacyHeaders,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
   message: {
     success: false,
     error: 'Muitas tentativas de 2FA. Tente novamente em 15 minutos.',
@@ -75,14 +78,14 @@ export const verify2faRateLimiter = rateLimit({
 
 /* ----------------------------------------------------------
  * 3. UPLOAD: 20 uploads / 10 min por IP.
- *    + slow down após 5 uploads.
+ *    + slow down apÃ³s 5 uploads.
  * ---------------------------------------------------------- */
 export const uploadRateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: isDev ? 200 : 20,
   standardHeaders,
   legacyHeaders,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
   message: {
     success: false,
     error: 'Muitos uploads. Tente novamente em alguns minutos.',
@@ -97,19 +100,19 @@ export const uploadSlowDown = slowDown({
   windowMs: 10 * 60 * 1000,
   delayAfter: isDev ? 50 : 5,
   delayMs: (hits) => hits * 200,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
 });
 
 /* ----------------------------------------------------------
- * 4. AI / Geração de conteúdo: 30 req / 15 min (custo $).
- *    + slow down após 5 reqs.
+ * 4. AI / GeraÃ§Ã£o de conteÃºdo: 30 req / 15 min (custo $).
+ *    + slow down apÃ³s 5 reqs.
  * ---------------------------------------------------------- */
 export const aiGenerateRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: isDev ? 300 : 30,
   standardHeaders,
   legacyHeaders,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
   message: {
     success: false,
     error: 'Cota de IA excedida. Tente novamente em 15 minutos.',
@@ -124,16 +127,35 @@ export const aiGenerateSlowDown = slowDown({
   windowMs: 15 * 60 * 1000,
   delayAfter: isDev ? 50 : 5,
   delayMs: (hits) => hits * 250,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
 });
 
 /* ----------------------------------------------------------
- * 5. CSRF TOKEN / geral auth não sensível: 60 req / min.
+ * 5. CSRF TOKEN / geral auth nÃ£o sensÃ­vel: 60 req / min.
  * ---------------------------------------------------------- */
 export const authGeneralRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: isDev ? 600 : 60,
   standardHeaders,
   legacyHeaders,
-  keyGenerator: getIpKey,
+  keyGenerator: ipKey,
+});
+
+/* ----------------------------------------------------------
+ * 6. LEAD PÚBLICO (formulários públicos): 10 envios / 15 min por IP.
+ * ---------------------------------------------------------- */
+export const publicLeadRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: isDev ? 100 : 10,
+  standardHeaders,
+  legacyHeaders,
+  keyGenerator: ipKey,
+  message: {
+    success: false,
+    error: 'Muitos envios de formulário. Tente novamente em alguns minutos.',
+  },
+  handler: (req, res, _next, options) => {
+    console.warn(`[RATE-LIMIT] lead público bloqueado IP=${getIpKey(req)}`);
+    res.status(options.statusCode).json(options.message);
+  },
 });

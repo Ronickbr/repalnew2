@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { adminApi } from '../../lib/adminApi';
 import { stripHtmlNormalize, normalizeKeywords } from '../../lib/seo';
 import * as XLSX from 'xlsx';
 import { Product, Category, Brand } from '../../types';
@@ -226,47 +227,32 @@ const ProductManager: React.FC = () => {
     try {
       clearError();
 
-      let query = supabase
-        .from('products')
-        .select(`
-          *,
-          categories(name),
-          product_images(url, sort_order)
-        `)
-        .order(sortBy, { ascending: sortOrder === 'asc' });
-
-      // Apply search
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-      }
-
-      // Apply filters
-      if (filters.category_id) {
-        query = query.eq('category_id', filters.category_id);
-      }
-      if (filters.subcategory_id) {
-        query = query.eq('subcategory_id', filters.subcategory_id);
-      }
-
-      if (filters.featured) {
-        query = query.eq('featured', filters.featured === 'true');
-      }
-      if (filters.active) {
-        query = query.eq('active', filters.active === 'true');
-      }
-
       interface ProductWithImages extends Product {
         product_images?: { url: string; sort_order: number }[];
       }
 
-      const { data, error: supabaseError } = await query;
+      const params: Record<string, unknown> = { sort_by: sortBy, sort_order: sortOrder };
 
-      if (supabaseError) {
-        throw new Error(`Erro ao buscar produtos: ${supabaseError.message}`);
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      if (filters.category_id) {
+        params.category_id = filters.category_id;
+      }
+      if (filters.subcategory_id) {
+        params.subcategory_id = filters.subcategory_id;
+      }
+      if (filters.featured) {
+        params.featured = filters.featured === 'true';
+      }
+      if (filters.active) {
+        params.active = filters.active === 'true';
       }
 
+      const json = await adminApi.getProducts(params);
+
       // Processar dados para converter product_images em additional_images
-      const processedData = (data as unknown as ProductWithImages[] || []).map((product: ProductWithImages) => {
+      const processedData = (json.data as unknown as ProductWithImages[] || []).map((product: ProductWithImages) => {
         const additionalImages = product.product_images
           ? [...product.product_images]
             .sort((a, b) => a.sort_order - b.sort_order)
@@ -280,7 +266,7 @@ const ProductManager: React.FC = () => {
       });
 
       setProducts(processedData as Product[]);
-      announceToScreenReader(`${data?.length || 0} produtos carregados`, 'polite');
+      announceToScreenReader(`${json.data?.length || 0} produtos carregados`, 'polite');
     } catch (err) {
       handleError(err, 'fetchProducts');
     }
@@ -290,16 +276,8 @@ const ProductManager: React.FC = () => {
     try {
       clearError();
 
-      const { data, error: supabaseError } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (supabaseError) {
-        throw new Error(`Erro ao buscar categorias: ${supabaseError.message}`);
-      }
-
-      setCategories(data || []);
+      const json = await adminApi.getCategories();
+      setCategories((json.data || []) as Category[]);
     } catch (err) {
       handleError(err, 'fetchCategories');
     }
@@ -313,16 +291,8 @@ const ProductManager: React.FC = () => {
     try {
       clearError();
 
-      const { data, error: supabaseError } = await supabase
-        .from('brands')
-        .select('*')
-        .order('name');
-
-      if (supabaseError) {
-        throw new Error(`Erro ao buscar marcas: ${supabaseError.message}`);
-      }
-
-      setBrands(data || []);
+      const json = await adminApi.getBrands();
+      setBrands((json.data || []) as Brand[]);
     } catch (err) {
       handleError(err, 'fetchBrands');
     }
@@ -628,53 +598,7 @@ const ProductManager: React.FC = () => {
         .replace(/-+/g, '-') // Remove hífens duplicados
         .trim();
 
-      // Verificar se o slug já existe e gerar um único se necessário
-      let slug = baseSlug;
-      let counter = 1;
-
-
-
-      try {
-        while (true) {
-          const { data: existingProduct, error: slugCheckError } = await supabase
-            .from('products')
-            .select('id')
-            .eq('slug', slug)
-            .maybeSingle();
-
-
-
-          if (slugCheckError) {
-            console.warn('Erro ao verificar slug:', slugCheckError);
-            // Se houver erro na verificação, usar timestamp para garantir unicidade
-            slug = `${baseSlug}-${Date.now()}`;
-            break;
-          }
-
-          if (!existingProduct) {
-
-            break; // Slug está disponível
-          }
-
-
-          slug = `${baseSlug}-${counter}`;
-          counter++;
-
-          if (counter > 100) {
-            // Usar timestamp como fallback para garantir unicidade
-            slug = `${baseSlug}-${Date.now()}`;
-
-            break;
-          }
-        }
-      } catch (error) {
-        console.warn('Exceção ao verificar slug:', error);
-        // Em caso de erro, usar timestamp para garantir unicidade
-        slug = `${baseSlug}-${Date.now()}`;
-      }
-
-
-
+      // O backend garante a unicidade do slug (baseSlug pode ganhar sufixo numérico)
       const productData = {
         ...productDataWithoutImages,
         category_id: formData.category_id ? parseInt(formData.category_id) : undefined,
@@ -682,34 +606,19 @@ const ProductManager: React.FC = () => {
         brand: formData.brand || undefined,
         image: image || undefined,
         specifications: formData.specifications?.trim() || undefined,
-        slug: slug,
+        slug: baseSlug,
         seo_title: formData.seo_title?.trim() || undefined,
         seo_description: stripHtmlNormalize(formData.seo_description) || undefined,
         seo_keywords: normalizeKeywords(formData.seo_keywords) || undefined,
         // Campos de preço e estoque serão gerenciados em outro módulo
       };
 
-      const { data: inserted, error: insertError } = await supabase
-        .from('products')
-        .insert([productData])
-        .select('*')
-        .single();
-
-      if (insertError) {
-        throw new Error(`Erro ao criar produto: ${insertError.message}`);
-      }
-      const data = inserted;
+      const json = await adminApi.createProduct(productData, additionalImages);
+      const data = json.data;
 
       if (data) {
-        // Salvar imagens adicionais na tabela product_images
-        if (additionalImages && additionalImages.length > 0) {
-          const records = additionalImages.filter(Boolean).map((url, idx) => ({ product_id: data.id, url, sort_order: idx }));
-          if (records.length > 0) {
-            const { error: imgError } = await supabase.from('product_images').insert(records);
-            if (imgError) {
-              addNotification('warning', `Algumas imagens adicionais não foram salvas: ${imgError.message}`);
-            }
-          }
+        if (json.images_warning) {
+          addNotification('warning', `Algumas imagens adicionais não foram salvas: ${json.images_warning}`);
         }
         setProducts((prev: Product[]) => [data, ...prev]);
         addNotification('success', 'Produto criado com sucesso');
@@ -742,71 +651,13 @@ const ProductManager: React.FC = () => {
         price: formData.price,
       };
 
-      const { data, error: supabaseError } = await supabase
-        .from('products')
-        .update(productData)
-        .eq('id', editingProduct.id)
-        .select(`
-          *,
-          categories(name)
-        `)
-        .single();
-
-      if (supabaseError) {
-        throw new Error(`Erro ao atualizar produto: ${supabaseError.message}`);
-      }
+      const json = await adminApi.updateProduct(editingProduct.id, productData, additionalImages);
+      const data = json.data;
 
       if (data) {
-        // Atualizar imagens adicionais na tabela product_images
-        if (additionalImages && additionalImages.length > 0) {
-          const validImages = additionalImages.filter(img => img && img.trim() !== '');
-
-
-          // Primeiro, remover imagens antigas
-
-          const { error: deleteError } = await supabase
-            .from('product_images')
-            .delete()
-            .eq('product_id', editingProduct.id);
-
-          if (deleteError) {
-            console.error('Erro ao remover imagens antigas:', deleteError);
-            console.error('Detalhes do erro:', deleteError.message, deleteError.details, deleteError.hint);
-          } else {
-
-          }
-
-          // Depois, inserir as novas imagens
-          if (validImages.length > 0) {
-            const imageRecords = validImages.map((url, index) => ({
-              product_id: editingProduct.id,
-              url: url,
-              sort_order: index
-            }));
-
-
-
-            try {
-              const { error: imagesError } = await supabase
-                .from('product_images')
-                .insert(imageRecords);
-
-              if (imagesError) {
-                console.error('Erro ao salvar imagens adicionais:', imagesError);
-                console.error('Detalhes do erro:', imagesError.message, imagesError.details, imagesError.hint);
-                console.error('Código do erro:', imagesError.code);
-                addNotification('error', `Erro ao salvar imagens adicionais: ${imagesError.message}`);
-              } else {
-
-                addNotification('success', `${imageRecords.length} imagens adicionais salvas com sucesso!`);
-              }
-            } catch (insertError) {
-              console.error('Erro crítico ao inserir imagens adicionais:', insertError);
-              addNotification('error', `Erro crítico ao salvar imagens: ${insertError instanceof Error ? insertError.message : 'Erro desconhecido'}`);
-            }
-          }
+        if (json.images_warning) {
+          addNotification('warning', `Erro ao salvar imagens adicionais: ${json.images_warning}`);
         }
-
         setProducts((prev: Product[]) => prev.map(p => p.id === data.id ? data : p));
         addNotification('success', 'Produto atualizado com sucesso');
         announceToScreenReader(`Produto ${data.name} atualizado com sucesso`, 'polite');
@@ -829,14 +680,7 @@ const ProductManager: React.FC = () => {
 
     try {
       startLoading('Excluindo produto...');
-      const { error: supabaseError } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productToDelete.id);
-
-      if (supabaseError) {
-        throw new Error(`Erro ao excluir produto: ${supabaseError.message}`);
-      }
+      await adminApi.deleteProduct(productToDelete.id);
 
       setProducts((prev: Product[]) => prev.filter(p => p.id !== productToDelete.id));
       addNotification('success', 'Produto excluído com sucesso');
@@ -863,14 +707,7 @@ const ProductManager: React.FC = () => {
 
     try {
       startLoading(`Excluindo ${selectedProducts.length} produtos...`);
-      const { error: supabaseError } = await supabase
-        .from('products')
-        .delete()
-        .in('id', selectedProducts);
-
-      if (supabaseError) {
-        throw new Error(`Erro ao excluir produtos: ${supabaseError.message}`);
-      }
+      await adminApi.bulkDeleteProducts(selectedProducts);
 
       setProducts((prev: Product[]) => prev.filter(p => !selectedProducts.includes(p.id)));
       addNotification('success', `${selectedProducts.length} produtos excluídos com sucesso`);
@@ -886,18 +723,10 @@ const ProductManager: React.FC = () => {
 
   const fetchSubcategories = async (categoryId: string) => {
     try {
-      const { data, error: supabaseError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('parent_id', categoryId)
-        .eq('is_active', true)
-        .order('name');
-
-      if (supabaseError) {
-        throw new Error(`Erro ao buscar subcategorias: ${supabaseError.message}`);
-      }
-
-      setSubcategories(data || []);
+      const list = (categories as Category[]).filter(
+        (c) => String(c.parent_id) === String(categoryId) && c.active !== false
+      );
+      setSubcategories(list);
     } catch (err) {
       handleError(err, 'fetchSubcategories');
     }
@@ -905,18 +734,10 @@ const ProductManager: React.FC = () => {
 
   const fetchFilterSubcategories = async (categoryId: string) => {
     try {
-      const { data, error: supabaseError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('parent_id', categoryId)
-        .eq('is_active', true)
-        .order('name');
-
-      if (supabaseError) {
-        throw new Error(`Erro ao buscar subcategorias: ${supabaseError.message}`);
-      }
-
-      setFilterSubcategories(data || []);
+      const list = (categories as Category[]).filter(
+        (c) => String(c.parent_id) === String(categoryId) && c.active !== false
+      );
+      setFilterSubcategories(list);
     } catch (err) {
       handleError(err, 'fetchFilterSubcategories');
     }
@@ -1081,14 +902,14 @@ PALAVRAS-CHAVE:
 
       }, true);
       
-      // Verificar se a resposta tem o formato esperado
+      // Verificar se a resposta tem o formato esperado (padrão Gemini)
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        console.error('Resposta inesperada da API do Gemini:', data);
-        throw new Error('Formato de resposta inválido da API do Gemini');
+        console.error('Resposta inesperada da API de IA:', data);
+        throw new Error('Formato de resposta inválido da API de IA');
 
       }
 
-      const content = data.choices[0].message.content;
+      const content = data.candidates[0].content.parts[0].text;
 
       if (!content || content.trim() === '') {
         throw new Error('Conteúdo gerado está vazio');

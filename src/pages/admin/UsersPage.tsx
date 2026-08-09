@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { table } from '../../lib/schema';
+import { supabase } from '../../lib/supabase';
+import { adminApi } from '../../lib/adminApi';
 import { Search, Filter, Eye, KeyRound, User as UserIcon, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { generateTemporaryPassword } from '../../utils/password';
 
 interface User {
   id: string;
@@ -53,56 +52,21 @@ const UsersPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      if (isSupabaseConfigured) {
-        const [{ error: adminsError, data: adminsData }, { error: usersError, data: usersData }] = await Promise.all([
-          supabase
-            .from(table('admin_users'))
-            .select('id,name,email,role,active,created_at')
-            .order('name'),
-          supabase
-            .from(table('users'))
-            .select('id,name,email,role,phone,avatar,is_active,created_at,last_login')
-            .order('name')
-        ]);
+      const result = await adminApi.getUsers();
+      const adminsData = result.data || [];
 
-        if (adminsError || usersError) throw adminsError || usersError;
+      const adminsNormalized: User[] = adminsData.map((u: { id: string; name: string; email: string; role: string | null; active: boolean | null; is_active: boolean | null; created_at: string | null }) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role || 'admin',
+        is_active: (u.active ?? u.is_active ?? true) !== false,
+        created_at: u.created_at || new Date().toISOString(),
+        last_sign_in_at: undefined,
+        source: 'admin'
+      }));
 
-        const adminsNormalized: User[] = (adminsData || []).map((u: { id: string; name: string; email: string; role: string | null; active: boolean | null; created_at: string | null }) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          role: u.role || 'admin',
-          is_active: (u.active ?? true) !== false,
-          created_at: u.created_at || new Date().toISOString(),
-          last_sign_in_at: undefined,
-          source: 'admin'
-        }));
-
-        const usersNormalized: User[] = (usersData || []).map((u: { id: string; name: string; email: string; role: string | null; is_active: boolean | null; created_at: string | null; last_login: string | null }) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          role: u.role || 'user',
-          is_active: (u.is_active ?? true) !== false,
-          created_at: u.created_at || new Date().toISOString(),
-          last_sign_in_at: u.last_login || undefined,
-          source: 'user'
-        }));
-
-        setUsers([...adminsNormalized, ...usersNormalized]);
-      } else {
-        const mockUsers: User[] = Array.from({ length: 23 }).map((_, i) => ({
-          id: String(i + 1),
-          name: `Usuário ${i + 1}`,
-          email: `user${i + 1}@example.com`,
-          role: i % 5 === 0 ? 'admin' : 'user',
-          is_active: i % 3 !== 0,
-          created_at: new Date(Date.now() - i * 86400000).toISOString(),
-          last_sign_in_at: i % 4 === 0 ? undefined : new Date().toISOString(),
-          source: i % 5 === 0 ? 'admin' : 'user'
-        }));
-        setUsers(mockUsers);
-      }
+      setUsers(adminsNormalized);
     } catch (err) {
       console.error('Erro ao buscar usuários:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar usuários');
@@ -156,11 +120,10 @@ const UsersPage: React.FC = () => {
     setShowDetailsModal(true);
     setActivities([]);
     setActivitiesError(null);
-    if (!isSupabaseConfigured) return;
     try {
       setActivitiesLoading(true);
       const { data, error } = await supabase
-        .from(table('activity_logs'))
+        .from('activity_logs')
         .select('action,details,status,created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -182,9 +145,7 @@ const UsersPage: React.FC = () => {
     if (!showResetModal) return;
     try {
       setResetting(true);
-      if (isSupabaseConfigured) {
-        await supabase.auth.resetPasswordForEmail(showResetModal.email);
-      }
+      await supabase.auth.resetPasswordForEmail(showResetModal.email);
       toast.success(`Email de redefinição enviado para ${showResetModal.email}`);
       setShowResetModal(null);
     } catch (e) {
@@ -583,38 +544,15 @@ const UsersPage: React.FC = () => {
                   if (Object.keys(errs).length > 0) return
                   try {
                     setCreating(true)
-                    const tempPassword = generateTemporaryPassword()
-                    if (isSupabaseConfigured) {
-                      const email = createForm.email.toLowerCase().trim()
-                      if (createType === 'admin') {
-                        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: tempPassword })
-                        if (authError) throw authError
-                        if (authData.user) {
-                          const { error } = await supabase
-                            .from(table('admin_users'))
-                            .insert({ id: authData.user.id, name: createForm.name.trim(), email, role: createForm.role, active: createForm.is_active })
-                          if (error) throw error
-                        }
-                      } else {
-                        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: tempPassword })
-                        if (authError) throw authError
-                        if (authData.user) {
-                          const { error: insertUserError } = await supabase
-                            .from(table('users'))
-                            .insert({ id: authData.user.id, name: createForm.name.trim(), email, role: createForm.role, is_active: createForm.is_active })
-                          // Se a tabela não existir ou colunas divergirem, não falhar o fluxo
-                          if (insertUserError) {
-                            console.warn('Falha ao inserir em users:', insertUserError)
-                          }
-                        }
-                      }
-                      await fetchUsers()
-                      setCreatedCredential({ email: createForm.email.toLowerCase().trim(), password: tempPassword })
-                    } else {
-                      const newUser: User = { id: Math.random().toString(36).slice(2), name: createForm.name.trim(), email: createForm.email.toLowerCase().trim(), role: createForm.role, is_active: createForm.is_active, created_at: new Date().toISOString(), source: createType, last_sign_in_at: undefined }
-                      setUsers(prev => [newUser, ...prev])
-                      setCreatedCredential({ email: createForm.email.toLowerCase().trim(), password: tempPassword })
-                    }
+                    const email = createForm.email.toLowerCase().trim()
+                    const result = await adminApi.createUser({
+                      name: createForm.name.trim(),
+                      email,
+                      role: createForm.role,
+                      is_active: createForm.is_active
+                    })
+                    await fetchUsers()
+                    setCreatedCredential({ email, password: result.tempPassword || '' })
                     setShowCreateModal(false)
                   } catch (e) {
                     setCreateErrors({ submit: e instanceof Error ? e.message : 'Falha ao criar usuário' })

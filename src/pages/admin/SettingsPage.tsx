@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { isValidUrl as isValidUrlStrict, formatCanonicalUrl, sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../../lib/seo';
-import { table } from '../../lib/schema';
+import { adminApi } from '../../lib/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'sonner';
 import { Save, RefreshCw, Globe, Mail, Phone, MapPin, Store, Plus, Search, Edit, Trash2, AlertTriangle } from 'lucide-react';
@@ -292,18 +291,9 @@ const SettingsPage: React.FC = () => {
       setLoading(true);
       setErrors({});
 
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase não está configurado');
-      }
+      const result = await adminApi.getSettings();
 
-      const { data, error } = await supabase
-        .from(table('site_settings'))
-        .select('*')
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-
-      const loadedSettings = data || {};
+      const loadedSettings = result.data || {};
       const mergedSettings = mergeWithDefaults(loadedSettings);
       
       setSettings(mergedSettings);
@@ -404,10 +394,6 @@ const SettingsPage: React.FC = () => {
 
       setSaving(true);
 
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase não está configurado');
-      }
-
       const settingsToUse = settingsOverride || formData;
 
       const sanitizedSeo = {
@@ -428,25 +414,7 @@ const SettingsPage: React.FC = () => {
         updated_at: new Date().toISOString()
       };
 
-
-
-      let error;
-      if (settings.id) {
-        const result = await supabase
-          .from(table('site_settings'))
-          .update(settingsToSave)
-          .eq('id', settings.id);
-        error = result.error;
-        
-      } else {
-        const result = await supabase
-          .from(table('site_settings'))
-          .insert([{ ...settingsToSave, created_at: new Date().toISOString() }]);
-        error = result.error;
-        
-      }
-
-      if (error) throw error;
+      await adminApi.updateSettings(settingsToSave);
 
       try {
         const robotsContent = settingsToSave.seo?.robots_txt || '';
@@ -486,13 +454,8 @@ const SettingsPage: React.FC = () => {
   const fetchStores = async () => {
     try {
       setStoreLoading(true);
-      const { data, error } = await supabase
-        .from('stores')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      setStores(data || []);
+      const result = await adminApi.getStores();
+      setStores(result.data || []);
     } catch (error) {
       console.error('Erro ao buscar lojas:', error);
       toast.error('Erro ao carregar lojas');
@@ -531,23 +494,13 @@ const SettingsPage: React.FC = () => {
         updated_at: new Date().toISOString()
       };
 
-      let error;
       if (editingStore?.id) {
         // Atualizar loja existente
-        const result = await supabase
-          .from('stores')
-          .update(storeData)
-          .eq('id', editingStore.id);
-        error = result.error;
+        await adminApi.updateStore(String(editingStore.id), storeData);
       } else {
         // Criar nova loja
-        const result = await supabase
-          .from('stores')
-          .insert([{ ...storeData, created_at: new Date().toISOString() }]);
-        error = result.error;
+        await adminApi.createStore(storeData);
       }
-
-      if (error) throw error;
 
       toast.success(editingStore ? 'Loja atualizada com sucesso!' : 'Loja criada com sucesso!');
       resetStoreForm();
@@ -571,12 +524,7 @@ const SettingsPage: React.FC = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from('stores')
-        .delete()
-        .eq('id', storeId);
-
-      if (error) throw error;
+      await adminApi.deleteStore(String(storeId));
 
       toast.success('Loja excluída com sucesso!');
       fetchStores();

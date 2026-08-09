@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { table } from '../../lib/schema';
+import { adminApi } from '../../lib/adminApi';
 import LeadManager from '../../components/admin/LeadManager';
 import LeadModal from '../../components/admin/LeadModal';
 import { Lead } from '../../lib/supabase';
@@ -27,18 +26,9 @@ const LeadsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase não está configurado');
-      }
-
-      const { data, error } = await supabase
-        .from(table('leads'))
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const result = await adminApi.getLeads();
       
-      setLeads(data || []);
+      setLeads(result.data || []);
     } catch (err) {
       console.error('Erro ao buscar leads:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar leads');
@@ -49,12 +39,7 @@ const LeadsPage: React.FC = () => {
 
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase
-        .from(table('leads'))
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
+      await adminApi.updateLeadStatus(id, status);
 
       setLeads(leads.map(lead => 
         lead.id === id ? { ...lead, status: status as any } : lead
@@ -74,25 +59,7 @@ const LeadsPage: React.FC = () => {
   const generateMockLeads = async () => {
     try {
       setLoading(true);
-      const statuses = ['novo', 'contato', 'orcado', 'fechado', 'perdido'];
-      const products = ['iPhone 13', 'Samsung Galaxy S21', 'MacBook Pro', 'Dell XPS', 'iPad Air'];
-      
-      const mockLeads = Array.from({ length: 5 }).map(() => ({
-        name: `Lead Teste ${Math.floor(Math.random() * 1000)}`,
-        email: `teste${Math.floor(Math.random() * 10000)}@exemplo.com`,
-        phone: `119${Math.floor(Math.random() * 100000000)}`,
-        message: 'Lead gerado automaticamente para testes do sistema.',
-        product_name: products[Math.floor(Math.random() * products.length)],
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }));
-
-      const { error } = await supabase
-        .from(table('leads'))
-        .insert(mockLeads);
-
-      if (error) throw error;
+      await adminApi.createMockLeads();
 
       toast.success('5 leads de teste gerados com sucesso!');
       fetchLeads();
@@ -111,14 +78,9 @@ const LeadsPage: React.FC = () => {
 
     try {
       setLoading(true);
-      const { error, count } = await supabase
-        .from(table('leads'))
-        .delete({ count: 'exact' })
-        .eq('message', 'Lead gerado automaticamente para testes do sistema.');
+      const result = await adminApi.deleteMockLeads();
 
-      if (error) throw error;
-
-      toast.success(`${count} leads de teste excluídos com sucesso!`);
+      toast.success(`${result.count ?? 0} leads de teste excluídos com sucesso!`);
       fetchLeads();
     } catch (err) {
       console.error('Erro ao excluir leads de teste:', err);
