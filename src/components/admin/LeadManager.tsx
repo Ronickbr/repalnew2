@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Eye, ChevronLeft, ChevronRight, MessageCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, MessageCircle, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import type { Lead } from '../../lib/supabase';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ interface LeadManagerProps {
   onNextPage: (totalPages: number) => void;
   getTotalPages: (totalItems: number) => number;
   onUpdateStatus?: (id: string, status: string) => void;
+  onDelete?: (lead: Lead) => void;
 }
 
 const LeadManager: React.FC<LeadManagerProps> = ({
@@ -31,7 +32,8 @@ const LeadManager: React.FC<LeadManagerProps> = ({
   onPreviousPage,
   onNextPage,
   getTotalPages,
-  onUpdateStatus
+  onUpdateStatus,
+  onDelete
 }) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -191,6 +193,17 @@ const LeadManager: React.FC<LeadManagerProps> = ({
                             <XCircle className="h-4 w-4" />
                           </button>
                         </>
+                      )}
+
+                      {onDelete && (
+                        <button
+                          onClick={() => onDelete(lead)}
+                          className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50"
+                          title="Excluir lead"
+                          aria-label={`Excluir lead de ${lead.name}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
                   </td>

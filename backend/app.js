@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { ENV } from './config/env.js';
 import { globalErrorHandler as errorHandler } from './middleware/errorHandler.js';
+import { requestLogger } from './middleware/requestLogger.js';
 
 // Importar rotas
 import authRoutes from './routes/authRoutes.js';
@@ -86,6 +87,9 @@ app.use(cors(corsOptions));
 
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
+
+// Log de requisições (antes das rotas para capturar tudo)
+app.use(requestLogger);
 
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, '..', 'public')));

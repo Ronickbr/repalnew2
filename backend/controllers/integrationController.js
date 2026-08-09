@@ -82,58 +82,38 @@ export const updateIntegrations = async (req, res) => {
 
     const supabase = getServiceClient();
 
-    // Determina um ID estável para o singleton (usa id=1 ou conflito upsert)
+    // Determina um ID estável para o singleton (primeira linha existente)
     const payload = {
       integrations,
       updated_at: new Date().toISOString(),
     };
 
-    // Race-condition-free: use upsert on a constraint (primary key id default=1),
-    // with .select().single() to avoid multiple rows.
-    const { data, error } = await supabase
+    const { data: existing } = await supabase
       .from('site_settings')
-      .upsert(payload, {
-        onConflict: 'id',
-        ignoreDuplicates: false,
-      })
-      .select('integrations')
-      .single();
+      .select('id')
+      .limit(1)
+      .maybeSingle();
 
-    if (error) {
-      // Fallback caso não exista a constraint onConflict ou primeira linha: check-then-act com transactional attempt
-      if (error.code && (String(error.code).includes('42') || error.code === '23502')) {
-        const { data: existing } = await supabase
-          .from('site_settings')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-
-        if (existing) {
-          const { data: upd, error: updErr } = await supabase
-            .from('site_settings')
-            .update(payload)
-            .eq('id', existing.id)
-            .select('integrations')
-            .single();
-          if (updErr) throw updErr;
-          await logAdminActivity(adminUser, 'update_integrations', { strategy: 'update' });
-          return res.json({ success: true, data: maskIntegrations(upd?.integrations || {}) });
-        }
-
-        const { data: ins, error: insErr } = await supabase
-          .from('site_settings')
-          .insert([payload])
-          .select('integrations')
-          .single();
-        if (insErr) throw insErr;
-        await logAdminActivity(adminUser, 'update_integrations', { strategy: 'insert' });
-        return res.json({ success: true, data: maskIntegrations(ins?.integrations || {}) });
-      }
-      throw error;
+    if (existing?.id) {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .update(payload)
+        .eq('id', existing.id)
+        .select('integrations')
+        .single();
+      if (error) throw error;
+      await logAdminActivity(adminUser, 'update_integrations', { strategy: 'update' });
+      return res.json({ success: true, data: maskIntegrations(data?.integrations || {}) });
     }
 
-    await logAdminActivity(adminUser, 'update_integrations', { strategy: 'upsert' });
-    return res.json({ success: true, data: maskIntegrations(data?.integrations || {}) });
+    const { data: ins, error: insErr } = await supabase
+      .from('site_settings')
+      .insert([payload])
+      .select('integrations')
+      .single();
+    if (insErr) throw insErr;
+    await logAdminActivity(adminUser, 'update_integrations', { strategy: 'insert' });
+    return res.json({ success: true, data: maskIntegrations(ins?.integrations || {}) });
   } catch (err) {
     console.error('Erro em updateIntegrations:', err);
     return res.status(500).json({

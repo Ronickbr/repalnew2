@@ -1,10 +1,20 @@
 import { isSupabaseConfigured, getServiceClient } from '../config/supabase.js';
+import { writeLog } from './logFile.js';
 
 export const logAdminActivity = async (admin, action, details = {}) => {
   try {
+    const adminLabel = admin?.email || admin?.id || 'unknown';
+
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[ADMIN LOG] ${admin.email || admin.id}: ${action}`, JSON.stringify(details));
+      console.log(`[ADMIN LOG] ${adminLabel}: ${action}`, JSON.stringify(details));
     }
+
+    writeLog('admin-activity', {
+      level: 'info',
+      admin: adminLabel,
+      action,
+      details
+    });
 
     if (!isSupabaseConfigured) return;
 

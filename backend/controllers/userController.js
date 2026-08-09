@@ -80,15 +80,14 @@ export const createUser = async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(tempPassword, 10);
+    const allowedRoles = ['admin', 'super_admin'];
+    const role = allowedRoles.includes(payload.role) ? payload.role : 'admin';
     const row = {
       id: authUserId || cryptoRandomId(),
       name: payload.name,
       email: emailLower,
-      phone: payload.phone || null,
-      role: payload.role || 'user',
-      is_active: payload.is_active ?? true,
+      role,
       active: payload.active ?? true,
-      avatar: payload.avatar || null,
       password_hash: passwordHash,
       created_at: new Date().toISOString()
     };
@@ -125,8 +124,12 @@ export const updateUser = async (req, res) => {
     }
 
     const supabase = getServiceClient();
-    const { id: _ignore, password, ...payload } = user;
+    const { id: _ignore, password, phone, avatar, ...payload } = user;
     const updatePayload = { ...payload };
+    if (updatePayload.role !== undefined) {
+      const allowedRoles = ['admin', 'super_admin'];
+      if (!allowedRoles.includes(updatePayload.role)) delete updatePayload.role;
+    }
     if (password) {
       updatePayload.password_hash = await bcrypt.hash(password, 10);
     }
@@ -164,7 +167,7 @@ export const toggleUserStatus = async (req, res) => {
     const value = typeof is_active === 'boolean' ? is_active : !(req.body?.active === false);
     const { error } = await supabase
       .from('admin_users')
-      .update({ is_active: value, active: value })
+      .update({ active: value })
       .eq('id', id);
     if (error) {
       console.error('Erro ao alterar status do usuário:', error);

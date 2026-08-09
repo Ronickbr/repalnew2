@@ -56,6 +56,21 @@ const LeadsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleDeleteLead = async (lead: Lead) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o lead de ${lead.name}?`)) {
+      return;
+    }
+
+    try {
+      await adminApi.deleteLead(lead.id);
+      setLeads(leads.filter(l => l.id !== lead.id));
+      toast.success('Lead excluído com sucesso');
+    } catch (err) {
+      console.error('Erro ao excluir lead:', err);
+      toast.error('Erro ao excluir lead');
+    }
+  };
+
   const generateMockLeads = async () => {
     try {
       setLoading(true);
@@ -161,6 +176,7 @@ const LeadsPage: React.FC = () => {
         onNextPage={(total) => handlePageChange(Math.min(total, currentPage + 1))}
         getTotalPages={() => totalPages}
         onUpdateStatus={handleUpdateStatus}
+        onDelete={handleDeleteLead}
       />
 
       <LeadModal

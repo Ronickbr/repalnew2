@@ -15,7 +15,15 @@ const validateCsrf = (req) => {
   const cookieToken = req.cookies['csrf_token'];
   // Em desenvolvimento, as vezes os cookies não vem se não tiver credentials: true no fetch.
   // Vamos assumir que o frontend manda corretamente.
-  return token && cookieToken && token === cookieToken;
+  const valid = token && cookieToken && token === cookieToken;
+  if (!valid && process.env.NODE_ENV !== 'production') {
+    const cookieAll = Object.keys(req.cookies || {});
+    console.warn(
+      `[CSRF] falha: header=${token ? 'presente' : 'AUSENTE'} cookie=${cookieToken ? 'presente' : 'AUSENTE'} ` +
+      `match=${token && cookieToken ? token === cookieToken : false} cookies=${JSON.stringify(cookieAll)}`
+    );
+  }
+  return valid;
 };
 
 export const authMiddleware = async (req, res, next) => {
