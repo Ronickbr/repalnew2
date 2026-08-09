@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.1
+
+### Corrigido
+- remove handlers especificos que sombreiam o catch-all do Express
+
 ## 2026-08-09 - v0.7.0
 
 ### Adicionado
