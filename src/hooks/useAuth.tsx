@@ -58,6 +58,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, []);
 
+  // Verifica se o cookie de sessão do backend (repal_admin_token) é válido via /api/auth/me.
+  // Apenas rejeições explícitas de autenticação (401/403) bloqueiam o login; se o backend
+  // estiver indisponível (404/405/rede), mantém o comportamento anterior de permitir o Supabase.
+  const validateBackendAdminSession = useCallback(async (): Promise<boolean> => {
+    if (devAuthBypass) return true;
+    try {
+      const resp = await fetch(`${apiBase}/api/auth/me`, { credentials: 'include' });
+      if (resp.status === 401 || resp.status === 403) return false;
+      if (resp.status === 404 || resp.status === 405) return true;
+      const j = await resp.json().catch(() => ({}));
+      return j?.success === true;
+    } catch {
+      return true;
+    }
+  }, []);
+
   useEffect(() => {
     if (devAuthBypass) {
       const devUser: AdminUser = { id: 'dev-admin', email: 'dev@local', name: 'Dev Admin', role: 'super_admin', active: true };
@@ -76,11 +92,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     // Verificação inicial — fonte única de verdade (a subscription já cobre mudanças posteriores)
-    supabase.auth.getSession().then((res: { data: { session: Session | null } }) => {
+    supabase.auth.getSession().then(async (res: { data: { session: Session | null } }) => {
       if (!active) return;
       const session = res.data?.session;
-      setUser(session?.user ? mapUser(session.user) : null);
+      const restoredUser = session?.user ? mapUser(session.user) : null;
+      setUser(restoredUser);
       setLoading(false);
+
+      // Para administradores, garantir sessão backend válida; caso contrário, encerrar a
+      // sessão para não deixar o painel num estado quebrado ("Não autorizado" em toda a API).
+      if (restoredUser && (restoredUser.role === 'admin' || restoredUser.role === 'super_admin')) {
+        const backendOk = await validateBackendAdminSession();
+        if (!active) return;
+        if (!backendOk) {
+          await supabase.auth.signOut().catch(() => {});
+          if (active) setUser(null);
+        }
+      }
     })
       .catch(() => {
         if (!active) return;
@@ -92,7 +120,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       active = false;
       authListener.subscription.unsubscribe();
     };
-  }, [mapUser]);
+  }, [mapUser, validateBackendAdminSession]);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string; requires2fa?: boolean; tempToken?: string }> => {
     try {
@@ -148,6 +176,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const adminUser = mapUser(u);
       setUser(adminUser);
 
+      // Administradores só podem usar o painel com sessão backend válida (cookie).
+      // Se o backend rejeitou o login (senha do painel dessincronizada da do Supabase),
+      // não deixar entrar num painel quebrado com "Não autorizado" em toda a API.
+      if (adminUser.role === 'admin' || adminUser.role === 'super_admin') {
+        const backendOk = await validateBackendAdminSession();
+        if (!backendOk) {
+          await supabase.auth.signOut().catch(() => {});
+          setUser(null);
+          return {
+            success: false,
+            error: 'Falha ao validar a sessão de administrador. Sua senha de painel pode estar desatualizada ou a sessão expirou. Faça login novamente ou entre em contato com o suporte.'
+          };
+        }
+      }
+
       try {
         await supabase.from('activity_logs').insert({
           user_id: u.id,
@@ -164,7 +207,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setLoading(false);
     }
-  }, [mapUser]);
+  }, [mapUser, validateBackendAdminSession]);
 
   const verify2fa = useCallback(async (tempToken: string, code: string, email: string, password: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> => {
     try {
@@ -188,6 +231,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const adminUser = mapUser(data.user);
       setUser(adminUser);
 
+      // Mesma proteção do login: admin precisa de sessão backend válida.
+      if (adminUser.role === 'admin' || adminUser.role === 'super_admin') {
+        const backendOk = await validateBackendAdminSession();
+        if (!backendOk) {
+          await supabase.auth.signOut().catch(() => {});
+          setUser(null);
+          return {
+            success: false,
+            error: 'Falha ao validar a sessão de administrador. Sua senha de painel pode estar desatualizada ou a sessão expirou. Faça login novamente ou entre em contato com o suporte.'
+          };
+        }
+      }
+
       try {
         await supabase.from('activity_logs').insert({
           user_id: data.user.id,
@@ -207,7 +263,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setLoading(false);
     }
-  }, [mapUser]);
+  }, [mapUser, validateBackendAdminSession]);
 
   const logout = useCallback(async (): Promise<void> => {
     try {
