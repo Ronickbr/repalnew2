@@ -1,3 +1,9 @@
+## 2026-08-09 - v0.7.3
+
+### Corrigido
+- adiciona rotas explicitas para endpoints multi-segmento do admin
+- remove totp_secret do select de admin_users (coluna inexistente quebrou login)
+
 ## 2026-08-09 - v0.7.2
 
 ### Corrigido

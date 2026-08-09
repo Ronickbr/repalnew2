@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.7.2`
+- **Versão**: `v0.7.3`
 - **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: adiciona catch-alls por diretorio para /api/auth, /api/admin, /api/ai e /api/seo
+- **Corrigido**: adiciona rotas explicitas para endpoints multi-segmento do admin; remove totp_secret do select de admin_users (coluna inexistente quebrou login)
 
 <!-- RELEASE-AUTO-END -->
