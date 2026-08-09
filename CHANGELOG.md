@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.0
+
+### Adicionado
+- migra painel para API backend e habilita deploy conjunto na Vercel
+
 ## 2026-08-08 - v0.6.3
 
 ### Corrigido

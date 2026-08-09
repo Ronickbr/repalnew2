@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.6.3`
-- **Data**: 2026-08-08
+- **Versão**: `v0.7.0`
+- **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: auditoria de seguranca, correcoes de UI e tela em branco (busca); remove useNavigation to fix blank screen on BrowserRouter
+- **Adicionado**: migra painel para API backend e habilita deploy conjunto na Vercel
 
 <!-- RELEASE-AUTO-END -->
