@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.2
+
+### Corrigido
+- adiciona catch-alls por diretorio para /api/auth, /api/admin, /api/ai e /api/seo
+
 ## 2026-08-09 - v0.7.1
 
 ### Corrigido
