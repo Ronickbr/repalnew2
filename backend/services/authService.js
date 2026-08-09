@@ -60,7 +60,7 @@ class AuthService {
     const emailLower = String(email).toLowerCase();
     const { data: userData, error: userError } = await supabase
       .from('admin_users')
-      .select('id, email, password_hash, name, role, active, totp_secret')
+      .select('id, email, password_hash, name, role, active')
       .eq('email', emailLower)
       .eq('active', true)
       .maybeSingle();
@@ -132,7 +132,7 @@ class AuthService {
     const supabase = getServiceClient();
     const { data: userData, error } = await supabase
       .from('admin_users')
-      .select('id, email, name, role, active, totp_secret')
+      .select('id, email, name, role, active')
       .eq('id', payload.sub)
       .eq('active', true)
       .maybeSingle();
