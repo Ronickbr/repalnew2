@@ -127,13 +127,23 @@ const ensureDirectoryExists = (dirPath) => {
   }
 };
 
+const writeFileSafe = (filePath, content) => {
+  try {
+    ensureDirectoryExists(path.dirname(filePath));
+    fs.writeFileSync(filePath, content);
+    return true;
+  } catch (err) {
+    console.warn(`[SEO] Não foi possível gravar ${filePath} (FS read-only na Vercel?):`, err instanceof Error ? err.message : String(err));
+    return false;
+  }
+};
+
 export const updateRobots = async (req, res) => {
   try {
     const { content } = req.body || {};
     const publicDir = path.join(rootDir, 'public');
-    ensureDirectoryExists(publicDir);
     const filePath = path.join(publicDir, 'robots.txt');
-    fs.writeFileSync(filePath, typeof content === 'string' ? content : '');
+    writeFileSafe(filePath, typeof content === 'string' ? content : '');
     await logAdminActivity(req.admin, 'update_robots', {});
     res.json({ success: true, path: '/robots.txt' });
   } catch (err) {
@@ -145,32 +155,31 @@ export const updateSitemap = async (req, res) => {
   try {
     const { enabled, baseUrl, content } = req.body || {};
     const publicDir = path.join(rootDir, 'public');
-    ensureDirectoryExists(publicDir);
     const filePath = path.join(publicDir, 'sitemap.xml');
     const distPath = path.join(rootDir, 'dist', 'sitemap.xml');
 
     if (!enabled) {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-      if (fs.existsSync(distPath)) {
-        fs.unlinkSync(distPath);
+      try {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        if (fs.existsSync(distPath)) fs.unlinkSync(distPath);
+      } catch (unlinkErr) {
+        console.warn('[SEO] Não foi possível remover sitemap (FS read-only na Vercel?):', unlinkErr instanceof Error ? unlinkErr.message : String(unlinkErr));
       }
       await logAdminActivity(req.admin, 'disable_sitemap', {});
       return res.json({ success: true, enabled: false });
     }
 
     if (typeof content === 'string' && content.trim() !== '') {
-      fs.writeFileSync(filePath, content);
+      writeFileSafe(filePath, content);
       if (fs.existsSync(path.join(rootDir, 'dist'))) {
-        fs.writeFileSync(distPath, content);
+        writeFileSafe(distPath, content);
       }
       await logAdminActivity(req.admin, 'update_sitemap_custom', { size: content.length });
     } else {
       const xml = await generateSitemapXml(baseUrl);
-      fs.writeFileSync(filePath, xml);
+      writeFileSafe(filePath, xml);
       if (fs.existsSync(path.join(rootDir, 'dist'))) {
-        fs.writeFileSync(distPath, xml);
+        writeFileSafe(distPath, xml);
       }
       await logAdminActivity(req.admin, 'generate_sitemap', { baseUrl: (baseUrl || '').trim() });
     }
