@@ -56,6 +56,9 @@ export const updateLeadStatus = async (req, res) => {
 
 export const createMockLeads = async (req, res) => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ success: false, error: 'Endpoint disponível apenas em dev' });
+    }
     const adminUser = req.admin;
     if (!isSupabaseConfigured) {
       await logAdminActivity(adminUser, 'create_mock_leads_dev', {});
@@ -93,6 +96,9 @@ export const createMockLeads = async (req, res) => {
 
 export const deleteMockLeads = async (req, res) => {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ success: false, error: 'Endpoint disponível apenas em dev' });
+    }
     const adminUser = req.admin;
     if (!isSupabaseConfigured) {
       await logAdminActivity(adminUser, 'delete_mock_leads_dev', {});

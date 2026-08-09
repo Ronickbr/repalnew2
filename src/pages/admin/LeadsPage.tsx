@@ -148,20 +148,22 @@ const LeadsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end gap-3">
-        <button
-          onClick={deleteMockLeads}
-          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors shadow-sm text-sm font-medium"
-        >
-          Excluir Leads de Teste
-        </button>
-        <button
-          onClick={generateMockLeads}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors shadow-sm text-sm font-medium"
-        >
-          Gerar 5 Leads de Teste
-        </button>
-      </div>
+      {import.meta.env.DEV && (
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={deleteMockLeads}
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors shadow-sm text-sm font-medium"
+          >
+            Excluir Leads de Teste
+          </button>
+          <button
+            onClick={generateMockLeads}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors shadow-sm text-sm font-medium"
+          >
+            Gerar 5 Leads de Teste
+          </button>
+        </div>
+      )}
       <LeadManager
         leads={leads}
         searchTerm={searchTerm}

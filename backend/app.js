@@ -110,10 +110,12 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/leads', publicLeadRoutes);
 
-// Rotas de teste
-app.get('/api/test', (req, res) => {
-  res.json({ message: 'API funcionando com nova arquitetura!' });
-});
+// Rotas de teste (apenas em dev)
+if (ENV.NODE_ENV !== 'production') {
+  app.get('/api/test', (req, res) => {
+    res.json({ message: 'API funcionando com nova arquitetura!' });
+  });
+}
 
 // Rotas Públicas de SEO
 app.get('/sitemap.xml', getSitemap);
