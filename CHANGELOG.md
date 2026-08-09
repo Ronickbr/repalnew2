@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.6
+
+### Corrigido
+- contorna sequencia do pk dessincronizada ao criar produto
+
 ## 2026-08-09 - v0.7.5
 
 ### Corrigido

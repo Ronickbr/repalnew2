@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.7.5`
+- **Versão**: `v0.7.6`
 - **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: consolida handlers api em funcao unica para respeitar limite do plano Hobby
+- **Corrigido**: contorna sequencia do pk dessincronizada ao criar produto
 
 <!-- RELEASE-AUTO-END -->
