@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.4
+
+### Corrigido
+- valida sessao backend do admin no login para evitar painel quebrado
+
 ## 2026-08-09 - v0.7.3
 
 ### Corrigido

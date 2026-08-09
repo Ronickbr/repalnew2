@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.7.3`
+- **Versão**: `v0.7.4`
 - **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: adiciona rotas explicitas para endpoints multi-segmento do admin; remove totp_secret do select de admin_users (coluna inexistente quebrou login)
+- **Corrigido**: valida sessao backend do admin no login para evitar painel quebrado
 
 <!-- RELEASE-AUTO-END -->
