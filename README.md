@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.7.6`
+- **Versão**: `v0.7.7`
 - **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: contorna sequencia do pk dessincronizada ao criar produto
+- **Corrigido**: corrige criacao de usuario, dedup de integracoes e adiciona logging + testes
 
 <!-- RELEASE-AUTO-END -->

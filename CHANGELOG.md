@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.7
+
+### Corrigido
+- corrige criacao de usuario, dedup de integracoes e adiciona logging + testes
+
 ## 2026-08-09 - v0.7.6
 
 ### Corrigido
