@@ -1,3 +1,8 @@
+## 2026-08-09 - v0.7.8
+
+### Manutenção
+- restringe recursos de teste (mock leads, rota /api/test) a dev
+
 ## 2026-08-09 - v0.7.7
 
 ### Corrigido

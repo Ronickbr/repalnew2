@@ -296,12 +296,12 @@ Para suporte técnico, entre em contato:
 
 ## Última Release
 
-- **Versão**: `v0.7.7`
+- **Versão**: `v0.7.8`
 - **Data**: 2026-08-09
 - **Changelog completo**: [CHANGELOG.md](./CHANGELOG.md)
 
 ### Resumo das Alterações
 
-- **Corrigido**: corrige criacao de usuario, dedup de integracoes e adiciona logging + testes
+- **Manutenção**: restringe recursos de teste (mock leads, rota /api/test) a dev
 
 <!-- RELEASE-AUTO-END -->
