@@ -102,11 +102,30 @@ class ProductService {
         }
       }
     }
-    const { data: inserted, error: insertError } = await supabase
-      .from('products')
-      .insert([{ ...productData, slug }])
-      .select('*')
-      .single();
+    const attemptInsert = async (row) => {
+      const result = await supabase
+        .from('products')
+        .insert([row])
+        .select('*')
+        .single();
+      return result;
+    };
+
+    let { data: inserted, error: insertError } = await attemptInsert({ ...productData, slug });
+
+    if (insertError && insertError.code === '23505' && /products_pkey/.test(insertError.message)) {
+      // Sequência do PK dessincronizada (imports antigos usaram ids explícitos).
+      // Reinsere com o próximo id disponível e avança a sequência automaticamente.
+      const { data: maxRow } = await supabase
+        .from('products')
+        .select('id')
+        .order('id', { ascending: false })
+        .limit(1);
+      const nextId = maxRow && maxRow.length > 0 ? maxRow[0].id + 1 : 1;
+      const retried = await attemptInsert({ ...productData, slug, id: nextId });
+      inserted = retried.data;
+      insertError = retried.error;
+    }
 
     if (insertError) {
       const error = new Error(insertError.message);
