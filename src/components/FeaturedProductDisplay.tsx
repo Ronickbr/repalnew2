@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useFeaturedProductByCategory, useProductsByCategory } from '../hooks/useProducts';
+import { useFeaturedProductByCategory, useAllProductsByCategory } from '../hooks/useProducts';
 import type { ProductWithCategory } from '../types/product';
 
 import { Search } from 'lucide-react';
@@ -13,7 +13,7 @@ interface FeaturedProductDisplayProps {
 const FeaturedProductDisplay: React.FC<FeaturedProductDisplayProps> = ({ categoryId, isOpen }) => {
   const navigate = useNavigate();
   const { data: featuredProduct, isLoading: isLoadingFeatured } = useFeaturedProductByCategory(categoryId);
-  const { data: allProducts, isLoading: isLoadingAll } = useProductsByCategory(categoryId);
+  const { data: allProducts, isLoading: isLoadingAll } = useAllProductsByCategory(categoryId);
 
   // Produtos de exemplo para debug quando não há produtos ou Supabase não configurado
   const mockProductsByCategory = {

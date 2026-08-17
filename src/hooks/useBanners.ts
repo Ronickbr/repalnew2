@@ -52,6 +52,8 @@ export function useBanners() {
     }
   };
 
+  const BANNER_FIELDS = 'id, title, image_url, link_url, active, sort_order, created_at, updated_at';
+
   // Fetch all banners
   const fetchBanners = useCallback(async () => {
     try {
@@ -60,7 +62,7 @@ export function useBanners() {
       
       const { data, error } = await supabase
         .from(table('banners'))
-        .select('*')
+        .select(BANNER_FIELDS)
         .order('sort_order', { ascending: true });
 
       if (error) {
@@ -86,7 +88,7 @@ export function useBanners() {
       
       const { data, error } = await supabase
         .from(table('banners'))
-        .select('*')
+        .select('id, title, image_url, link_url, active, sort_order, updated_at')
         .eq('active', true)
         .order('sort_order', { ascending: true });
 
@@ -583,7 +585,7 @@ export function useActiveBanners() {
       
       const { data, error } = await supabase
         .from(table('banners'))
-        .select('*')
+        .select('id, title, image_url, link_url, active, sort_order, updated_at')
         .eq('active', true)
         .order('sort_order', { ascending: true });
 

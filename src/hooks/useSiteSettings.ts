@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { queryKeys } from '../lib/react-query';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 
-export interface SiteSettings {
+export interface PublicSiteSettings {
   id?: number;
   site_info?: {
     site_name?: string;
@@ -16,12 +15,6 @@ export interface SiteSettings {
     favicon_url?: string;
     favicon?: string;
     url?: string;
-  };
-  integrations?: {
-    google_tag_manager_id?: string;
-    google_analytics_id?: string;
-    facebook_pixel_id?: string;
-    gemini_api_key?: string;
   };
   maintenance?: {
     is_maintenance_mode?: boolean;
@@ -53,25 +46,37 @@ export interface SiteSettings {
     meta_keywords?: string;
     canonical_url?: string;
   };
-  created_at?: string;
   updated_at?: string;
 }
 
-const EMPTY_SETTINGS: SiteSettings = {};
+export type SiteSettings = PublicSiteSettings;
+
+const EMPTY_SETTINGS: PublicSiteSettings = {};
+
+const PUBLIC_SETTINGS_FIELDS = `
+  id,
+  site_info,
+  maintenance,
+  theme,
+  contact,
+  social_media,
+  seo,
+  updated_at
+`;
 
 export const useSiteSettings = () => {
   const queryClient = useQueryClient();
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  const query = useQuery<SiteSettings>({
+  const query = useQuery<PublicSiteSettings>({
     queryKey: queryKeys.siteSettings,
     queryFn: async () => {
       if (!isSupabaseConfigured) return EMPTY_SETTINGS;
 
       const { data, error: qError } = await supabase
         .from('site_settings')
-        .select('*')
+        .select(PUBLIC_SETTINGS_FIELDS)
         .limit(1)
         .maybeSingle();
 
@@ -79,8 +84,8 @@ export const useSiteSettings = () => {
 
       return data ?? EMPTY_SETTINGS;
     },
-    staleTime: Infinity,
-    gcTime: Infinity,
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 2,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -100,31 +105,6 @@ export const useSiteSettings = () => {
     }
   }, [query]);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) return undefined;
-
-    const subscription: RealtimeChannel = supabase
-      .channel('site_settings_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_settings' },
-        (payload: { new?: SiteSettings; old?: SiteSettings; eventType: string }) => {
-          if (payload.eventType === 'DELETE') {
-            queryClient.setQueryData(queryKeys.siteSettings, EMPTY_SETTINGS);
-            return;
-          }
-          if (payload.new) {
-            queryClient.setQueryData(queryKeys.siteSettings, payload.new);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription?.unsubscribe();
-    };
-  }, [queryClient]);
-
   const updateSettings = useCallback(
     async (newSettings: Partial<SiteSettings>) => {
       try {
@@ -138,7 +118,7 @@ export const useSiteSettings = () => {
             .from('site_settings')
             .update(newSettings)
             .eq('id', settings.id)
-            .select()
+            .select(PUBLIC_SETTINGS_FIELDS)
             .maybeSingle();
 
           if (sError) throw sError;
@@ -153,7 +133,7 @@ export const useSiteSettings = () => {
                 updated_at: new Date().toISOString(),
               },
             ])
-            .select()
+            .select(PUBLIC_SETTINGS_FIELDS)
             .maybeSingle();
 
           if (insertError) throw insertError;
@@ -184,8 +164,8 @@ export const useSiteSettings = () => {
     error,
     fetchSettings,
     updateSettings,
-    gtmId: settings?.integrations?.google_tag_manager_id,
-    geminiApiKey: settings?.integrations?.gemini_api_key,
+    gtmId: undefined,
+    geminiApiKey: undefined,
     siteName: settings?.site_info?.site_name || settings?.site_info?.name,
     siteDescription: settings?.site_info?.site_description || settings?.site_info?.description,
     logoUrl: settings?.site_info?.logo || settings?.site_info?.logo_url,

@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { queryKeys } from '../lib/react-query'
+import { queryKeys, type ProductFilters } from '../lib/react-query'
 import { table } from '../lib/schema'
 import type { ProductWithCategory } from '../types/product'
 
@@ -11,6 +11,46 @@ export interface SubcategoryWithId {
   slug: string;
   category_id: number;
 }
+
+export const PAGE_SIZE = 24;
+
+const PRODUCT_CARD_FIELDS = `
+  id,
+  name,
+  slug,
+  short_description,
+  category_id,
+  subcategory_id,
+  image,
+  brand,
+  featured,
+  featured_on_homepage,
+  featured_in_dropdown,
+  is_disabled,
+  active,
+  created_at,
+  updated_at
+`;
+
+const PRODUCT_DETAIL_FIELDS = `
+  id,
+  name,
+  slug,
+  description,
+  specifications,
+  technical_specifications,
+  short_description,
+  key_features,
+  category_id,
+  subcategory_id,
+  brand,
+  model,
+  sku_code,
+  image,
+  active,
+  updated_at,
+  product_images(id, url, sort_order, alt_text, created_at)
+`;
 
 const generateSlug = (name: string): string => {
   return name
@@ -59,9 +99,10 @@ const transformProductWithCategory = (
 
   if (opts?.useRawImages && raw.product_images && Array.isArray(raw.product_images)) {
     productImages = raw.product_images.map((img: any) => ({
-      id: img.id,
+      id: String(img.id),
       image_url: img.url,
       sort_order: img.sort_order ?? 0,
+      alt_text: img.alt_text ?? undefined,
       created_at: img.created_at ?? new Date().toISOString(),
     }));
   } else if (raw.image) {
@@ -83,6 +124,14 @@ const transformProductWithCategory = (
     };
   };
 
+  const extraFields: any = {};
+  if (raw.short_description) extraFields.short_description = raw.short_description;
+  if (raw.key_features) extraFields.key_features = raw.key_features;
+  if (raw.technical_specifications) extraFields.technical_specifications = raw.technical_specifications;
+  if (raw.brand) extraFields.brand = raw.brand;
+  if (raw.model) extraFields.model = raw.model;
+  if (raw.sku_code) extraFields.sku_code = raw.sku_code;
+
   return {
     id: String(raw.id),
     name: raw.name || 'Produto',
@@ -102,62 +151,274 @@ const transformProductWithCategory = (
     subcategory: toCat(subcategory),
     product_images: productImages,
     image_url: raw.image || undefined,
+    ...extraFields,
   } as ProductWithCategory;
 };
 
 export const useProducts = () => {
   const queryClient = useQueryClient();
-  const query = useQuery<ProductWithCategory[]>({
-    queryKey: queryKeys.products.all,
-    queryFn: async () => {
-      if (!isSupabaseConfigured) return [];
-
-      const categoryMap = await fetchActiveCategoriesMap();
-
-      const { data, error: productsError } = await supabase
-        .from(table('products'))
-        .select(`
-          id,
-          name,
-          slug,
-          description,
-          specifications,
-          category_id,
-          subcategory_id,
-          featured,
-          featured_in_dropdown,
-          is_disabled,
-          featured_on_homepage,
-          image,
-          active,
-          created_at,
-          updated_at
-        `)
-        .eq('active', true);
-
-      if (productsError) throw new Error(`Falha ao carregar produtos: ${productsError.message}`);
-
-      return (data || []).map((p: any) => transformProductWithCategory(p, categoryMap));
-    },
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-    retry: 1,
-  });
+  const page1Filters: ProductFilters = {};
+  const firstPage = useProductsPage(1, page1Filters);
 
   const fetchProducts = useCallback(() => {
     return queryClient.refetchQueries({ queryKey: queryKeys.products.all });
   }, [queryClient]);
 
   return useMemo(() => ({
-    data: query.data ?? [],
-    isLoading: query.isPending || query.isFetching,
-    error: query.error?.message ?? null,
+    data: firstPage.data?.data ?? [],
+    isLoading: firstPage.isLoading,
+    error: firstPage.error,
     refetch: fetchProducts,
-  }), [query.data, query.isPending, query.isFetching, query.error, fetchProducts]);
+  }), [firstPage.data, firstPage.isLoading, firstPage.error, fetchProducts]);
 };
+
+export const useAllProductsByCategory = (categoryId: string | number) => {
+  return useQuery<ProductWithCategory[]>({
+    queryKey: ['products', 'all-by-category', String(categoryId)],
+    queryFn: async (): Promise<ProductWithCategory[]> => {
+      if (!categoryId || !isSupabaseConfigured) return [];
+
+      const categoryMap = await fetchActiveCategoriesMap();
+
+      let numericCategoryId: number | null = null;
+      if (typeof categoryId === 'number') {
+        numericCategoryId = categoryId;
+      } else {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === categoryId) {
+            numericCategoryId = id;
+            break;
+          }
+        }
+      }
+
+      let request = supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS)
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .order('created_at', { ascending: false })
+        .limit(600);
+
+      if (numericCategoryId != null) {
+        request = request.eq('category_id', numericCategoryId);
+      }
+
+      const { data, error } = await request;
+      if (error) throw new Error(`Falha ao carregar produtos da categoria: ${error.message}`);
+
+      return (data || []).map((p: any) => transformProductWithCategory(p, categoryMap));
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !!categoryId,
+  });
+};
+
+export const useAllProductsBySubcategory = (subcategoryId: string | number) => {
+  return useQuery<ProductWithCategory[]>({
+    queryKey: ['products', 'all-by-subcategory', String(subcategoryId)],
+    queryFn: async (): Promise<ProductWithCategory[]> => {
+      if (!subcategoryId || !isSupabaseConfigured) return [];
+
+      const categoryMap = await fetchActiveCategoriesMap();
+
+      let numericSubcategoryId: number | null = null;
+      if (typeof subcategoryId === 'number') {
+        numericSubcategoryId = subcategoryId;
+      } else {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === subcategoryId) {
+            numericSubcategoryId = id;
+            break;
+          }
+        }
+      }
+
+      let request = supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS)
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .order('created_at', { ascending: false })
+        .limit(600);
+
+      if (numericSubcategoryId != null) {
+        request = request.eq('subcategory_id', numericSubcategoryId);
+      }
+
+      const { data, error } = await request;
+      if (error) throw new Error(`Falha ao carregar produtos da subcategoria: ${error.message}`);
+
+      return (data || []).map((p: any) => transformProductWithCategory(p, categoryMap));
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !!subcategoryId,
+  });
+};
+
+export function useProductsPage(page: number = 1, filters: ProductFilters = {}) {
+  return useQuery<{ data: ProductWithCategory[]; count: number | null }>({
+    queryKey: queryKeys.products.page(page, filters),
+    queryFn: async () => {
+      if (!isSupabaseConfigured) return { data: [], count: 0 };
+
+      const categoryMap = await fetchActiveCategoriesMap();
+      const p = Math.max(1, page);
+      const from = (p - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      let request = supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS, { count: 'exact' })
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (filters.category_id != null) {
+        request = request.eq('category_id', filters.category_id);
+      }
+      if (filters.subcategory_id != null) {
+        request = request.eq('subcategory_id', filters.subcategory_id);
+      }
+
+      const { data, count, error: productsError } = await request;
+
+      if (productsError) throw new Error(`Falha ao carregar produtos: ${productsError.message}`);
+
+      return {
+        data: (data || []).map((pItem: any) => transformProductWithCategory(pItem, categoryMap)),
+        count,
+      };
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
+}
+
+export function useProductsByCategory(categoryId: string | number, page: number = 1) {
+  return useQuery<{ data: ProductWithCategory[]; count: number | null }>({
+    queryKey: queryKeys.products.byCategory(categoryId, page),
+    queryFn: async () => {
+      if (!categoryId || !isSupabaseConfigured) return { data: [], count: 0 };
+
+      const categoryMap = await fetchActiveCategoriesMap();
+
+      let numericCategoryId: number | null = null;
+      if (typeof categoryId === 'number') {
+        numericCategoryId = categoryId;
+      } else {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === categoryId) {
+            numericCategoryId = id;
+            break;
+          }
+        }
+      }
+
+      const p = Math.max(1, page);
+      const from = (p - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      let request = supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS, { count: 'exact' })
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (numericCategoryId != null) {
+        request = request.eq('category_id', numericCategoryId);
+      }
+
+      const { data, count, error: productsError } = await request;
+
+      if (productsError) throw new Error(`Falha ao carregar produtos da categoria: ${productsError.message}`);
+
+      return {
+        data: (data || []).map((pItem: any) => transformProductWithCategory(pItem, categoryMap)),
+        count,
+      };
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !!categoryId,
+  });
+}
+
+export function useProductsBySubcategory(subcategoryId: string | number, page: number = 1) {
+  return useQuery<{ data: ProductWithCategory[]; count: number | null }>({
+    queryKey: queryKeys.products.bySubcategory(subcategoryId, page),
+    queryFn: async () => {
+      if (!subcategoryId || !isSupabaseConfigured) return { data: [], count: 0 };
+
+      const categoryMap = await fetchActiveCategoriesMap();
+
+      let numericSubcategoryId: number | null = null;
+      if (typeof subcategoryId === 'number') {
+        numericSubcategoryId = subcategoryId;
+      } else {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === subcategoryId) {
+            numericSubcategoryId = id;
+            break;
+          }
+        }
+      }
+
+      const p = Math.max(1, page);
+      const from = (p - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      let request = supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS, { count: 'exact' })
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (numericSubcategoryId != null) {
+        request = request.eq('subcategory_id', numericSubcategoryId);
+      }
+
+      const { data, count, error: productsError } = await request;
+
+      if (productsError) throw new Error(`Falha ao carregar produtos da subcategoria: ${productsError.message}`);
+
+      return {
+        data: (data || []).map((pItem: any) => transformProductWithCategory(pItem, categoryMap)),
+        count,
+      };
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !!subcategoryId,
+  });
+}
 
 export const useFeaturedProductsHome = () => {
   return useQuery<ProductWithCategory[]>({
@@ -169,34 +430,21 @@ export const useFeaturedProductsHome = () => {
 
       const { data, error: productsError } = await supabase
         .from(table('products'))
-        .select(`
-          id,
-          name,
-          slug,
-          description,
-          category_id,
-          subcategory_id,
-          featured,
-          featured_in_dropdown,
-          is_disabled,
-          featured_on_homepage,
-          image,
-          created_at,
-          updated_at
-        `)
+        .select(PRODUCT_CARD_FIELDS)
         .eq('active', true)
+        .eq('is_disabled', false)
         .or('featured.eq.true,featured_on_homepage.eq.true')
         .order('featured_on_homepage', { ascending: false, nullsFirst: false })
         .order('featured', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
-        .limit(32);
+        .limit(8);
 
       if (productsError) throw new Error(`Falha ao carregar produtos home: ${productsError.message}`);
 
       return (data || []).map((p: any) => transformProductWithCategory(p, categoryMap));
     },
-    staleTime: 1000 * 60 * 10,
-    gcTime: 1000 * 60 * 20,
+    staleTime: 1000 * 60 * 15,
+    gcTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
@@ -204,87 +452,50 @@ export const useFeaturedProductsHome = () => {
   });
 };
 
-export const useProductsBySubcategory = (subcategoryId: string | number, categoryId?: string | number) => {
-  const { data: allProducts, isLoading, error } = useProducts();
-
-  const filteredProducts = useMemo(() => {
-    if (!allProducts || !subcategoryId) return [];
-
-    const subIdStr = String(subcategoryId);
-
-    let filtered = allProducts.filter((product) => {
-      if (typeof subcategoryId === 'string') {
-        return product.subcategory?.slug === subcategoryId || String(product.subcategory_id) === subIdStr;
-      }
-      return String(product.subcategory_id) === subIdStr;
-    });
-
-    if (filtered.length === 0 && categoryId) {
-      const catIdStr = String(categoryId);
-      filtered = allProducts.filter((product) => {
-        if (typeof categoryId === 'string') {
-          return product.category?.slug === categoryId || String(product.category_id) === catIdStr;
-        }
-        return String(product.category_id) === catIdStr;
-      });
-    }
-
-    return filtered;
-  }, [allProducts, subcategoryId, categoryId]);
-
-  return useMemo(() => ({
-    data: filteredProducts,
-    isLoading,
-    error,
-  }), [filteredProducts, isLoading, error]);
-};
-
-export const useProductsByCategory = (categoryId: string | number) => {
-  const { data: allProducts, isLoading, error } = useProducts();
-
-  const filteredProducts = useMemo(() => {
-    if (!allProducts || !categoryId) return [];
-
-    const catIdStr = String(categoryId);
-
-    return allProducts.filter((product) => {
-      if (typeof categoryId === 'string') {
-        return product.category?.slug === categoryId || String(product.category_id) === catIdStr;
-      }
-      return String(product.category_id) === catIdStr;
-    });
-  }, [allProducts, categoryId]);
-
-  return useMemo(() => ({
-    data: filteredProducts,
-    isLoading,
-    error,
-  }), [filteredProducts, isLoading, error]);
-};
-
 export const useFeaturedProductByCategory = (categoryId: string | number) => {
-  const { data: allProducts, isLoading, error } = useProducts();
+  return useQuery<ProductWithCategory | null>({
+    queryKey: ['products', 'featured-by-category', String(categoryId)],
+    queryFn: async () => {
+      if (!categoryId || !isSupabaseConfigured) return null;
 
-  const featuredProduct = useMemo(() => {
-    if (!allProducts) return null;
+      const categoryMap = await fetchActiveCategoriesMap();
 
-    const catIdStr = String(categoryId);
+      let numericCategoryId: number | null = null;
+      if (typeof categoryId === 'number') {
+        numericCategoryId = categoryId;
+      } else {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === categoryId) {
+            numericCategoryId = id;
+            break;
+          }
+        }
+      }
 
-    const filtered = allProducts.filter((product) => {
-      const match = typeof categoryId === 'string'
-        ? product.category?.slug === categoryId || String(product.category_id) === catIdStr
-        : String(product.category_id) === catIdStr;
-      return match && product.featured_in_dropdown === true && !product.is_disabled;
-    });
+      if (numericCategoryId == null) return null;
 
-    return filtered.length > 0 ? filtered[0] : null;
-  }, [allProducts, categoryId]);
+      const { data, error } = await supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS)
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .eq('category_id', numericCategoryId)
+        .eq('featured_in_dropdown', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-  return useMemo(() => ({
-    data: featuredProduct,
-    isLoading,
-    error,
-  }), [featuredProduct, isLoading, error]);
+      if (error) throw new Error(`Falha ao carregar destaque da categoria: ${error.message}`);
+
+      return (data && data.length > 0) ? transformProductWithCategory(data[0], categoryMap) : null;
+    },
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 20,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !!categoryId,
+  });
 };
 
 export const useProductBySlug = (slug: string) => {
@@ -293,21 +504,11 @@ export const useProductBySlug = (slug: string) => {
     queryFn: async (): Promise<ProductWithCategory | null> => {
       if (!slug || !isSupabaseConfigured) return null;
 
-      const baseSelect = `
-        *,
-        product_images (
-          id,
-          url,
-          sort_order,
-          created_at
-        )
-      `;
-
       let candidate: any = null;
 
       const { data: exact, error: exactErr } = await supabase
         .from(table('products'))
-        .select(baseSelect)
+        .select(PRODUCT_DETAIL_FIELDS)
         .eq('active', true)
         .eq('slug', slug)
         .maybeSingle();
@@ -319,22 +520,11 @@ export const useProductBySlug = (slug: string) => {
       candidate = exact ?? null;
 
       if (!candidate) {
-        const { data: byILike } = await supabase
-          .from(table('products'))
-          .select(baseSelect)
-          .eq('active', true)
-          .ilike('slug', slug)
-          .limit(1)
-          .maybeSingle();
-        if (byILike) candidate = byILike;
-      }
-
-      if (!candidate) {
         const numId = Number(slug);
         if (!Number.isNaN(numId)) {
           const { data: byId } = await supabase
             .from(table('products'))
-            .select(baseSelect)
+            .select(PRODUCT_DETAIL_FIELDS)
             .eq('active', true)
             .eq('id', numId)
             .maybeSingle();
@@ -384,38 +574,82 @@ export const useProductBySlug = (slug: string) => {
 };
 
 export const useFeaturedDropdownProducts = () => {
-  const { data: allProducts, isLoading, error } = useProducts();
+  return useQuery<ProductWithCategory[]>({
+    queryKey: queryKeys.products.dropdownFeatured,
+    queryFn: async () => {
+      if (!isSupabaseConfigured) return [];
 
-  const featuredProducts = useMemo(() => {
-    if (!allProducts) return [];
-    return allProducts.filter((product) => product.featured_in_dropdown === true && !product.is_disabled);
-  }, [allProducts]);
+      const categoryMap = await fetchActiveCategoriesMap();
 
-  return useMemo(() => ({
-    data: featuredProducts,
-    isLoading,
-    error,
-  }), [featuredProducts, isLoading, error]);
+      const { data, error } = await supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS)
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .eq('featured_in_dropdown', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(`Falha ao carregar destaque dropdown: ${error.message}`);
+
+      return (data || []).map((p: any) => transformProductWithCategory(p, categoryMap));
+    },
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 20,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
 };
 
 export const useFeaturedProductsByCategory = (categoryId: string | number) => {
-  const { data: allProducts, isLoading, error } = useProductsByCategory(categoryId);
+  return useQuery<ProductWithCategory[]>({
+    queryKey: ['products', 'featured-list', String(categoryId)],
+    queryFn: async () => {
+      if (!categoryId || !isSupabaseConfigured) return [];
 
-  const featuredProducts = useMemo(() => {
-    if (!allProducts) return [];
-    return allProducts.filter((product) => product.featured_in_dropdown === true && !product.is_disabled);
-  }, [allProducts, categoryId]);
+      const categoryMap = await fetchActiveCategoriesMap();
 
-  return useMemo(() => ({
-    data: featuredProducts,
-    isLoading,
-    error,
-  }), [featuredProducts, isLoading, error]);
+      let numericCategoryId: number | null = null;
+      if (typeof categoryId === 'number') {
+        numericCategoryId = categoryId;
+      } else {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === categoryId) {
+            numericCategoryId = id;
+            break;
+          }
+        }
+      }
+
+      if (numericCategoryId == null) return [];
+
+      const { data, error } = await supabase
+        .from(table('products'))
+        .select(PRODUCT_CARD_FIELDS)
+        .eq('active', true)
+        .eq('is_disabled', false)
+        .eq('category_id', numericCategoryId)
+        .eq('featured_in_dropdown', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw new Error(`Falha ao carregar destaques da categoria: ${error.message}`);
+
+      return (data || []).map((p: any) => transformProductWithCategory(p, categoryMap));
+    },
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 20,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    enabled: !!categoryId,
+  });
 };
 
 export const useLatestProducts = (limit: number = 6) => {
   return useQuery<ProductWithCategory[]>({
-    queryKey: ['products', 'latest', limit],
+    queryKey: queryKeys.products.latest(limit),
     queryFn: async () => {
       if (!isSupabaseConfigured) return [];
 
@@ -423,23 +657,11 @@ export const useLatestProducts = (limit: number = 6) => {
 
       const { data, error: productsError } = await supabase
         .from(table('products'))
-        .select(`
-          id,
-          name,
-          slug,
-          description,
-          image,
-          category_id,
-          featured,
-          featured_in_dropdown,
-          is_disabled,
-          featured_on_homepage,
-          created_at,
-          updated_at
-        `)
+        .select(PRODUCT_CARD_FIELDS)
         .eq('active', true)
+        .eq('is_disabled', false)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(Math.max(1, limit));
 
       if (productsError) throw new Error(`Falha ao carregar produtos recentes: ${productsError.message}`);
 
@@ -460,34 +682,39 @@ export const useSimilarProducts = (
   limit: number = 4
 ) => {
   return useQuery<ProductWithCategory[]>({
-    queryKey: ['products', 'similar', String(currentProductId), categoryId != null ? String(categoryId) : 'nocat', limit],
+    queryKey: queryKeys.products.similar(currentProductId, categoryId ?? null, limit),
     queryFn: async () => {
       if (!categoryId || !isSupabaseConfigured) return [];
 
       const categoryMap = await fetchActiveCategoriesMap();
 
+      let numericCategoryId: number | null = null;
+      if (typeof categoryId === 'number') {
+        numericCategoryId = categoryId;
+      } else if (typeof categoryId === 'string') {
+        for (const [id, cat] of categoryMap.entries()) {
+          if (cat.slug === categoryId) {
+            numericCategoryId = id;
+            break;
+          }
+        }
+        if (numericCategoryId == null) {
+          const parsed = Number(categoryId);
+          if (!Number.isNaN(parsed)) numericCategoryId = parsed;
+        }
+      }
+
+      if (numericCategoryId == null) return [];
+
       const { data, error: productsError } = await supabase
         .from(table('products'))
-        .select(`
-          id,
-          name,
-          slug,
-          description,
-          category_id,
-          subcategory_id,
-          featured,
-          featured_in_dropdown,
-          is_disabled,
-          featured_on_homepage,
-          image,
-          created_at,
-          updated_at
-        `)
+        .select(PRODUCT_CARD_FIELDS)
         .eq('active', true)
-        .eq('category_id', categoryId)
+        .eq('is_disabled', false)
+        .eq('category_id', numericCategoryId)
         .neq('id', currentProductId)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .limit(Math.max(1, limit));
 
       if (productsError) throw new Error(`Falha ao carregar produtos similares: ${productsError.message}`);
 
@@ -516,7 +743,11 @@ export const useSubcategories = (categoryId?: string | number) => {
         .eq('active', true);
 
       if (categoryId) {
-        q = q.eq('parent_id', categoryId);
+        if (typeof categoryId === 'number') {
+          q = q.eq('parent_id', categoryId);
+        } else {
+          q = q.or(`parent_id.eq.${categoryId}`);
+        }
       }
 
       const { data, error: subError } = await q.order('name');

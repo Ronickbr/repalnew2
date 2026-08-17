@@ -94,6 +94,7 @@ export const isSupabaseConfigured = isEnvConfigured
 export const supabase = isEnvConfigured ? createClient(supabaseUrl!, supabaseAnonKey!) : createSupabaseStub()
 export const isActivityLogsEnabled = import.meta.env.VITE_ACTIVITY_LOGS !== 'false'
 import { table } from './schema'
+import { isLikelyBot } from './utils'
 
 export async function logActivity(payload: {
   action: string;
@@ -104,6 +105,7 @@ export async function logActivity(payload: {
   status?: string;
 }) {
   if (!isSupabaseConfigured || !isActivityLogsEnabled) return
+  if (isLikelyBot()) return
   try {
     await supabase.from(table('activity_logs')).insert(payload)
   } catch (err) {

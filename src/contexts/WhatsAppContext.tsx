@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { logActivity, supabase } from '../lib/supabase';
+import { isLikelyBot } from '../lib/utils';
 
 export interface Store {
   id: string | number;
@@ -34,7 +35,7 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
     try {
       const { data, error } = await supabase
         .from('stores')
-        .select('*')
+        .select('id, name, whatsapp_number, phone, active')
         .eq('active', true)
         .order('name');
 
@@ -82,21 +83,23 @@ export const WhatsAppProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const redirectToWhatsApp = useCallback((store: Store, message: string = 'Olá, gostaria de mais informações') => {
     const whatsappUrl = `https://wa.me/${store.phone}?text=${encodeURIComponent(message)}`;
-    const details = {
-      store_id: store.id,
-      store_name: store.name,
-      phone: store.phone,
-      path: window.location.pathname,
-      message,
-    };
-    logActivity({
-      action: 'whatsapp_click',
-      resource_type: 'store',
-      resource_id: String(store.id),
-      details: JSON.stringify(details),
-      user_agent: navigator.userAgent,
-      status: 'success',
-    });
+    if (!isLikelyBot()) {
+      const details = {
+        store_id: store.id,
+        store_name: store.name,
+        phone: store.phone,
+        path: window.location.pathname,
+        message,
+      };
+      logActivity({
+        action: 'whatsapp_click',
+        resource_type: 'store',
+        resource_id: String(store.id),
+        details: JSON.stringify(details),
+        user_agent: navigator.userAgent,
+        status: 'success',
+      });
+    }
     window.open(whatsappUrl, '_blank');
     closeStoreSelector();
   }, [closeStoreSelector]);

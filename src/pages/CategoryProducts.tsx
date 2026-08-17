@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Search, Filter, ChevronLeft, ChevronRight, Grid2x2, List } from 'lucide-react'
 import { useCategories, useSubcategoriesByCategory } from '../hooks/useCategories'
-import { useProductsByCategory } from '../hooks/useProducts'
+import { useAllProductsByCategory } from '../hooks/useProducts'
 import type { ProductWithCategory } from '../types/product'
 import ProductCard from '../components/ProductCard'
 import { useAccessibility } from '../hooks/useAccessibility'
@@ -31,7 +31,7 @@ const CategoryProducts: React.FC = () => {
 
   const { data: categories } = useCategories()
 
-  const { data: categoryProducts = [], isLoading } = useProductsByCategory(selectedCategorySlug || '')
+  const { data: categoryProducts = [], isLoading } = useAllProductsByCategory(selectedCategorySlug || '')
 
   const categoryIdForSubcategories = useMemo(() => {
     const found = categories?.find(c => c.slug === (selectedCategorySlug || ''))

@@ -3,6 +3,7 @@ export interface ProductImage {
   image_url: string;
   alt_text?: string;
   sort_order: number;
+  created_at?: string;
 }
 
 export interface Product {
@@ -23,6 +24,7 @@ export interface Product {
   featured_on_homepage?: boolean;
   specifications?: string;
   tags?: string[];
+  short_description?: string;
 }
 
 export interface ProductWithCategory {
@@ -44,6 +46,9 @@ export interface ProductWithCategory {
   is_disabled?: boolean;
   featured_on_homepage?: boolean;
   specifications?: string;
+  technical_specifications?: string | Record<string, unknown> | unknown[];
+  short_description?: string;
+  key_features?: string[];
   additional_images?: string[];
   brand?: string;
   model?: string;

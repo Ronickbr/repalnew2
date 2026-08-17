@@ -5,6 +5,7 @@ import Header from './Header';
 import Footer from './Footer';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { logActivity } from '../lib/supabase';
+import { isLikelyBot } from '../lib/utils';
 
 const Layout: React.FC = () => {
   const { siteName, metaTitle, metaDescription, metaKeywords, canonicalBaseUrl } = useSiteSettings();
@@ -22,6 +23,8 @@ const Layout: React.FC = () => {
   const canonicalHref = origin ? `${origin}${canonicalPath}` : undefined;
 
   useEffect(() => {
+    if (isLikelyBot()) return;
+
     const vidKey = 'repal_visitor_id';
     const visitLoggedKey = 'repal_visit_logged';
     let visitorId: string | null = null;

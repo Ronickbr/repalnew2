@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useActiveBanners } from '../hooks/useBanners';
+import { getSupabaseImageUrl } from '../lib/utils';
 
 interface BannerCarouselProps {
   autoPlay?: boolean;
@@ -9,6 +10,16 @@ interface BannerCarouselProps {
   showControls?: boolean;
   showIndicators?: boolean;
   className?: string;
+}
+
+function buildBannerSrcSet(originalUrl: string, width: number, height: number, resize: 'cover' | 'contain' = 'contain') {
+  const base = getSupabaseImageUrl(originalUrl, { width, height, quality: 80, resize });
+  const retina = getSupabaseImageUrl(originalUrl, { width: width * 2, height: height * 2, quality: 80, resize });
+  return `${base} 1x, ${retina} 2x`;
+}
+
+function buildBannerImg(originalUrl: string, width: number, height: number, resize: 'cover' | 'contain' = 'contain') {
+  return getSupabaseImageUrl(originalUrl, { width, height, quality: 80, resize });
 }
 
 export default function BannerCarousel({
@@ -30,7 +41,6 @@ export default function BannerCarousel({
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
-  // Debounced navigation to prevent rapid clicking
   const debouncedNavigation = useCallback((callback: () => void) => {
     if (navigationTimeoutRef.current) {
       clearTimeout(navigationTimeoutRef.current);
@@ -46,26 +56,22 @@ export default function BannerCarousel({
     }
   }, [isTransitioning]);
 
-  // Preload images for smooth transitions
-  // Usa um ref (e não state) para evitar re-renders e re-subscriptions do efeito
-  // de autoplay a cada imagem pré-carregada.
   const preloadImage = useCallback((index: number) => {
     if (banners[index] && !preloadedImagesRef.current.has(index)) {
+      const transformed = buildBannerImg(banners[index].image_url, 1280, 448, 'contain');
       const img = new Image();
       img.onload = () => {
         preloadedImagesRef.current.add(index);
       };
-      img.src = banners[index].image_url;
+      img.src = transformed;
     }
   }, [banners]);
 
-  // Navigate to next banner
   const nextBanner = useCallback(() => {
     if (banners.length > 0) {
       debouncedNavigation(() => {
         setCurrentIndex((prevIndex) => {
           const nextIndex = prevIndex === banners.length - 1 ? 0 : prevIndex + 1;
-          // Preload next image
           const preloadIndex = nextIndex === banners.length - 1 ? 0 : nextIndex + 1;
           preloadImage(preloadIndex);
           return nextIndex;
@@ -74,39 +80,29 @@ export default function BannerCarousel({
     }
   }, [banners.length, debouncedNavigation, preloadImage]);
 
-  // Navigate to previous banner
   const prevBanner = useCallback(() => {
     if (banners.length > 0) {
       debouncedNavigation(() => {
         setCurrentIndex((prevIndex) => {
-          const nextIndex = prevIndex === 0 ? banners.length - 1 : prevIndex - 1;
-          // Preload previous image
-          const preloadIndex = nextIndex === 0 ? banners.length - 1 : nextIndex - 1;
-          preloadImage(preloadIndex);
-          return nextIndex;
+          return prevIndex === 0 ? banners.length - 1 : prevIndex - 1;
         });
       });
     }
-  }, [banners.length, debouncedNavigation, preloadImage]);
+  }, [banners.length, debouncedNavigation]);
 
-  // Go to specific banner
   const goToBanner = useCallback((index: number) => {
     if (index !== currentIndex) {
       debouncedNavigation(() => {
         setCurrentIndex(index);
-        // Preload adjacent images
         preloadImage((index + 1) % banners.length);
-        preloadImage(index === 0 ? banners.length - 1 : index - 1);
       });
     }
   }, [currentIndex, debouncedNavigation, preloadImage, banners.length]);
 
-  // Toggle play/pause
   const togglePlayPause = useCallback(() => {
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
-  // Auto-play functionality with smooth progress animation
   useEffect(() => {
     if (!isPlaying || isHovered || !isInView || banners.length <= 1) return;
 
@@ -145,26 +141,19 @@ export default function BannerCarousel({
     };
   }, [isPlaying, isHovered, isInView, nextBanner, autoPlayInterval, banners.length]);
 
-  // Reset current index if banners change
   useEffect(() => {
     if (banners.length > 0 && currentIndex >= banners.length) {
       setCurrentIndex(0);
     }
   }, [banners.length, currentIndex]);
 
-  // Preload initial images
   useEffect(() => {
-    if (banners.length > 0) {
-      // Preload current and next images
+    if (banners.length > 0 && isInView) {
       preloadImage(currentIndex);
       preloadImage((currentIndex + 1) % banners.length);
-      if (banners.length > 2) {
-        preloadImage(currentIndex === 0 ? banners.length - 1 : currentIndex - 1);
-      }
     }
-  }, [banners, currentIndex, preloadImage]);
+  }, [banners, currentIndex, preloadImage, isInView]);
 
-  // Intersection Observer for lazy loading
   useEffect(() => {
     if (!carouselRef.current) return;
 
@@ -172,12 +161,6 @@ export default function BannerCarousel({
       (entries) => {
         entries.forEach((entry) => {
           setIsInView(entry.isIntersecting);
-          if (entry.isIntersecting) {
-            // Preload all images when carousel comes into view
-            banners.forEach((_, index) => {
-              preloadImage(index);
-            });
-          }
         });
       },
       { threshold: 0.1 }
@@ -188,12 +171,10 @@ export default function BannerCarousel({
     return () => {
       observer.disconnect();
     };
-  }, [banners, preloadImage]);
+  }, []);
 
-  // Handle keyboard navigation with focus management
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle keyboard events when carousel is focused or contains focus
       if (!carouselRef.current?.contains(document.activeElement)) return;
 
       switch (event.key) {
@@ -224,15 +205,12 @@ export default function BannerCarousel({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [nextBanner, prevBanner, togglePlayPause, goToBanner, banners.length]);
 
-  // Handle reduced motion preference
   const prefersReducedMotion = useCallback(() => {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  // Handle banner click
   const handleBannerClick = useCallback((banner: typeof banners[0]) => {
     if (!banner.link_url) return;
-    // Check if it's an external link
     if (/^https?:\/\//i.test(banner.link_url)) {
       try {
         const url = new URL(banner.link_url);
@@ -243,7 +221,7 @@ export default function BannerCarousel({
           return;
         }
       } catch {
-        /* fallthrough: open external */
+        /* fallthrough */
       }
       window.open(banner.link_url, '_blank', 'noopener,noreferrer');
     } else if (banner.link_url.startsWith('#')) {
@@ -252,10 +230,14 @@ export default function BannerCarousel({
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } else {
-      // Internal link - preserve SPA state
       navigate(banner.link_url);
     }
   }, [navigate]);
+
+  const shouldRenderIndex = useCallback((index: number): boolean => {
+    if (banners.length <= 2) return true;
+    return index === currentIndex || index === (currentIndex + 1) % banners.length;
+  }, [currentIndex, banners.length]);
 
   if (loading) {
     return (
@@ -289,6 +271,16 @@ export default function BannerCarousel({
 
   const transitionDuration = prefersReducedMotion() ? 0 : 500;
 
+  const bannerSources = useMemo(() => banners.map((b) => ({
+    banner: b,
+    src480: buildBannerImg(b.image_url, 480, 192, 'contain'),
+    src640: buildBannerSrcSet(b.image_url, 640, 256, 'contain'),
+    src768: buildBannerSrcSet(b.image_url, 768, 320, 'contain'),
+    src1024: buildBannerSrcSet(b.image_url, 1024, 384, 'contain'),
+    src1280: buildBannerSrcSet(b.image_url, 1280, 448, 'contain'),
+    src1536: buildBannerSrcSet(b.image_url, 1536, 512, 'cover'),
+  })), [banners]);
+
   return (
     <div 
       ref={carouselRef}
@@ -300,7 +292,6 @@ export default function BannerCarousel({
       aria-label="Carrossel de banners"
       aria-live="polite"
     >
-      {/* Banner Container with Slide Transition */}
       <div 
         className="relative w-full h-full"
         style={{
@@ -309,66 +300,52 @@ export default function BannerCarousel({
           willChange: 'transform'
         }}
       >
-        {banners.map((banner, index) => (
-          <div
-            key={`${banner.id}-${index}`}
-            className={`absolute top-0 left-0 w-full h-full ${
-              banner.link_url ? 'cursor-pointer' : 'cursor-default'
-            }`}
-            style={{
-              transform: `translate3d(${index * 100}%, 0, 0)`,
-              willChange: 'transform'
-            }}
-            onClick={() => handleBannerClick(banner)}
-          >
-            <picture>
-              <source
-                media="(min-width: 1536px)"
-                srcSet={`${banner.image_url}?w=1536&h=512&fit=crop&auto=format&q=80 1x, ${banner.image_url}?w=3072&h=1024&fit=crop&auto=format&q=80 2x`}
-              />
-              <source
-                media="(min-width: 1280px)"
-                srcSet={`${banner.image_url}?w=1280&h=448&fit=contain&auto=format&q=80 1x, ${banner.image_url}?w=2560&h=896&fit=contain&auto=format&q=80 2x`}
-              />
-              <source
-                media="(min-width: 1024px)"
-                srcSet={`${banner.image_url}?w=1024&h=384&fit=contain&auto=format&q=80 1x, ${banner.image_url}?w=2048&h=768&fit=contain&auto=format&q=80 2x`}
-              />
-              <source
-                media="(min-width: 768px)"
-                srcSet={`${banner.image_url}?w=768&h=320&fit=contain&auto=format&q=80 1x, ${banner.image_url}?w=1536&h=640&fit=contain&auto=format&q=80 2x`}
-              />
-              <source
-                media="(min-width: 640px)"
-                srcSet={`${banner.image_url}?w=640&h=256&fit=contain&auto=format&q=80 1x, ${banner.image_url}?w=1280&h=512&fit=contain&auto=format&q=80 2x`}
-              />
-              <img
-                src={`${banner.image_url}?w=480&h=192&fit=contain&auto=format&q=80`}
-                alt={banner.title}
-                className="w-full h-full object-contain bg-gray-100"
-                loading={index === currentIndex ? "eager" : "lazy"}
-                decoding="async"
-                onError={(e) => {
-                  console.error('Erro ao carregar imagem do banner:', banner.image_url);
-                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDQwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgNzVIMjI1VjEyNUgxNzVWNzVaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0yMDAgOTBMMjEwIDEwNUgxOTBMMjAwIDkwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8L3N2Zz4K';
-                  e.currentTarget.alt = 'Imagem não encontrada';
-                }}
-                onLoad={() => {
-                  preloadedImagesRef.current.add(index);
-                }}
-              />
-            </picture>
-            
-            {/* Gradient Overlay for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
-          </div>
-        ))}
+        {bannerSources.map(({ banner, src480, src640, src768, src1024, src1280, src1536 }, index) => {
+          if (!shouldRenderIndex(index)) return null;
+          return (
+            <div
+              key={`${banner.id}-${index}`}
+              className={`absolute top-0 left-0 w-full h-full ${
+                banner.link_url ? 'cursor-pointer' : 'cursor-default'
+              }`}
+              style={{
+                transform: `translate3d(${index * 100}%, 0, 0)`,
+                willChange: 'transform'
+              }}
+              onClick={() => handleBannerClick(banner)}
+            >
+              <picture>
+                <source media="(min-width: 1536px)" srcSet={src1536} />
+                <source media="(min-width: 1280px)" srcSet={src1280} />
+                <source media="(min-width: 1024px)" srcSet={src1024} />
+                <source media="(min-width: 768px)" srcSet={src768} />
+                <source media="(min-width: 640px)" srcSet={src640} />
+                <img
+                  src={src480}
+                  alt={banner.title}
+                  className="w-full h-full object-contain bg-gray-100"
+                  loading={index === currentIndex ? "eager" : "lazy"}
+                  fetchPriority={index === currentIndex ? "high" : "auto"}
+                  decoding="async"
+                  onError={(e) => {
+                    console.error('Erro ao carregar imagem do banner:', banner.image_url);
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDQwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xNzUgNzVIMjI1VjEyNUgxNzVWNzVaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0yMDAgOTBMMjEwIDEwNUgxOTBMMjAwIDkwWiIgZmlsbD0iI0Y5RkFGQiIvPgo8L3N2Zz4K';
+                    e.currentTarget.alt = 'Imagem não encontrada';
+                  }}
+                  onLoad={() => {
+                    preloadedImagesRef.current.add(index);
+                  }}
+                />
+              </picture>
+              
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+            </div>
+          );
+        })}
       </div>
 
-      {/* Navigation Controls */}
       {showControls && banners.length > 1 && (
         <>
-          {/* Previous Button */}
           <button
             onClick={prevBanner}
             disabled={isTransitioning}
@@ -387,7 +364,6 @@ export default function BannerCarousel({
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
-          {/* Next Button */}
           <button
             onClick={nextBanner}
             disabled={isTransitioning}
@@ -406,7 +382,6 @@ export default function BannerCarousel({
             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
-          {/* Play/Pause Button */}
           {autoPlay && (
             <button
               onClick={togglePlayPause}
@@ -427,7 +402,6 @@ export default function BannerCarousel({
         </>
       )}
 
-      {/* Indicators */}
       {showIndicators && banners.length > 1 && (
         <div className="absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 hidden sm:flex space-x-1.5 sm:space-x-2">
           {banners.map((_, index) => (
@@ -458,7 +432,6 @@ export default function BannerCarousel({
         </div>
       )}
 
-      {/* Progress Bar */}
       {autoPlay && isPlaying && !isHovered && banners.length > 1 && (
         <div className="absolute bottom-0 left-0 w-full h-0.5 sm:h-1 bg-gradient-to-r from-black/20 via-black/30 to-black/20">
           <div 
@@ -472,8 +445,6 @@ export default function BannerCarousel({
           />
         </div>
       )}
-
-
     </div>
   );
 }

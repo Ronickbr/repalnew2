@@ -10,6 +10,7 @@ import ProductCard from '../components/ProductCard'
 import { useSiteSettings } from '../hooks/useSiteSettings'
 import { sanitizeMetaDescription, sanitizeMetaTitle, normalizeKeywords } from '../lib/seo'
 import { logActivity } from '../lib/supabase'
+import { isLikelyBot } from '../lib/utils'
 import { SafeHTML } from '../components/SafeHTML'
 
 
@@ -53,6 +54,7 @@ const ProductDetail: React.FC = () => {
 
   React.useEffect(() => {
     if (!product) return;
+    if (isLikelyBot()) return;
     const details = {
       product_id: product.id,
       product_name: product.name,

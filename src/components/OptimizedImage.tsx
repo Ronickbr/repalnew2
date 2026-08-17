@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react';
+import { getSupabaseImageUrl } from '../lib/utils';
 
 type ImageVariant = 'card' | 'hero' | 'detail' | 'raw';
 
@@ -45,7 +46,7 @@ const VARIANT_LOADING: Record<ImageVariant, 'eager' | 'lazy'> = {
 };
 
 const isSupabaseStorageUrl = (url: string): boolean =>
-  url.includes('supabase.co') || url.includes('/storage/v1/object/');
+  url.includes('supabase.co') || url.includes('/storage/v1/');
 
 const isImgurUrl = (url: string): boolean => /^https?:\/\/i\.imgur\.com\//i.test(url);
 
@@ -74,14 +75,13 @@ const buildSrcSet = (src: string): { srcset?: string; sizes?: string; fallbackSr
 
   if (isSupabaseStorageUrl(src)) {
     try {
-      const hasQuery = src.includes('?');
       const set = SUPABASE_WIDTHS.map((w) => {
-        const sep = hasQuery ? '&' : '?';
-        return `${src}${sep}width=${w} ${w}w`;
+        const transformed = getSupabaseImageUrl(src, { width: w, quality: 80, resize: 'contain' });
+        return `${transformed} ${w}w`;
       }).join(', ');
       return {
         srcset: set,
-        fallbackSrc: `${src}${hasQuery ? '&' : '?'}width=1280`,
+        fallbackSrc: getSupabaseImageUrl(src, { width: 1280, quality: 80, resize: 'contain' }),
       };
     } catch {
       return { fallbackSrc: src };

@@ -6,6 +6,43 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function getSupabaseImageUrl(
+  originalUrl: string,
+  options: { width: number; height?: number; quality?: number; resize?: 'cover' | 'contain' | 'fill' }
+): string {
+  if (!originalUrl) return originalUrl;
+  try {
+    const url = new URL(originalUrl);
+    const wasObject = url.pathname.includes('/storage/v1/object/public/');
+    url.pathname = url.pathname.replace(
+      '/storage/v1/object/public/',
+      '/storage/v1/render/image/public/'
+    );
+
+    if (wasObject || url.pathname.includes('/storage/v1/render/image/public/')) {
+      url.searchParams.set('width', String(options.width));
+      if (options.height) url.searchParams.set('height', String(options.height));
+      url.searchParams.set('quality', String(options.quality ?? 80));
+      url.searchParams.set('resize', options.resize ?? 'contain');
+    }
+
+    return url.toString();
+  } catch {
+    return originalUrl;
+  }
+}
+
+const BOT_PATTERN = /bot|crawler|spider|crawling|headlesschrome|googlebot|bingbot|applebot|ahrefsbot|semrushbot/i;
+
+export function isLikelyBot(): boolean {
+  if (typeof navigator === 'undefined') return true;
+  try {
+    return Boolean(navigator.webdriver) || BOT_PATTERN.test(navigator.userAgent || '');
+  } catch {
+    return false;
+  }
+}
+
 export type SanitizeMode = 'strict' | 'editor' | 'inline'
 
 export const SANITIZE_STRICT_TAGS = [
