@@ -41,7 +41,7 @@ RETURNS TABLE (metric_name text, metric_value bigint, note text)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_catalog
-AS $$
+AS $OBSF$
 DECLARE
   v_products bigint;
   v_activity_24h bigint;
@@ -102,7 +102,7 @@ BEGIN
     WHERE s.label = p_label
     ORDER BY s.metric_name;
 END;
-$$;
+$OBSF$;
 
 -- Retira execução pública (só service_role / superuser / authenticated admin)
 REVOKE ALL ON FUNCTION public.capture_egress_snapshot(text) FROM PUBLIC;

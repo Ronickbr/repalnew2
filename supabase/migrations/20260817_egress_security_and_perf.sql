@@ -193,20 +193,25 @@ WHERE created_at < NOW() - INTERVAL '180 days';
 
 -- Retenção via pg_cron (SE a extensão estiver habilitada no projeto).
 -- Verificar em SQL Editor: SELECT * FROM pg_extension WHERE extname='pg_cron';
-DO $$
+DO $CRONJOB$
+DECLARE
+  v_has_cron boolean;
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname='pg_cron') THEN
+  SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+    INTO v_has_cron;
 
-    PERFORM cron.unschedule('purge_activity_logs_180d')
-      WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'purge_activity_logs_180d');
+  IF v_has_cron THEN
+    IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'purge_activity_logs_180d') THEN
+      PERFORM cron.unschedule('purge_activity_logs_180d');
+    END IF;
 
     PERFORM cron.schedule(
       'purge_activity_logs_180d',
-      '0 3 * * 0',                      -- todo domingo às 03:00 (UTC)
-      $$ DELETE FROM public.activity_logs WHERE created_at < NOW() - INTERVAL '180 days'; $$
+      '0 3 * * 0',
+      $_$ DELETE FROM public.activity_logs WHERE created_at < NOW() - INTERVAL '180 days'; $_$
     );
   END IF;
-END $$;
+END $CRONJOB$;
 
 -- ==========================================================================
 -- BLOCO 5 — CONSULTAS DE VERIFICAÇÃO / SAÚDE

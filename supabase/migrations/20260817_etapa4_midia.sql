@@ -27,10 +27,9 @@
 -- versionados) e 1 dia a buckets de logo/icones (podem ser sobrescritos).
 -- Ajuste os nomes de bucket conforme projeto Repal.
 
-DO $$
+DO $MIDIA$
 DECLARE
   bucket_pattern text;
-  cache_seconds text;
 BEGIN
   -- Bucket "banners" (se existir) → 1 ano (normalmente nome único por campanha)
   IF EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'banners') THEN
@@ -57,7 +56,7 @@ BEGIN
   END IF;
 
   -- Buckets genéricos "public", "logos", "icons", "uploads" → 24h (menos seguro sobrescrever)
-  FOR bucket_pattern IN ARRAY ARRAY['public','logos','icons','uploads'] LOOP
+  FOREACH bucket_pattern IN ARRAY ARRAY['public','logos','icons','uploads'] LOOP
     IF EXISTS (SELECT 1 FROM storage.buckets WHERE id = bucket_pattern) THEN
       UPDATE storage.objects
       SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('cacheControl', 'public, max-age=86400')
@@ -65,7 +64,7 @@ BEGIN
         AND COALESCE(metadata->>'cacheControl', '') = '';
     END IF;
   END LOOP;
-END $$;
+END $MIDIA$;
 
 -- ==========================================================================
 -- 4.2) VIEWS de auditoria / saúde dos buckets
