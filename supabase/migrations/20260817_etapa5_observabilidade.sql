@@ -86,9 +86,9 @@ BEGIN
     (p_label, 'whatsapp_24h',      v_whatsapp_24h);
 
   -- 3) Storage (tamanho lógico e contagem)
-  SELECT count(*), coalesce(sum((metadata->>'size')::bigint), 0)
+  SELECT count(*), coalesce(sum((o.metadata->>'size')::bigint), 0)
     INTO v_bucket_objects, v_bucket_bytes
-    FROM storage.objects;
+    FROM storage.objects o;
 
   INSERT INTO public.egress_snapshots(label, metric_name, metric_value, extra)
   VALUES
@@ -180,13 +180,13 @@ WHERE active = true;
 
 CREATE OR REPLACE VIEW public.check_bucket_logical_size AS
 SELECT
-  bucket_id,
+  o.bucket_id,
   count(*)                                                                    AS object_count,
-  pg_size_pretty(sum(coalesce((metadata->>'size')::bigint, 0)))::text         AS logical_size,
-  max(coalesce((metadata->>'size')::bigint, 0))                               AS largest_object_bytes
-FROM storage.objects
-GROUP BY bucket_id
-ORDER BY sum(coalesce((metadata->>'size')::bigint, 0)) DESC NULLS LAST;
+  pg_size_pretty(sum(coalesce((o.metadata->>'size')::bigint, 0)))::text       AS logical_size,
+  max(coalesce((o.metadata->>'size')::bigint, 0))                             AS largest_object_bytes
+FROM storage.objects o
+GROUP BY o.bucket_id
+ORDER BY sum(coalesce((o.metadata->>'size')::bigint, 0)) DESC NULLS LAST;
 
 CREATE OR REPLACE VIEW public.check_activity_by_type AS
 SELECT

@@ -95,29 +95,29 @@ ORDER BY logical_bytes DESC NULLS LAST;
 -- Top 50 maiores arquivos (priorizar conversão para WebP)
 CREATE OR REPLACE VIEW public.storage_top_heavy_objects AS
 SELECT
-  bucket_id,
-  name,
-  pg_size_pretty(coalesce((metadata->>'size')::bigint, 0))::text  AS size,
-  coalesce((metadata->>'size')::bigint, 0)                        AS size_bytes,
-  coalesce(metadata->>'mimetype', '')                             AS mime,
-  coalesce(metadata->>'cacheControl', '')                         AS cache_control,
-  created_at,
-  last_accessed_at
-FROM storage.objects
+  o.bucket_id,
+  o.name,
+  pg_size_pretty(coalesce((o.metadata->>'size')::bigint, 0))::text  AS size,
+  coalesce((o.metadata->>'size')::bigint, 0)                        AS size_bytes,
+  coalesce(o.metadata->>'mimetype', '')                             AS mime,
+  coalesce(o.metadata->>'cacheControl', '')                         AS cache_control,
+  o.created_at,
+  o.last_accessed_at
+FROM storage.objects o
 ORDER BY size_bytes DESC NULLS LAST
 LIMIT 50;
 
 -- Arquivos SEM cache-control definido
 CREATE OR REPLACE VIEW public.storage_objects_missing_cache AS
 SELECT
-  bucket_id,
-  name,
-  pg_size_pretty(coalesce((metadata->>'size')::bigint, 0))::text  AS size,
-  coalesce(metadata->>'mimetype', '')                             AS mime,
-  created_at
-FROM storage.objects
-WHERE coalesce(metadata->>'cacheControl', '') = ''
-ORDER BY bucket_id, coalesce((metadata->>'size')::bigint, 0) DESC NULLS LAST;
+  o.bucket_id,
+  o.name,
+  pg_size_pretty(coalesce((o.metadata->>'size')::bigint, 0))::text  AS size,
+  coalesce(o.metadata->>'mimetype', '')                             AS mime,
+  o.created_at
+FROM storage.objects o
+WHERE coalesce(o.metadata->>'cacheControl', '') = ''
+ORDER BY o.bucket_id, coalesce((o.metadata->>'size')::bigint, 0) DESC NULLS LAST;
 
 -- ==========================================================================
 -- 4.3) CONSULTAS de verificação de saúde (rodar após aplicar)

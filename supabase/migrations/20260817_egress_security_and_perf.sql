@@ -158,16 +158,16 @@ ORDER BY last_30d DESC NULLS LAST;
 -- Top 20 produtos mais vistos nos últimos 30 dias
 CREATE OR REPLACE VIEW public.dashboard_top_products_30d AS
 SELECT
-  resource_id,
+  al.resource_id,
   MAX(p.name)                                 AS product_name,
   MAX(p.slug)                                 AS product_slug,
   COUNT(*)                                    AS views,
-  COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') AS last_7d_views
+  COUNT(*) FILTER (WHERE al.created_at >= NOW() - INTERVAL '7 days') AS last_7d_views
 FROM public.activity_logs al
-LEFT JOIN public.products p ON p.id = CASE WHEN resource_id ~ '^\d+$' THEN resource_id::bigint ELSE NULL END
-WHERE action = 'product_view'
-  AND created_at >= NOW() - INTERVAL '30 days'
-GROUP BY resource_id
+LEFT JOIN public.products p ON p.id = CASE WHEN al.resource_id ~ '^\d+$' THEN al.resource_id::bigint ELSE NULL END
+WHERE al.action = 'product_view'
+  AND al.created_at >= NOW() - INTERVAL '30 days'
+GROUP BY al.resource_id
 ORDER BY views DESC
 LIMIT 20;
 
